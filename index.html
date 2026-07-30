@@ -35,6 +35,14 @@
         <button class="round-button" id="openMood" type="button" aria-label="更新我的心情">♥</button>
       </section>
 
+      <section class="pairing-notice" id="pairingNotice" hidden aria-live="polite">
+        <div>
+          <strong>还差最后一步</strong>
+          <p>登录成功，请输入向强的邀请码进入两人空间。</p>
+        </div>
+        <button class="soft-button" id="openPairing" type="button">去配对</button>
+      </section>
+
       <section class="screen is-active" id="home" aria-label="首页">
         <div class="section-heading home-heading">
           <div>
@@ -71,12 +79,36 @@
           <div class="message-list" id="messageList"></div>
         </article>
 
-        <article class="panel prompt-panel">
-          <div>
-            <p class="section-kicker">Tonight's little question</p>
-            <h2 id="questionText">今天最想和对方分享的一件小事是什么？</h2>
+        <article class="panel question-panel">
+          <div class="section-heading question-heading">
+            <div>
+              <p class="section-kicker">Tonight's little question</p>
+              <h2>每日随机问题</h2>
+            </div>
+            <span class="question-category" id="questionCategory">日常</span>
           </div>
-          <button class="soft-button" id="newQuestion" type="button">换一个</button>
+          <h3 id="questionText">今天最想和对方分享的一件小事是什么？</h3>
+          <div class="question-tools">
+            <select id="questionCategorySelect" aria-label="选择问题类别">
+              <option value="all">全部类别</option>
+              <option value="daily">日常</option>
+              <option value="romance">浪漫</option>
+              <option value="memory">回忆</option>
+              <option value="future">未来</option>
+              <option value="deep">深入</option>
+              <option value="private">私密</option>
+              <option value="flirty">情趣</option>
+            </select>
+            <button class="soft-button" id="newQuestion" type="button">纯随机换题</button>
+          </div>
+          <p class="consent-note">私密与情趣问题都可以跳过，舒服和坦诚永远优先。</p>
+          <form id="questionAnswerForm" class="question-answer-form">
+            <label><span>以 <strong id="questionWriterName">刘向强</strong> 的身份回答</span>
+              <textarea id="questionAnswer" rows="2" maxlength="300" placeholder="写下你的答案，双方回答后解锁..."></textarea>
+            </label>
+            <button class="primary-button" type="submit">保存我的回答</button>
+          </form>
+          <div class="answer-status" id="questionAnswers"></div>
         </article>
       </section>
 
@@ -98,6 +130,58 @@
             <button class="primary-button" type="submit">添加任务</button>
           </form>
           <div class="task-list" id="taskList"></div>
+        </article>
+
+        <div class="section-heading page-heading feature-heading">
+          <div>
+            <p class="section-kicker">A note for you</p>
+            <h2>情侣小纸条</h2>
+          </div>
+          <span class="mini-stat" id="noteStats">0 张</span>
+        </div>
+        <article class="panel note-panel">
+          <form id="noteForm" class="stack-form">
+            <div class="form-grid">
+              <label>写给谁
+                <select id="noteReceiver">
+                  <option value="fu">付嘉颖</option>
+                  <option value="liu">刘向强</option>
+                </select>
+              </label>
+              <label>何时可以打开
+                <input id="noteUnlockDate" type="date">
+              </label>
+            </div>
+            <label>纸条内容
+              <textarea id="noteText" rows="3" maxlength="300" placeholder="想你时、难过时或某个特别日子再打开..."></textarea>
+            </label>
+            <button class="primary-button" type="submit">折好这张纸条</button>
+          </form>
+          <div class="note-list" id="noteList"></div>
+        </article>
+
+        <div class="section-heading page-heading feature-heading">
+          <div>
+            <p class="section-kicker">Grow side by side</p>
+            <h2>学习打卡</h2>
+          </div>
+          <span class="mini-stat" id="studyStats">0 分钟</span>
+        </div>
+        <article class="panel study-panel">
+          <form id="studyForm" class="stack-form">
+            <label>今天学了什么
+              <input id="studyContent" autocomplete="off" maxlength="80" placeholder="例如：高数第二章、英语单词">
+            </label>
+            <div class="form-grid study-grid">
+              <label>日期<input id="studyDate" type="date"></label>
+              <label>时长（分钟）<input id="studyMinutes" type="number" min="1" max="1440" inputmode="numeric" placeholder="60"></label>
+            </div>
+            <label>一句小结
+              <input id="studyNote" autocomplete="off" maxlength="120" placeholder="今天的收获或给对方的鼓励">
+            </label>
+            <button class="primary-button" type="submit">完成打卡</button>
+          </form>
+          <div class="study-list" id="studyList"></div>
         </article>
 
         <div class="section-heading page-heading meeting-heading">
@@ -202,7 +286,6 @@
                 <button class="soft-button" type="submit">加入</button>
               </form>
             </div>
-            <p class="invite-result" id="inviteResult"></p>
           </div>
           <div id="syncConnected" hidden>
             <p class="sync-copy" id="syncConnectedText">已连接到你们的私密空间。</p>
@@ -213,6 +296,7 @@
             </div>
             <button class="text-button" id="syncSignOut" type="button">退出此设备</button>
           </div>
+          <p class="invite-result" id="inviteResult" aria-live="polite"></p>
         </article>
 
         <article class="panel profile-panel">
@@ -233,6 +317,32 @@
             <button class="icon-button" type="submit" aria-label="添加记录">＋</button>
           </form>
           <div class="trait-list" id="traitList"></div>
+        </article>
+
+        <article class="panel diary-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Only for myself</p>
+              <h2>私人日记</h2>
+            </div>
+            <span class="private-chip">仅自己可见</span>
+          </div>
+          <form id="diaryForm" class="stack-form diary-form">
+            <input id="diaryEditId" type="hidden">
+            <div class="form-grid">
+              <label>日期<input id="diaryDate" type="date"></label>
+              <label>心情<input id="diaryMood" maxlength="20" placeholder="平静、开心..."></label>
+            </div>
+            <label>标题<input id="diaryTitle" maxlength="60" placeholder="给今天起个名字"></label>
+            <label>写给自己
+              <textarea id="diaryText" rows="5" maxlength="2000" placeholder="这里的内容不会出现在共同空间..."></textarea>
+            </label>
+            <div class="diary-actions">
+              <button class="primary-button" id="saveDiary" type="submit">保存日记</button>
+              <button class="soft-button" id="cancelDiaryEdit" type="button" hidden>取消修改</button>
+            </div>
+          </form>
+          <div class="diary-list" id="diaryList"></div>
         </article>
 
         <article class="panel health-panel" id="healthPanel">

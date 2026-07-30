@@ -81,7 +81,7 @@
       await sync.client.auth.signOut();
       resetConnection();
       updateUi("signed-out", "请登录");
-      emit("love-sync-status", { connected: false, role: null });
+      emit("love-sync-status", { connected: false, authenticated: false, needsPairing: false, role: null });
     });
   }
 
@@ -178,7 +178,7 @@
     if (!session) {
       resetConnection();
       updateUi("signed-out", "请登录");
-      emit("love-sync-status", { connected: false, role: null });
+      emit("love-sync-status", { connected: false, authenticated: false, needsPairing: false, role: null });
       return;
     }
     sync.user = session.user;
@@ -193,7 +193,8 @@
     }
     if (!member) {
       updateUi("pairing", "等待配对");
-      emit("love-sync-status", { connected: false, role: null });
+      q("#inviteResult").textContent = "登录成功。请选择自己是谁，再输入对方的邀请码加入空间。";
+      emit("love-sync-status", { connected: false, authenticated: true, needsPairing: true, role: null });
       return;
     }
     sync.coupleId = member.couple_id;
@@ -209,7 +210,7 @@
       q("#syncInviteCode").textContent = couple.invite_code;
       q("#connectedInvite").hidden = false;
     }
-    emit("love-sync-status", { connected: true, role: sync.role });
+    emit("love-sync-status", { connected: true, authenticated: true, needsPairing: false, role: sync.role });
     await loadRemoteState();
     subscribe();
   }
