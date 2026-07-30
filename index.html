@@ -3,176 +3,263 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#f6a99b">
+    <meta name="theme-color" content="#e88488">
     <title>刘向强 × 付嘉颖</title>
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
     <main class="app-shell">
-      <section class="hero" aria-label="情侣首页">
+      <section class="hero" aria-label="刘向强和付嘉颖的情侣空间">
         <div class="hero-media" role="img" aria-label="晨光、花束和两只杯子的温柔背景"></div>
         <div class="hero-overlay"></div>
         <div class="hero-content">
           <p class="eyebrow">Our little world</p>
           <h1>刘向强 <span>×</span> 付嘉颖</h1>
-          <p class="subtitle">把每天的小事，慢慢存成只属于我们的宇宙。</p>
-          <div class="days-card">
+          <p class="subtitle">异地的日子，也把彼此放在每天的生活里。</p>
+          <div class="hero-stats">
             <div>
-              <span class="metric-label">在一起</span>
+              <span>已经在一起</span>
               <strong id="daysTogether">0</strong>
-              <span class="metric-label">天</span>
+              <small>天</small>
             </div>
-            <button class="ghost-button" id="editStartDate" type="button">设置日期</button>
+            <button class="hero-action" id="editStartDate" type="button">设置日期</button>
           </div>
         </div>
       </section>
 
-      <nav class="tabbar" aria-label="功能导航">
-        <button class="tab is-active" data-tab="home" type="button">
-          <span aria-hidden="true">⌂</span>
-          <b>首页</b>
-        </button>
-        <button class="tab" data-tab="wishes" type="button">
-          <span aria-hidden="true">✓</span>
-          <b>愿望</b>
-        </button>
-        <button class="tab" data-tab="notes" type="button">
-          <span aria-hidden="true">✎</span>
-          <b>留言</b>
-        </button>
-        <button class="tab" data-tab="memories" type="button">
-          <span aria-hidden="true">◇</span>
-          <b>回忆</b>
-        </button>
-      </nav>
-
-      <section class="screen is-active" id="home" aria-label="今日概览">
-        <div class="quick-grid">
-          <article class="panel next-day">
-            <p class="panel-kicker">下个纪念日</p>
-            <h2 id="nextEventTitle">等待设置</h2>
-            <p id="nextEventMeta">添加一个日期，让我帮你倒计时。</p>
-          </article>
-          <article class="panel mood-panel">
-            <p class="panel-kicker">今日心情</p>
-            <div class="mood-row" id="moodRow"></div>
-          </article>
+      <section class="presence-bar" aria-label="今日状态">
+        <div class="presence-copy">
+          <p>今天的我们</p>
+          <strong id="presenceText">正在把想念，变成一句话。</strong>
         </div>
+        <button class="round-button" id="openMood" type="button" aria-label="更新我的心情">♥</button>
+      </section>
 
-        <article class="panel quote-panel">
-          <p class="panel-kicker">今天想说</p>
-          <h2 id="dailyLine">喜欢是藏不住的，就像手机总会想打开这个页面。</h2>
-          <button class="soft-button" id="newLine" type="button">换一句</button>
-        </article>
-
-        <article class="panel date-panel">
+      <section class="screen is-active" id="home" aria-label="首页">
+        <div class="section-heading home-heading">
           <div>
-            <p class="panel-kicker">随机约会</p>
-            <h2 id="dateIdea">夜晚散步，顺路买一杯热饮。</h2>
+            <p class="section-kicker">Distance, but close</p>
+            <h2>今日连接</h2>
           </div>
-          <button class="primary-button" id="rollDate" type="button">抽一个</button>
+          <span class="status-chip">异地恋模式</span>
+        </div>
+
+        <div class="two-up" id="moodCards"></div>
+
+        <article class="feature-panel meeting-countdown">
+          <div>
+            <p class="section-kicker">下次见面</p>
+            <h2 id="nextMeetingTitle">还没有约定</h2>
+            <p id="nextMeetingMeta">先把下一次想见面的日子写下来。</p>
+          </div>
+          <span class="countdown-number" id="nextMeetingDays">--</span>
         </article>
 
-        <article class="panel form-panel">
+        <article class="panel message-panel">
           <div class="section-heading">
             <div>
-              <p class="panel-kicker">纪念日</p>
-              <h2>重要日子</h2>
+              <p class="section-kicker">Shared message</p>
+              <h2>共同留言</h2>
             </div>
+            <button class="text-button" id="switchWriter" type="button">切换记录人</button>
           </div>
-          <form id="eventForm" class="stack-form">
-            <label>
-              名称
-              <input id="eventTitle" autocomplete="off" placeholder="比如：第一次约会">
-            </label>
-            <label>
-              日期
-              <input id="eventDate" type="date">
-            </label>
-            <button class="primary-button" type="submit">添加纪念日</button>
+          <p class="writer-hint">现在以 <strong id="writerName">刘向强</strong> 的身份留言</p>
+          <form id="messageForm" class="message-form">
+            <textarea id="messageText" rows="3" maxlength="240" placeholder="留下一句想让对方看见的话..."></textarea>
+            <button class="primary-button" type="submit">发送</button>
           </form>
-          <ul class="item-list" id="eventList"></ul>
+          <div class="message-list" id="messageList"></div>
+        </article>
+
+        <article class="panel prompt-panel">
+          <div>
+            <p class="section-kicker">Tonight's little question</p>
+            <h2 id="questionText">今天最想和对方分享的一件小事是什么？</h2>
+          </div>
+          <button class="soft-button" id="newQuestion" type="button">换一个</button>
         </article>
       </section>
 
-      <section class="screen" id="wishes" aria-label="情侣愿望清单">
-        <article class="panel form-panel">
-          <div class="section-heading">
-            <div>
-              <p class="panel-kicker">Wish list</p>
-              <h2>一起完成的事</h2>
-            </div>
-            <span class="mini-stat" id="wishStats">0/0</span>
+      <section class="screen" id="together" aria-label="我们的">
+        <div class="section-heading page-heading">
+          <div>
+            <p class="section-kicker">Things we do together</p>
+            <h2>我们的计划</h2>
           </div>
-          <form id="wishForm" class="inline-form">
-            <input id="wishText" autocomplete="off" placeholder="想一起做什么？">
-            <button class="icon-button" type="submit" aria-label="添加愿望">＋</button>
+          <span class="mini-stat" id="taskStats">0/0</span>
+        </div>
+
+        <article class="panel form-panel">
+          <form id="taskForm" class="stack-form compact-form">
+            <label>
+              双人任务
+              <input id="taskText" autocomplete="off" placeholder="例如：本周一起看完一部电影">
+            </label>
+            <button class="primary-button" type="submit">添加任务</button>
           </form>
-          <ul class="item-list" id="wishList"></ul>
+          <div class="task-list" id="taskList"></div>
+        </article>
+
+        <div class="section-heading page-heading meeting-heading">
+          <div>
+            <p class="section-kicker">Meet again</p>
+            <h2>见面记录</h2>
+          </div>
+        </div>
+        <article class="panel form-panel">
+          <form id="meetingForm" class="stack-form">
+            <label>
+              这次见面叫什么
+              <input id="meetingTitle" autocomplete="off" placeholder="例如：杭州的周末">
+            </label>
+            <div class="form-grid">
+              <label>日期<input id="meetingDate" type="date"></label>
+              <label>地点<input id="meetingPlace" autocomplete="off" placeholder="城市或地点"></label>
+            </div>
+            <label>
+              想记住的事
+              <textarea id="meetingNote" rows="3" placeholder="那天最开心的瞬间..."></textarea>
+            </label>
+            <button class="primary-button" type="submit">存下这次见面</button>
+          </form>
+          <div class="meeting-list" id="meetingList"></div>
         </article>
       </section>
 
-      <section class="screen" id="notes" aria-label="每日留言">
-        <article class="panel form-panel">
+      <section class="screen" id="album" aria-label="公共相册">
+        <div class="section-heading page-heading">
+          <div>
+            <p class="section-kicker">Only ours</p>
+            <h2>公共相册</h2>
+          </div>
+          <span class="status-chip">共同可见</span>
+        </div>
+        <article class="panel album-upload">
+          <form id="albumForm" class="stack-form">
+            <label class="upload-box" for="photoInput">
+              <span aria-hidden="true">＋</span>
+              <strong>添加一张回忆</strong>
+              <small>从手机相册选择照片</small>
+            </label>
+            <input id="photoInput" type="file" accept="image/*" hidden>
+            <input id="photoCaption" autocomplete="off" maxlength="80" placeholder="给这张照片写一句话">
+            <button class="primary-button" type="submit">放进公共相册</button>
+          </form>
+        </article>
+        <div class="album-grid" id="albumGrid"></div>
+      </section>
+
+      <section class="screen" id="me" aria-label="我的空间">
+        <div class="section-heading page-heading">
+          <div>
+            <p class="section-kicker">Private and gentle</p>
+            <h2>我的记录</h2>
+          </div>
+        </div>
+        <div class="person-switch" role="tablist" aria-label="选择私人空间">
+          <button class="person-option is-active" data-person="liu" type="button">刘向强</button>
+          <button class="person-option" data-person="fu" type="button">付嘉颖</button>
+        </div>
+        <p class="private-note">此页面为个人记录，不会显示在共同空间。</p>
+
+        <article class="panel profile-panel">
           <div class="section-heading">
             <div>
-              <p class="panel-kicker">Message</p>
-              <h2>给对方的一句话</h2>
+              <p class="section-kicker">What I treasure</p>
+              <h2>对方的小档案</h2>
+            </div>
+            <span class="private-chip">仅自己可见</span>
+          </div>
+          <form id="traitForm" class="inline-form trait-form">
+            <select id="traitType" aria-label="记录类型">
+              <option value="优点">优点</option>
+              <option value="习惯">习惯</option>
+              <option value="喜欢">喜欢</option>
+            </select>
+            <input id="traitText" autocomplete="off" placeholder="记录一个关于对方的小发现">
+            <button class="icon-button" type="submit" aria-label="添加记录">＋</button>
+          </form>
+          <div class="trait-list" id="traitList"></div>
+        </article>
+
+        <article class="panel health-panel" id="healthPanel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Gentle health plan</p>
+              <h2>嘉颖的健康工具栏</h2>
+            </div>
+            <span class="private-chip">温柔陪伴</span>
+          </div>
+          <p class="health-copy">关注规律、活力和感受，不追求极端数字。</p>
+          <div class="health-cards">
+            <button class="health-card" data-health-action="water" type="button">
+              <span>今日饮水</span><strong id="waterCount">0</strong><small>杯</small>
+            </button>
+            <button class="health-card" data-health-action="move" type="button">
+              <span>运动完成</span><strong id="moveCount">0</strong><small>次</small>
+            </button>
+            <div class="health-card weight-card">
+              <span>最近体重</span><strong id="weightValue">--</strong><small>kg</small>
             </div>
           </div>
-          <form id="noteForm" class="stack-form">
-            <label>
-              今天想说
-              <textarea id="noteText" rows="4" placeholder="写给对方，或者写给今天的我们。"></textarea>
-            </label>
-            <button class="primary-button" type="submit">保存留言</button>
+          <form id="weightForm" class="weight-form">
+            <input id="weightInput" inputmode="decimal" placeholder="记录今日体重（kg）">
+            <button class="soft-button" type="submit">记录</button>
           </form>
-          <ul class="note-list" id="noteList"></ul>
+          <p class="encourage-line" id="encourageLine">慢慢来，今天照顾好自己就已经很好。</p>
+          <div class="cycle-block">
+            <div class="section-heading">
+              <div>
+                <p class="section-kicker">Private cycle log</p>
+                <h3>月经记录</h3>
+              </div>
+              <span class="private-chip">仅嘉颖可见</span>
+            </div>
+            <div class="cycle-summary">
+              <div><span>下次预计</span><strong id="cycleNextDate">待记录</strong></div>
+              <div><span>还有</span><strong id="cycleDaysLeft">--</strong><small>天</small></div>
+            </div>
+            <form id="cycleForm" class="form-grid cycle-form">
+              <label>本次开始日期<input id="cycleStart" type="date"></label>
+              <label>通常周期（天）<input id="cycleLength" type="number" min="20" max="45" inputmode="numeric" value="28"></label>
+              <button class="soft-button" type="submit">保存本次记录</button>
+            </form>
+            <p class="cycle-note">仅用于个人记录与提醒，周期变化或身体不适时请咨询医生。</p>
+            <div class="cycle-history" id="cycleHistory"></div>
+          </div>
         </article>
       </section>
 
-      <section class="screen" id="memories" aria-label="回忆时间线">
-        <article class="panel form-panel">
-          <div class="section-heading">
-            <div>
-              <p class="panel-kicker">Timeline</p>
-              <h2>回忆时间线</h2>
-            </div>
-          </div>
-          <form id="memoryForm" class="stack-form">
-            <label>
-              标题
-              <input id="memoryTitle" autocomplete="off" placeholder="比如：第一次一起看海">
-            </label>
-            <label>
-              日期
-              <input id="memoryDate" type="date">
-            </label>
-            <label>
-              小故事
-              <textarea id="memoryText" rows="3" placeholder="那天发生了什么？"></textarea>
-            </label>
-            <button class="primary-button" type="submit">存进回忆</button>
-          </form>
-          <div class="timeline" id="memoryList"></div>
-        </article>
-      </section>
+      <nav class="tabbar" aria-label="主导航">
+        <button class="tab is-active" data-tab="home" type="button"><span aria-hidden="true">⌂</span><b>首页</b></button>
+        <button class="tab" data-tab="together" type="button"><span aria-hidden="true">♡</span><b>我们的</b></button>
+        <button class="tab" data-tab="album" type="button"><span aria-hidden="true">▧</span><b>相册</b></button>
+        <button class="tab" data-tab="me" type="button"><span aria-hidden="true">◌</span><b>我的</b></button>
+      </nav>
     </main>
 
     <dialog id="settingsDialog">
       <form method="dialog" class="dialog-card">
         <h2>设置在一起的日期</h2>
-        <label>
-          开始日期
-          <input id="startDateInput" type="date">
-        </label>
+        <label>开始日期<input id="startDateInput" type="date"></label>
         <div class="dialog-actions">
           <button class="soft-button" value="cancel" type="submit">取消</button>
           <button class="primary-button" id="saveStartDate" value="default" type="button">保存</button>
         </div>
       </form>
     </dialog>
-
+    <dialog id="moodDialog">
+      <form method="dialog" class="dialog-card">
+        <p class="section-kicker">今天的心情</p>
+        <h2 id="moodDialogTitle">刘向强想说</h2>
+        <div class="mood-picker" id="moodPicker"></div>
+        <label>补充一句<input id="moodNote" maxlength="40" placeholder="例如：下班路上想你"></label>
+        <div class="dialog-actions">
+          <button class="soft-button" value="cancel" type="submit">取消</button>
+          <button class="primary-button" id="saveMood" value="default" type="button">更新心情</button>
+        </div>
+      </form>
+    </dialog>
     <script src="app.js"></script>
   </body>
 </html>
