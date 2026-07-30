@@ -1,0 +1,49 @@
+# 双人同步配置
+
+这份配置会让公共留言、心情、任务、见面记录和相册在两台手机间同步，同时把个人档案、健康和月经记录锁定为本人登录后才能访问。
+
+## 1. 创建项目
+
+1. 打开 https://supabase.com/dashboard 并注册或登录。
+2. 选择 `New project`，创建一个免费项目。
+3. 等待项目状态变成可用。
+
+## 2. 配置邮件登录回跳地址
+
+在 `Authentication` -> `URL Configuration` 中设置：
+
+- `Site URL`：`https://xiaomanovoi.github.io/liu-fu-love/`
+- `Redirect URLs`：添加同一个地址 `https://xiaomanovoi.github.io/liu-fu-love/`
+
+在 `Authentication` -> `Providers` 中确认 `Email` 已启用。
+
+## 3. 创建安全数据库
+
+1. 进入 `SQL Editor`。
+2. 新建查询。
+3. 打开本项目的 `supabase-schema.sql`，复制全部内容并粘贴到查询中。
+4. 点击 `Run`，确认执行成功。
+
+这份脚本会启用行级安全策略：公共数据只对同一情侣空间的两人开放；私人数据只允许记录者本人读取和修改。
+
+## 4. 把两个公开配置值发给我
+
+在 `Project Settings` -> `API` 中复制：
+
+- `Project URL`
+- `Publishable key`，或旧版项目中的 `anon public key`
+
+这两个值可以放在浏览器前端中。不要提供 `service_role`、`secret key` 或账号密码。
+
+我会将它们写入 `supabase-config.js` 并重新发布网页。
+
+## 5. 两个人完成配对
+
+1. 刘向强和付嘉颖分别用各自邮箱打开网站，在“我的”中点击邮箱登录链接。
+2. 第一位登录的人选择自己的身份，点击“创建两人空间”，把生成的邀请码发给另一位。
+3. 第二位登录的人选择另一身份，输入邀请码并加入。
+4. 页面显示“已实时同步”后，公共区域立即共享；“我的”只显示自己的私人记录。
+
+## 相册说明
+
+当前版本会在上传时压缩照片，并作为同步数据保存，适合少量日常照片。相册积累较多后，下一步应迁移到 Supabase Storage 私有存储桶，以获得更快加载和更大容量。

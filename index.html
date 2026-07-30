@@ -162,6 +162,42 @@
         </div>
         <p class="private-note">此页面为个人记录，不会显示在共同空间。</p>
 
+        <article class="panel sync-panel" id="syncPanel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Private cloud</p>
+              <h2>双人同步</h2>
+            </div>
+            <span class="sync-status" id="syncStatus">本机模式</span>
+          </div>
+          <div id="syncSignedOut">
+            <p class="sync-copy">用邮箱登录后，就能创建你们的私密空间。</p>
+            <form id="syncEmailForm" class="sync-form">
+              <input id="syncEmail" type="email" autocomplete="email" placeholder="输入你的邮箱">
+              <button class="soft-button" type="submit">发送登录链接</button>
+            </form>
+          </div>
+          <div id="syncPairing" hidden>
+            <p class="sync-copy">选择自己是谁，再创建或加入你们的空间。</p>
+            <div class="role-picker" id="syncRolePicker">
+              <button class="role-option is-active" data-role="liu" type="button">我是刘向强</button>
+              <button class="role-option" data-role="fu" type="button">我是付嘉颖</button>
+            </div>
+            <div class="sync-actions">
+              <button class="primary-button" id="createPair" type="button">创建两人空间</button>
+              <form id="joinPairForm" class="join-form">
+                <input id="pairCode" autocomplete="off" maxlength="8" placeholder="输入对方的邀请码">
+                <button class="soft-button" type="submit">加入</button>
+              </form>
+            </div>
+            <p class="invite-result" id="inviteResult"></p>
+          </div>
+          <div id="syncConnected" hidden>
+            <p class="sync-copy" id="syncConnectedText">已连接到你们的私密空间。</p>
+            <button class="text-button" id="syncSignOut" type="button">退出此设备</button>
+          </div>
+        </article>
+
         <article class="panel profile-panel">
           <div class="section-heading">
             <div>
@@ -260,6 +296,9 @@
         </div>
       </form>
     </dialog>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script src="sync.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

@@ -62,7 +62,9 @@ init();
 function init() {
   bindNavigation();
   bindActions();
+  bindSyncEvents();
   render();
+  window.LoveSync?.initialize();
 }
 
 function bindNavigation() {
@@ -92,6 +94,7 @@ function bindActions() {
     persistAndRender();
   });
   els.switchWriter.addEventListener("click", () => {
+    if (window.LoveSync?.isConnected()) return;
     state.writer = state.writer === "liu" ? "fu" : "liu";
     persistAndRender();
   });
@@ -133,6 +136,7 @@ function bindActions() {
     persistAndRender();
   });
   els.personOptions.forEach((button) => button.addEventListener("click", () => {
+    if (window.LoveSync?.isConnected() && button.dataset.person !== window.LoveSync.getRole()) return;
     state.privatePerson = button.dataset.person;
     persistAndRender();
   }));
@@ -169,6 +173,30 @@ function bindActions() {
     els.cycleForm.reset();
     els.cycleLength.value = "28";
     persistAndRender();
+  });
+}
+
+function bindSyncEvents() {
+  window.addEventListener("love-sync-status", (event) => {
+    const role = event.detail.role;
+    if (!role) return;
+    state.writer = role;
+    state.privatePerson = role;
+    saveLocalAndRender();
+  });
+  window.addEventListener("love-sync-remote", (event) => {
+    const { shared, privateData, role, initializeEmptySpace } = event.detail;
+    const next = {
+      ...state,
+      ...(shared || {}),
+      writer: role || state.writer,
+      privatePerson: role || state.privatePerson,
+      private: { ...state.private }
+    };
+    if (privateData && role) next.private[role] = privateData;
+    state = mergeDefaults(next);
+    saveLocalAndRender();
+    if (initializeEmptySpace) window.LoveSync?.scheduleSave(state);
   });
 }
 
@@ -275,8 +303,13 @@ function renderAlbum() {
 }
 
 function renderPrivate() {
-  const person = state.privatePerson;
-  els.personOptions.forEach((button) => button.classList.toggle("is-active", button.dataset.person === person));
+  const syncedRole = window.LoveSync?.getRole();
+  const person = syncedRole || state.privatePerson;
+  state.privatePerson = person;
+  els.personOptions.forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.person === person);
+    button.disabled = Boolean(syncedRole && button.dataset.person !== person);
+  });
   const space = privateSpace();
   if (!space.traits.length) {
     renderEmpty(els.traitList, "把你发现的一个小优点记下来。");
@@ -344,7 +377,12 @@ function openMoodDialog() {
 }
 
 function privateSpace() { return state.private[state.privatePerson]; }
-function persistAndRender() { localStorage.setItem(storageKey, JSON.stringify(state)); render(); }
+function persistAndRender() {
+  localStorage.setItem(storageKey, JSON.stringify(state));
+  render();
+  window.LoveSync?.scheduleSave(state);
+}
+function saveLocalAndRender() { localStorage.setItem(storageKey, JSON.stringify(state)); render(); }
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
@@ -384,13 +422,13 @@ function shrinkImage(file) {
     reader.onload = () => {
       const image = new Image();
       image.onload = () => {
-        const maxSide = 1200;
+        const maxSide = 720;
         const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
         const canvas = document.createElement("canvas");
         canvas.width = Math.round(image.width * scale);
         canvas.height = Math.round(image.height * scale);
         canvas.getContext("2d").drawImage(image, 0, 0, canvas.width, canvas.height);
-        resolve(canvas.toDataURL("image/jpeg", 0.82));
+        resolve(canvas.toDataURL("image/jpeg", 0.72));
       };
       image.onerror = () => reject(new Error("图片无法读取"));
       image.src = reader.result;

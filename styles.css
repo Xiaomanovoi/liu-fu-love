@@ -144,6 +144,17 @@ label { display: grid; gap: 6px; color: var(--muted); font-size: .8rem; font-wei
 .person-option { min-height: 42px; border: 0; border-radius: 6px; color: var(--muted); font-weight: 800; background: transparent; }
 .person-option.is-active { color: #fff; background: var(--rose); box-shadow: 0 7px 16px rgba(219,115,125,.2); }
 .private-note { margin: 0 3px 13px; color: var(--muted); font-size: .76rem; }
+.sync-panel { background: #f5f1fb; }
+.sync-status { flex: 0 0 auto; padding: 6px 9px; border-radius: 999px; color: #756b9b; font-size: .71rem; font-weight: 800; background: #e9e4f5; }
+.sync-status[data-mode="connected"] { color: #4d7a67; background: #e0f0e8; }
+.sync-copy { margin: 10px 0; color: var(--muted); font-size: .82rem; line-height: 1.5; }
+.sync-form, .join-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.role-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 11px 0; }
+.role-option { min-height: 40px; border: 1px solid var(--line); color: var(--muted); font-size: .78rem; font-weight: 800; background: rgba(255,255,255,.78); }
+.role-option.is-active { border-color: var(--lavender); color: #fff; background: var(--lavender); }
+.sync-actions { display: grid; gap: 8px; }
+.invite-result { min-height: 1.4em; margin: 10px 0 0; color: #756b9b; font-size: .78rem; line-height: 1.5; }
+.person-option:disabled { cursor: default; opacity: .48; }
 .inline-form { display: grid; grid-template-columns: 75px 1fr 46px; gap: 7px; }
 .inline-form select { padding-inline: 7px; font-size: .77rem; }
 .trait-item { display: flex; align-items: start; justify-content: space-between; gap: 8px; padding: 10px 11px; border: 1px solid var(--line); border-radius: 8px; background: #fffaf8; }
