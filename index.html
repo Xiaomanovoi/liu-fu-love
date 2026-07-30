@@ -159,25 +159,15 @@
             <div class="achievement-progress" aria-hidden="true"><i id="achievementProgressBar"></i></div>
           </div>
           <div class="achievement-tools">
-            <select id="achievementCategory" aria-label="选择成就分类">
-              <option value="daily">日常陪伴</option>
-              <option value="distance">异地默契</option>
-              <option value="meeting">见面回忆</option>
-              <option value="travel">一起出发</option>
-              <option value="romance">浪漫时刻</option>
-              <option value="growth">共同成长</option>
-              <option value="fun">有趣挑战</option>
-              <option value="milestone">时间里程碑</option>
-              <option value="custom">我们的自定义</option>
-            </select>
             <div class="achievement-filter" id="achievementFilter" role="group" aria-label="筛选成就状态">
               <button class="is-active" data-achievement-filter="all" type="button">全部</button>
               <button data-achievement-filter="todo" type="button">未完成</button>
               <button data-achievement-filter="done" type="button">已完成</button>
             </div>
+            <span class="achievement-visible-count" id="achievementVisibleCount">显示 12 项</span>
           </div>
-          <p class="achievement-category-copy" id="achievementCategoryCopy"></p>
           <div class="achievement-list" id="achievementList"></div>
+          <button class="achievement-more" id="achievementMore" type="button">展开更多</button>
           <form id="achievementForm" class="achievement-form">
             <input id="achievementText" maxlength="80" autocomplete="off" placeholder="添加只属于你们的成就">
             <button class="soft-button" type="submit">添加</button>
@@ -475,6 +465,18 @@
         <div class="dialog-actions">
           <button class="soft-button" value="cancel" type="submit">取消</button>
           <button class="primary-button" id="saveMood" value="default" type="button">更新心情</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="achievementEditDialog">
+      <form method="dialog" class="dialog-card">
+        <p class="section-kicker">Our little milestone</p>
+        <h2>修改成就</h2>
+        <input id="achievementEditId" type="hidden">
+        <label>成就内容<input id="achievementEditText" maxlength="80" autocomplete="off"></label>
+        <div class="dialog-actions">
+          <button class="soft-button" value="cancel" type="submit">取消</button>
+          <button class="primary-button" id="saveAchievementEdit" value="default" type="button">保存修改</button>
         </div>
       </form>
     </dialog>

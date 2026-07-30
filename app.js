@@ -204,7 +204,7 @@ const defaults = {
   },
   loveNotes: [],
   studyLogs: [],
-  achievements: { completed: {}, custom: [] },
+  achievements: { completed: {}, custom: [], edits: {} },
   meetings: [
     { id: uid(), title: "下一次见面", date: "", place: "", note: "把想见面的日子先约下来。", planned: true }
   ],
@@ -220,6 +220,7 @@ let selectedMood = state.moods[state.writer].feeling;
 let photoPreviewUrl = "";
 let pairingRedirected = false;
 let activeAchievementFilter = "all";
+let achievementsExpanded = false;
 let lastCapsuleDate = "";
 
 const els = {
@@ -228,7 +229,7 @@ const els = {
   tabs: qa(".tab"), screens: qa(".screen"), capsuleType: q("#capsuleType"), capsuleDate: q("#capsuleDate"), capsuleText: q("#capsuleText"), moodCards: q("#moodCards"), nextMeetingTitle: q("#nextMeetingTitle"), nextMeetingMeta: q("#nextMeetingMeta"), nextMeetingDays: q("#nextMeetingDays"),
   writerName: q("#writerName"), switchWriter: q("#switchWriter"), messageForm: q("#messageForm"), messageText: q("#messageText"), messageList: q("#messageList"), questionText: q("#questionText"), questionCategory: q("#questionCategory"), questionCategorySelect: q("#questionCategorySelect"), newQuestion: q("#newQuestion"), questionAnswerForm: q("#questionAnswerForm"), questionAnswer: q("#questionAnswer"), questionWriterName: q("#questionWriterName"), questionAnswers: q("#questionAnswers"),
   taskForm: q("#taskForm"), taskText: q("#taskText"), taskList: q("#taskList"), taskStats: q("#taskStats"),
-  achievementStats: q("#achievementStats"), achievementPercent: q("#achievementPercent"), achievementProgressBar: q("#achievementProgressBar"), achievementCategory: q("#achievementCategory"), achievementFilter: q("#achievementFilter"), achievementCategoryCopy: q("#achievementCategoryCopy"), achievementList: q("#achievementList"), achievementForm: q("#achievementForm"), achievementText: q("#achievementText"),
+  achievementStats: q("#achievementStats"), achievementPercent: q("#achievementPercent"), achievementProgressBar: q("#achievementProgressBar"), achievementFilter: q("#achievementFilter"), achievementVisibleCount: q("#achievementVisibleCount"), achievementList: q("#achievementList"), achievementMore: q("#achievementMore"), achievementForm: q("#achievementForm"), achievementText: q("#achievementText"), achievementEditDialog: q("#achievementEditDialog"), achievementEditId: q("#achievementEditId"), achievementEditText: q("#achievementEditText"), saveAchievementEdit: q("#saveAchievementEdit"),
   noteForm: q("#noteForm"), noteReceiver: q("#noteReceiver"), noteUnlockDate: q("#noteUnlockDate"), noteText: q("#noteText"), noteList: q("#noteList"), noteStats: q("#noteStats"),
   studyForm: q("#studyForm"), studyContent: q("#studyContent"), studyDate: q("#studyDate"), studyMinutes: q("#studyMinutes"), studyNote: q("#studyNote"), studyList: q("#studyList"), studyStats: q("#studyStats"),
   meetingForm: q("#meetingForm"), meetingTitle: q("#meetingTitle"), meetingDate: q("#meetingDate"), meetingPlace: q("#meetingPlace"), meetingNote: q("#meetingNote"), meetingList: q("#meetingList"),
@@ -317,12 +318,16 @@ function bindActions() {
     els.taskForm.reset();
     persistAndRender();
   });
-  els.achievementCategory.addEventListener("change", renderAchievements);
   els.achievementFilter.addEventListener("click", (event) => {
     const button = event.target.closest("[data-achievement-filter]");
     if (!button) return;
     activeAchievementFilter = button.dataset.achievementFilter;
+    achievementsExpanded = false;
     els.achievementFilter.querySelectorAll("button").forEach((item) => item.classList.toggle("is-active", item === button));
+    renderAchievements();
+  });
+  els.achievementMore.addEventListener("click", () => {
+    achievementsExpanded = !achievementsExpanded;
     renderAchievements();
   });
   els.achievementForm.addEventListener("submit", (event) => {
@@ -331,9 +336,23 @@ function bindActions() {
     if (!text) return;
     state.achievements.custom.unshift({ id: `custom-${uid()}`, text, createdAt: todayString() });
     els.achievementForm.reset();
-    els.achievementCategory.value = "custom";
     activeAchievementFilter = "all";
+    achievementsExpanded = false;
     els.achievementFilter.querySelectorAll("button").forEach((item) => item.classList.toggle("is-active", item.dataset.achievementFilter === "all"));
+    persistAndRender();
+  });
+  els.saveAchievementEdit.addEventListener("click", () => {
+    const id = els.achievementEditId.value;
+    const text = els.achievementEditText.value.trim();
+    if (!id || !text) return;
+    const custom = state.achievements.custom.find((item) => item.id === id);
+    if (custom) custom.text = text;
+    else {
+      const original = achievementDefinitions.find((item) => item.id === id)?.text;
+      if (text === original) delete state.achievements.edits[id];
+      else state.achievements.edits[id] = text;
+    }
+    els.achievementEditDialog.close();
     persistAndRender();
   });
   els.noteForm.addEventListener("submit", (event) => {
@@ -602,8 +621,10 @@ function renderTasks() {
 
 function renderAchievements() {
   const achievementState = state.achievements;
-  const custom = (achievementState.custom || []).map((item) => ({ ...item, category: "custom" }));
-  const all = [...achievementDefinitions, ...custom];
+  const edits = achievementState.edits || {};
+  const custom = (achievementState.custom || []).map((item) => ({ ...item, isCustom: true }));
+  const preset = achievementDefinitions.map((item) => ({ ...item, text: edits[item.id] || item.text, isCustom: false }));
+  const all = [...custom, ...preset];
   const completed = achievementState.completed || {};
   const completedCount = all.filter((item) => completed[item.id]).length;
   const percent = all.length ? Math.round((completedCount / all.length) * 100) : 0;
@@ -611,40 +632,50 @@ function renderAchievements() {
   els.achievementPercent.textContent = `${percent}%`;
   els.achievementProgressBar.style.width = `${percent}%`;
 
-  const category = els.achievementCategory.value;
-  const group = achievementCategories[category];
-  let items = all.filter((item) => item.category === category);
-  const categoryDone = items.filter((item) => completed[item.id]).length;
-  els.achievementCategoryCopy.textContent = category === "custom"
-    ? `只属于你们的清单 · 已完成 ${categoryDone}/${items.length}`
-    : `${group.copy} · 已完成 ${categoryDone}/${items.length}`;
+  let items = all;
   if (activeAchievementFilter === "done") items = items.filter((item) => completed[item.id]);
   if (activeAchievementFilter === "todo") items = items.filter((item) => !completed[item.id]);
+  const visibleItems = achievementsExpanded ? items : items.slice(0, 12);
+  els.achievementVisibleCount.textContent = `显示 ${visibleItems.length}/${items.length} 项`;
+  els.achievementMore.hidden = items.length <= 12;
+  els.achievementMore.textContent = achievementsExpanded ? "收起成就" : `展开更多（${items.length - visibleItems.length}）`;
   if (!items.length) {
-    const emptyText = category === "custom" ? "在下方添加一个只属于你们的成就。" : "这个筛选条件下还没有成就。";
-    renderEmpty(els.achievementList, emptyText);
+    renderEmpty(els.achievementList, "这个筛选条件下还没有成就。");
   } else {
-    els.achievementList.replaceChildren(...items.map((item) => {
+    els.achievementList.replaceChildren(...visibleItems.map((item) => {
       const record = completed[item.id];
       const isDone = Boolean(record);
-      const detail = isDone
-        ? `我们完成于 ${record.date ? formatDate(parseDate(record.date)) : "某个值得纪念的日子"}`
-        : "等待一起完成";
+      const completionDate = typeof record === "string" ? record : record?.date || "";
       const node = document.createElement("article");
       node.className = `achievement-item${isDone ? " is-done" : ""}`;
-      node.innerHTML = `<label><input type="checkbox" data-achievement-id="${item.id}" ${isDone ? "checked" : ""}><span class="achievement-check" aria-hidden="true">✓</span><span class="achievement-copy"><strong>${escapeHTML(item.text)}</strong><small>${detail}</small></span></label>${item.category === "custom" ? `<button class="delete-button" data-delete-achievement="${item.id}" type="button" aria-label="删除自定义成就">×</button>` : ""}`;
+      const dateControl = isDone
+        ? `<label class="achievement-date">完成日期<input data-achievement-date="${item.id}" type="date" value="${completionDate}"></label>`
+        : `<small class="achievement-waiting">等待一起完成</small>`;
+      node.innerHTML = `<div class="achievement-main"><label class="achievement-toggle"><input type="checkbox" data-achievement-id="${item.id}" ${isDone ? "checked" : ""}><span class="achievement-check" aria-hidden="true">✓</span><span class="achievement-copy"><strong>${escapeHTML(item.text)}</strong></span></label><div class="achievement-actions"><button class="achievement-edit" data-edit-achievement="${item.id}" type="button">修改</button>${item.isCustom ? `<button class="delete-button" data-delete-achievement="${item.id}" type="button" aria-label="删除自定义成就">×</button>` : ""}</div></div>${dateControl}`;
       return node;
     }));
   }
   els.achievementList.querySelectorAll("[data-achievement-id]").forEach((input) => input.addEventListener("change", () => {
-    if (input.checked) state.achievements.completed[input.dataset.achievementId] = { date: todayString() };
+    if (input.checked) state.achievements.completed[input.dataset.achievementId] = { date: "" };
     else delete state.achievements.completed[input.dataset.achievementId];
     persistAndRender();
+  }));
+  els.achievementList.querySelectorAll("[data-achievement-date]").forEach((input) => input.addEventListener("change", () => {
+    state.achievements.completed[input.dataset.achievementDate] = { date: input.value };
+    persistAndRender();
+  }));
+  els.achievementList.querySelectorAll("[data-edit-achievement]").forEach((button) => button.addEventListener("click", () => {
+    const item = all.find((entry) => entry.id === button.dataset.editAchievement);
+    if (!item) return;
+    els.achievementEditId.value = item.id;
+    els.achievementEditText.value = item.text;
+    els.achievementEditDialog.showModal();
   }));
   els.achievementList.querySelectorAll("[data-delete-achievement]").forEach((button) => button.addEventListener("click", () => {
     const id = button.dataset.deleteAchievement;
     state.achievements.custom = state.achievements.custom.filter((item) => item.id !== id);
     delete state.achievements.completed[id];
+    delete state.achievements.edits[id];
     persistAndRender();
   }));
 }
@@ -924,7 +955,8 @@ function mergeDefaults(saved) {
     studyLogs: Array.isArray(saved.studyLogs) ? saved.studyLogs : [],
     achievements: {
       completed: { ...base.achievements.completed, ...(saved.achievements?.completed || {}) },
-      custom: Array.isArray(saved.achievements?.custom) ? saved.achievements.custom : []
+      custom: Array.isArray(saved.achievements?.custom) ? saved.achievements.custom : [],
+      edits: { ...base.achievements.edits, ...(saved.achievements?.edits || {}) }
     },
     private: {
       liu: mergePrivateSpace(saved.private?.liu, "liu"),
