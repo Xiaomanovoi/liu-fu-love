@@ -1,6 +1,7 @@
 {
+  "type": "module",
   "scripts": {
-    "build": "node -e \"require('fs').mkdirSync('dist',{recursive:true}); for (const name of ['index.html','styles.css','app.js']) require('fs').copyFileSync(name, 'dist/' + name); require('fs').cpSync('assets', 'dist/assets', {recursive:true});\""
+    "build": "node build.mjs"
   },
   "dependencies": {},
   "devDependencies": {}
