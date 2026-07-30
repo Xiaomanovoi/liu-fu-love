@@ -177,3 +177,5 @@ begin
   ) then alter publication supabase_realtime add table public.love_private_state; end if;
 end;
 $$;
+
+notify pgrst, 'reload schema';

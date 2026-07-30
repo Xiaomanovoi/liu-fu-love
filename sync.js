@@ -92,17 +92,21 @@
   }
 
   function pairingError(action, error) {
+    const code = error?.code || "UNKNOWN";
     const detail = [error?.message, error?.details, error?.hint].filter(Boolean).join(" ");
-    if (/create_love_space|join_love_space|function.*does not exist|schema cache/i.test(detail)) {
-      return `${action}失败：数据库同步功能还没有生效。请在 Supabase 的 SQL Editor 中重新执行最新版 supabase-schema.sql，执行成功后刷新网页再试。`;
+    if (code === "PGRST202" || /could not find.*function|function.*does not exist|schema cache/i.test(detail)) {
+      return `${action}失败（${code}）：数据库接口缓存尚未识别同步函数，请在 SQL Editor 执行 NOTIFY pgrst, 'reload schema'; 后刷新网页。`;
     }
     if (/already belongs to a couple space/i.test(detail)) {
       return `${action}失败：这个邮箱已经属于一个两人空间。请刷新网页确认是否已连接，或改用另一个邮箱。`;
     }
-    if (/Please sign in first|JWT|unauthorized|permission denied/i.test(detail)) {
+    if (/permission denied for function/i.test(detail)) {
+      return `${action}失败（${code}）：数据库函数尚未授权给登录用户，请重新执行最新版数据库脚本中的 GRANT 语句。`;
+    }
+    if (/Please sign in first|JWT|unauthorized/i.test(detail)) {
       return `${action}失败：登录状态已失效。请退出后重新通过邮箱链接登录。`;
     }
-    return detail ? `${action}失败：${detail}` : `${action}失败，请稍后刷新网页再试。`;
+    return detail ? `${action}失败（${code}）：${detail}` : `${action}失败（${code}），请稍后刷新网页再试。`;
   }
 
   async function createPair() {
