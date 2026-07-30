@@ -64,7 +64,7 @@ button {
 }
 
 .hero-media {
-  background-image: url("assets/hero-bg.png");
+  background-image: url("assets/hero-bg.jpg");
   background-size: cover;
   background-position: center bottom;
   transform: scale(1.01);
