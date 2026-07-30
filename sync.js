@@ -61,11 +61,25 @@
     return q("#syncRolePicker .is-active")?.dataset.role || "liu";
   }
 
+  function pairingError(action, error) {
+    const detail = [error?.message, error?.details, error?.hint].filter(Boolean).join(" ");
+    if (/create_love_space|join_love_space|function.*does not exist|schema cache/i.test(detail)) {
+      return `${action}失败：数据库同步功能还没有生效。请在 Supabase 的 SQL Editor 中重新执行最新版 supabase-schema.sql，执行成功后刷新网页再试。`;
+    }
+    if (/already belongs to a couple space/i.test(detail)) {
+      return `${action}失败：这个邮箱已经属于一个两人空间。请刷新网页确认是否已连接，或改用另一个邮箱。`;
+    }
+    if (/Please sign in first|JWT|unauthorized|permission denied/i.test(detail)) {
+      return `${action}失败：登录状态已失效。请退出后重新通过邮箱链接登录。`;
+    }
+    return detail ? `${action}失败：${detail}` : `${action}失败，请稍后刷新网页再试。`;
+  }
+
   async function createPair() {
     const role = chosenRole();
     const { data, error } = await sync.client.rpc("create_love_space", { p_role: role });
     if (error) {
-      q("#inviteResult").textContent = "创建失败，请确认数据库脚本已执行。";
+      q("#inviteResult").textContent = pairingError("创建", error);
       return;
     }
     q("#inviteResult").textContent = `邀请码：${data.invite_code}，请发给对方。`;
@@ -78,7 +92,7 @@
     if (!code) return;
     const { error } = await sync.client.rpc("join_love_space", { p_invite_code: code, p_role: chosenRole() });
     if (error) {
-      q("#inviteResult").textContent = "加入失败，请检查邀请码和身份选择。";
+      q("#inviteResult").textContent = pairingError("加入", error);
       return;
     }
     await refreshSession();
