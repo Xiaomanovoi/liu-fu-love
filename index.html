@@ -145,37 +145,6 @@
 
         <div class="section-heading page-heading feature-heading">
           <div>
-            <p class="section-kicker">Our little milestones</p>
-            <h2>情侣成就</h2>
-          </div>
-          <span class="mini-stat" id="achievementStats">0/80</span>
-        </div>
-        <article class="panel achievement-panel">
-          <div class="achievement-summary">
-            <div>
-              <strong id="achievementPercent">0%</strong>
-              <span>共同进度</span>
-            </div>
-            <div class="achievement-progress" aria-hidden="true"><i id="achievementProgressBar"></i></div>
-          </div>
-          <div class="achievement-tools">
-            <div class="achievement-filter" id="achievementFilter" role="group" aria-label="筛选成就状态">
-              <button class="is-active" data-achievement-filter="all" type="button">全部</button>
-              <button data-achievement-filter="todo" type="button">未完成</button>
-              <button data-achievement-filter="done" type="button">已完成</button>
-            </div>
-            <span class="achievement-visible-count" id="achievementVisibleCount">显示 12 项</span>
-          </div>
-          <div class="achievement-list" id="achievementList"></div>
-          <button class="achievement-more" id="achievementMore" type="button">展开更多</button>
-          <form id="achievementForm" class="achievement-form">
-            <input id="achievementText" maxlength="80" autocomplete="off" placeholder="添加只属于你们的成就">
-            <button class="soft-button" type="submit">添加</button>
-          </form>
-        </article>
-
-        <div class="section-heading page-heading feature-heading">
-          <div>
             <p class="section-kicker">A note for you</p>
             <h2>情侣小纸条</h2>
           </div>
@@ -226,6 +195,36 @@
           <div class="study-list" id="studyList"></div>
         </article>
 
+        <div class="section-heading page-heading feature-heading">
+          <div>
+            <p class="section-kicker">Game nights</p>
+            <h2>游戏记录</h2>
+          </div>
+          <span class="mini-stat" id="gameStats">0 局</span>
+        </div>
+        <article class="panel game-panel">
+          <form id="gameForm" class="stack-form">
+            <div class="form-grid">
+              <label>日期<input id="gameDate" type="date"></label>
+              <label>游戏名称<input id="gameName" maxlength="60" autocomplete="off" placeholder="例如：双人成行"></label>
+            </div>
+            <label>这次达成了什么
+              <textarea id="gameAchievement" rows="3" maxlength="300" placeholder="通关、上分、拿到奖杯，或者一个好笑的瞬间..."></textarea>
+            </label>
+            <label class="game-upload" for="gamePhotoInput">
+              <i data-lucide="image-plus" aria-hidden="true">＋</i>
+              <span>添加游戏截图</span>
+            </label>
+            <input id="gamePhotoInput" type="file" accept="image/*" hidden>
+            <div class="photo-preview game-photo-preview" id="gamePhotoPreview" hidden>
+              <img id="gamePhotoPreviewImage" alt="待保存的游戏截图预览">
+              <button class="delete-button" id="clearGamePhoto" type="button" aria-label="取消本次截图选择">×</button>
+            </div>
+            <button class="primary-button" type="submit">保存游戏记录</button>
+          </form>
+          <div class="game-list" id="gameList"></div>
+        </article>
+
         <div class="section-heading page-heading meeting-heading">
           <div>
             <p class="section-kicker">Meet again</p>
@@ -249,6 +248,37 @@
             <button class="primary-button" type="submit">存下这次见面</button>
           </form>
           <div class="meeting-list" id="meetingList"></div>
+        </article>
+
+        <div class="section-heading page-heading feature-heading achievement-heading">
+          <div>
+            <p class="section-kicker">Our little milestones</p>
+            <h2>情侣成就</h2>
+          </div>
+          <span class="mini-stat" id="achievementStats">0/80</span>
+        </div>
+        <article class="panel achievement-panel">
+          <div class="achievement-summary">
+            <div>
+              <strong id="achievementPercent">0%</strong>
+              <span>共同进度</span>
+            </div>
+            <div class="achievement-progress" aria-hidden="true"><i id="achievementProgressBar"></i></div>
+          </div>
+          <div class="achievement-tools">
+            <div class="achievement-filter" id="achievementFilter" role="group" aria-label="筛选成就状态">
+              <button class="is-active" data-achievement-filter="all" type="button">全部</button>
+              <button data-achievement-filter="todo" type="button">未完成</button>
+              <button data-achievement-filter="done" type="button">已完成</button>
+            </div>
+            <span class="achievement-visible-count" id="achievementVisibleCount">显示 6 项</span>
+          </div>
+          <div class="achievement-list" id="achievementList"></div>
+          <button class="achievement-more" id="achievementMore" type="button">展开更多</button>
+          <form id="achievementForm" class="achievement-form">
+            <input id="achievementText" maxlength="80" autocomplete="off" placeholder="添加只属于你们的成就">
+            <button class="soft-button" type="submit">添加</button>
+          </form>
         </article>
       </section>
 

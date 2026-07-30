@@ -204,6 +204,7 @@ const defaults = {
   },
   loveNotes: [],
   studyLogs: [],
+  gameRecords: [],
   achievements: { completed: {}, custom: [], edits: {} },
   meetings: [
     { id: uid(), title: "下一次见面", date: "", place: "", note: "把想见面的日子先约下来。", planned: true }
@@ -218,6 +219,7 @@ const defaults = {
 let state = loadState();
 let selectedMood = state.moods[state.writer].feeling;
 let photoPreviewUrl = "";
+let gamePhotoPreviewUrl = "";
 let pairingRedirected = false;
 let activeAchievementFilter = "all";
 let achievementsExpanded = false;
@@ -232,6 +234,7 @@ const els = {
   achievementStats: q("#achievementStats"), achievementPercent: q("#achievementPercent"), achievementProgressBar: q("#achievementProgressBar"), achievementFilter: q("#achievementFilter"), achievementVisibleCount: q("#achievementVisibleCount"), achievementList: q("#achievementList"), achievementMore: q("#achievementMore"), achievementForm: q("#achievementForm"), achievementText: q("#achievementText"), achievementEditDialog: q("#achievementEditDialog"), achievementEditId: q("#achievementEditId"), achievementEditText: q("#achievementEditText"), saveAchievementEdit: q("#saveAchievementEdit"),
   noteForm: q("#noteForm"), noteReceiver: q("#noteReceiver"), noteUnlockDate: q("#noteUnlockDate"), noteText: q("#noteText"), noteList: q("#noteList"), noteStats: q("#noteStats"),
   studyForm: q("#studyForm"), studyContent: q("#studyContent"), studyDate: q("#studyDate"), studyMinutes: q("#studyMinutes"), studyNote: q("#studyNote"), studyList: q("#studyList"), studyStats: q("#studyStats"),
+  gameForm: q("#gameForm"), gameDate: q("#gameDate"), gameName: q("#gameName"), gameAchievement: q("#gameAchievement"), gamePhotoInput: q("#gamePhotoInput"), gamePhotoPreview: q("#gamePhotoPreview"), gamePhotoPreviewImage: q("#gamePhotoPreviewImage"), clearGamePhoto: q("#clearGamePhoto"), gameList: q("#gameList"), gameStats: q("#gameStats"),
   meetingForm: q("#meetingForm"), meetingTitle: q("#meetingTitle"), meetingDate: q("#meetingDate"), meetingPlace: q("#meetingPlace"), meetingNote: q("#meetingNote"), meetingList: q("#meetingList"),
   albumForm: q("#albumForm"), photoInput: q("#photoInput"), photoPreview: q("#photoPreview"), photoPreviewImage: q("#photoPreviewImage"), clearPhotoSelection: q("#clearPhotoSelection"), photoCaption: q("#photoCaption"), albumGrid: q("#albumGrid"),
   personOptions: qa(".person-option"), traitForm: q("#traitForm"), traitType: q("#traitType"), traitText: q("#traitText"), traitList: q("#traitList"), diaryForm: q("#diaryForm"), diaryEditId: q("#diaryEditId"), diaryDate: q("#diaryDate"), diaryMood: q("#diaryMood"), diaryTitle: q("#diaryTitle"), diaryText: q("#diaryText"), diaryList: q("#diaryList"), saveDiary: q("#saveDiary"), cancelDiaryEdit: q("#cancelDiaryEdit"), healthPanel: q("#healthPanel"), waterCount: q("#waterCount"), moveCount: q("#moveCount"), weightValue: q("#weightValue"), weightForm: q("#weightForm"), weightDate: q("#weightDate"), weightInput: q("#weightInput"), weightHistory: q("#weightHistory"), encourageLine: q("#encourageLine"), cycleForm: q("#cycleForm"), cycleStart: q("#cycleStart"), cycleEnd: q("#cycleEnd"), cycleLength: q("#cycleLength"), cycleNextDate: q("#cycleNextDate"), cycleDaysLeft: q("#cycleDaysLeft"), cycleHistory: q("#cycleHistory")
@@ -380,6 +383,35 @@ function bindActions() {
     setFormDates();
     persistAndRender();
   });
+  els.gameForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const game = els.gameName.value.trim();
+    const achievement = els.gameAchievement.value.trim();
+    const date = els.gameDate.value;
+    if (!game || !achievement || !date) return;
+    const button = event.currentTarget.querySelector("button[type=submit]");
+    button.disabled = true;
+    button.textContent = "保存中...";
+    try {
+      const file = els.gamePhotoInput.files[0];
+      const image = file ? await shrinkImage(file) : "";
+      state.gameRecords.unshift({ id: uid(), date, game, achievement, image });
+      els.gameForm.reset();
+      clearGamePhotoPreview();
+      setFormDates();
+      persistAndRender();
+    } catch {
+      window.alert("这张图片暂时无法读取，请换一张图片后再试。");
+    } finally {
+      button.disabled = false;
+      button.textContent = "保存游戏记录";
+    }
+  });
+  els.gamePhotoInput.addEventListener("change", () => showGamePhotoPreview(els.gamePhotoInput.files[0]));
+  els.clearGamePhoto.addEventListener("click", () => {
+    els.gamePhotoInput.value = "";
+    clearGamePhotoPreview();
+  });
   els.meetingForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const title = els.meetingTitle.value.trim();
@@ -504,10 +536,11 @@ function render() {
   renderMessages();
   renderQuestion();
   renderTasks();
-  renderAchievements();
   renderLoveNotes();
   renderStudyLogs();
+  renderGameRecords();
   renderMeetings();
+  renderAchievements();
   renderAlbum();
   renderPrivate();
 }
@@ -635,9 +668,9 @@ function renderAchievements() {
   let items = all;
   if (activeAchievementFilter === "done") items = items.filter((item) => completed[item.id]);
   if (activeAchievementFilter === "todo") items = items.filter((item) => !completed[item.id]);
-  const visibleItems = achievementsExpanded ? items : items.slice(0, 12);
+  const visibleItems = achievementsExpanded ? items : items.slice(0, 6);
   els.achievementVisibleCount.textContent = `显示 ${visibleItems.length}/${items.length} 项`;
-  els.achievementMore.hidden = items.length <= 12;
+  els.achievementMore.hidden = items.length <= 6;
   els.achievementMore.textContent = achievementsExpanded ? "收起成就" : `展开更多（${items.length - visibleItems.length}）`;
   if (!items.length) {
     renderEmpty(els.achievementList, "这个筛选条件下还没有成就。");
@@ -724,6 +757,24 @@ function renderStudyLogs() {
   }));
   els.studyList.querySelectorAll("[data-delete-study]").forEach((button) => button.addEventListener("click", () => {
     state.studyLogs = state.studyLogs.filter((item) => item.id !== button.dataset.deleteStudy || item.person !== currentPerson());
+    persistAndRender();
+  }));
+}
+
+function renderGameRecords() {
+  const records = sortByDateDesc(state.gameRecords || []);
+  els.gameStats.textContent = `${records.length} 局`;
+  if (!records.length) return renderEmpty(els.gameList, "把下一次并肩作战的高光时刻存下来。");
+  els.gameList.replaceChildren(...records.map((item) => {
+    const node = document.createElement("article");
+    node.className = "game-record";
+    const image = item.image ? `<img src="${item.image}" alt="${escapeHTML(item.game)}的游戏截图">` : "";
+    node.innerHTML = `${image}<div class="game-record-copy"><header><span>共同战绩</span><time>${formatDate(parseDate(item.date))}</time></header><h3>${escapeHTML(item.game)}</h3><p>${escapeHTML(item.achievement)}</p></div><button class="delete-button" data-delete-game="${item.id}" type="button" aria-label="删除游戏记录">×</button>`;
+    return node;
+  }));
+  els.gameList.querySelectorAll("[data-delete-game]").forEach((button) => button.addEventListener("click", () => {
+    if (!window.confirm("确定删除这条游戏记录吗？")) return;
+    state.gameRecords = state.gameRecords.filter((item) => item.id !== button.dataset.deleteGame);
     persistAndRender();
   }));
 }
@@ -916,6 +967,7 @@ function setFormDates() {
   const today = todayString();
   els.noteUnlockDate.value = els.noteUnlockDate.value || today;
   els.studyDate.value = els.studyDate.value || today;
+  els.gameDate.value = els.gameDate.value || today;
   els.diaryDate.value = els.diaryDate.value || today;
   els.weightDate.value = els.weightDate.value || today;
 }
@@ -953,6 +1005,7 @@ function mergeDefaults(saved) {
     },
     loveNotes: Array.isArray(saved.loveNotes) ? saved.loveNotes : [],
     studyLogs: Array.isArray(saved.studyLogs) ? saved.studyLogs : [],
+    gameRecords: Array.isArray(saved.gameRecords) ? saved.gameRecords : [],
     achievements: {
       completed: { ...base.achievements.completed, ...(saved.achievements?.completed || {}) },
       custom: Array.isArray(saved.achievements?.custom) ? saved.achievements.custom : [],
@@ -997,6 +1050,19 @@ function clearPhotoPreview() {
   photoPreviewUrl = "";
   els.photoPreviewImage.removeAttribute("src");
   els.photoPreview.hidden = true;
+}
+function showGamePhotoPreview(file) {
+  clearGamePhotoPreview();
+  if (!file) return;
+  gamePhotoPreviewUrl = URL.createObjectURL(file);
+  els.gamePhotoPreviewImage.src = gamePhotoPreviewUrl;
+  els.gamePhotoPreview.hidden = false;
+}
+function clearGamePhotoPreview() {
+  if (gamePhotoPreviewUrl) URL.revokeObjectURL(gamePhotoPreviewUrl);
+  gamePhotoPreviewUrl = "";
+  els.gamePhotoPreviewImage.removeAttribute("src");
+  els.gamePhotoPreview.hidden = true;
 }
 function shrinkImage(file) {
   return new Promise((resolve, reject) => {

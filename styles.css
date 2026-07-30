@@ -210,6 +210,20 @@ label { display: grid; gap: 6px; color: var(--muted); font-size: .8rem; font-wei
 .study-record header { min-height: 31px; padding-right: 38px; }
 .study-record header time { overflow: hidden; max-width: 9.5em; text-overflow: ellipsis; white-space: nowrap; }
 .study-minutes { color: #56836d; font-weight: 850; }
+.game-panel { background: #f5f3f9; }
+.game-upload { display: flex; min-height: 48px; align-items: center; justify-content: center; gap: 8px; border: 1px dashed rgba(117,107,155,.34); color: #756b9b; background: rgba(255,255,255,.58); cursor: pointer; }
+.game-upload i, .game-upload svg { width: 19px; height: 19px; flex: 0 0 auto; }
+.game-list { display: grid; gap: 10px; margin-top: 13px; }
+.game-record { position: relative; overflow: hidden; border: 1px solid rgba(117,107,155,.16); border-radius: 8px; background: rgba(255,255,255,.78); }
+.game-record > img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+.game-record-copy { padding: 12px; }
+.game-record header { display: flex; align-items: center; gap: 8px; padding-right: 34px; color: var(--muted); font-size: .7rem; font-weight: 800; }
+.game-record header time { margin-left: auto; }
+.game-record h3 { margin: 7px 34px 4px 0; font-family: inherit; font-size: .95rem; }
+.game-record p { margin: 0 34px 0 0; overflow-wrap: anywhere; color: var(--muted); font-size: .78rem; line-height: 1.55; white-space: pre-wrap; }
+.game-record .delete-button { position: absolute; top: 9px; right: 9px; background: rgba(255,255,255,.92); box-shadow: 0 3px 8px rgba(61,45,43,.12); }
+.game-photo-preview img { aspect-ratio: 16 / 9; }
+.achievement-heading { margin-top: 25px; }
 
 .album-upload { background: #f3f8f4; }
 .upload-box { min-height: 120px; place-items: center; align-content: center; border: 1px dashed rgba(219,115,125,.45); border-radius: 8px; color: var(--rose-deep); text-align: center; background: rgba(255,255,255,.55); }
