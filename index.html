@@ -52,6 +52,17 @@
           <span class="status-chip">异地恋模式</span>
         </div>
 
+        <article class="daily-capsule" aria-label="每日心动盲盒">
+          <div class="capsule-mark" aria-hidden="true"><i data-lucide="sparkles">✦</i></div>
+          <div class="capsule-copy">
+            <div class="capsule-meta">
+              <span id="capsuleType">今日心动盲盒</span>
+              <time id="capsuleDate"></time>
+            </div>
+            <p id="capsuleText">今天也要认真生活，认真想念。</p>
+          </div>
+        </article>
+
         <div class="two-up" id="moodCards"></div>
 
         <article class="feature-panel meeting-countdown">
@@ -130,6 +141,47 @@
             <button class="primary-button" type="submit">添加任务</button>
           </form>
           <div class="task-list" id="taskList"></div>
+        </article>
+
+        <div class="section-heading page-heading feature-heading">
+          <div>
+            <p class="section-kicker">Our little milestones</p>
+            <h2>情侣成就</h2>
+          </div>
+          <span class="mini-stat" id="achievementStats">0/80</span>
+        </div>
+        <article class="panel achievement-panel">
+          <div class="achievement-summary">
+            <div>
+              <strong id="achievementPercent">0%</strong>
+              <span>共同进度</span>
+            </div>
+            <div class="achievement-progress" aria-hidden="true"><i id="achievementProgressBar"></i></div>
+          </div>
+          <div class="achievement-tools">
+            <select id="achievementCategory" aria-label="选择成就分类">
+              <option value="daily">日常陪伴</option>
+              <option value="distance">异地默契</option>
+              <option value="meeting">见面回忆</option>
+              <option value="travel">一起出发</option>
+              <option value="romance">浪漫时刻</option>
+              <option value="growth">共同成长</option>
+              <option value="fun">有趣挑战</option>
+              <option value="milestone">时间里程碑</option>
+              <option value="custom">我们的自定义</option>
+            </select>
+            <div class="achievement-filter" id="achievementFilter" role="group" aria-label="筛选成就状态">
+              <button class="is-active" data-achievement-filter="all" type="button">全部</button>
+              <button data-achievement-filter="todo" type="button">未完成</button>
+              <button data-achievement-filter="done" type="button">已完成</button>
+            </div>
+          </div>
+          <p class="achievement-category-copy" id="achievementCategoryCopy"></p>
+          <div class="achievement-list" id="achievementList"></div>
+          <form id="achievementForm" class="achievement-form">
+            <input id="achievementText" maxlength="80" autocomplete="off" placeholder="添加只属于你们的成就">
+            <button class="soft-button" type="submit">添加</button>
+          </form>
         </article>
 
         <div class="section-heading page-heading feature-heading">

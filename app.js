@@ -72,6 +72,110 @@ const questionBank = {
   ]
 };
 const questionCategoryNames = { daily: "日常", romance: "浪漫", memory: "回忆", future: "未来", deep: "深入", private: "私密", flirty: "情趣" };
+const dailyCapsules = [
+  { type: "一句情话", text: "隔着不同的城市，也要把喜欢认真放进每一天。" },
+  { type: "今日鼓励", text: "不用一下子变得很厉害，今天比昨天前进一点就很好。" },
+  { type: "温柔提醒", text: "忙碌的时候也别忘了吃饭、喝水，还有告诉对方你平安。" },
+  { type: "一起成长", text: "最好的陪伴，是我们都在成为更喜欢的自己。" },
+  { type: "一句情话", text: "距离只负责考验时间，想念会替我们拥抱彼此。" },
+  { type: "学习勉励", text: "认真学过的每一分钟，都在悄悄靠近想要的未来。" },
+  { type: "今日鼓励", text: "允许今天不完美，但别忘了肯定已经努力的自己。" },
+  { type: "温柔提醒", text: "有情绪并不可怕，说出来就是在给爱一次靠近的机会。" },
+  { type: "一句情话", text: "日子普通没关系，因为分享给你以后就有了意义。" },
+  { type: "一起成长", text: "两个人最好的默契，是各自努力，也彼此托底。" },
+  { type: "学习勉励", text: "先完成，再完善；今天坐下来开始，就已经赢了一半。" },
+  { type: "今日鼓励", text: "慢一点也没关系，稳定地向前就是很了不起的速度。" },
+  { type: "一句情话", text: "想见面不是一句抱怨，是我对下一次重逢的期待。" },
+  { type: "温柔提醒", text: "真正的关心不一定是解决问题，也可以只是安静听完。" },
+  { type: "一起成长", text: "我们不用步伐完全相同，只要方向里一直有彼此。" },
+  { type: "今日鼓励", text: "别因为一次失误否定自己，你依然值得被坚定喜欢。" },
+  { type: "一句情话", text: "今天看到好看的云，第一反应还是想发给你。" },
+  { type: "学习勉励", text: "把目标拆成很小的一步，然后认真完成眼前这一步。" },
+  { type: "温柔提醒", text: "累了就休息，不必把疲惫解释成不够努力。" },
+  { type: "一句情话", text: "你不用每时每刻有趣，我喜欢的也包括你安静的样子。" },
+  { type: "今日鼓励", text: "你已经走过很多曾经以为走不过去的路。" },
+  { type: "一起成长", text: "爱不是互相消耗，而是让彼此更有勇气面对生活。" },
+  { type: "一句情话", text: "下一次见面，我想先好好看看你，再抱紧一点。" },
+  { type: "学习勉励", text: "专注当下的四十分钟，未来会感谢现在没有放弃的你。" },
+  { type: "温柔提醒", text: "及时表达需要不是麻烦对方，而是在练习信任。" },
+  { type: "今日鼓励", text: "今天也请把自己放在重要的位置，好好照顾。" },
+  { type: "一句情话", text: "世界很大，但我最想抵达的坐标一直是你身边。" },
+  { type: "一起成长", text: "好的关系不是没有分歧，而是愿意一起寻找答案。" },
+  { type: "学习勉励", text: "看似重复的练习，会在某一天突然变成你的底气。" },
+  { type: "一句情话", text: "我喜欢的不只是见面，也喜欢等待见面时认真的我们。" },
+  { type: "今日鼓励", text: "别急着和别人比较，属于你的进度同样值得尊重。" },
+  { type: "温柔提醒", text: "一句早安和一句晚安，都可以成为小小的安全感。" },
+  { type: "一句情话", text: "有你可以分享，开心就变成双份，难过也会轻一点。" },
+  { type: "一起成长", text: "我们可以互相依靠，也要保留独立生长的力量。" },
+  { type: "今日鼓励", text: "不开心的时候先抱抱自己，答案可以晚一点再找。" },
+  { type: "学习勉励", text: "每一次克制分心、回到目标，都是一种进步。" },
+  { type: "一句情话", text: "希望所有绕远的路，最后都通向我们认真规划的未来。" },
+  { type: "温柔提醒", text: "不要让猜测代替沟通，真实的话会让距离变短。" },
+  { type: "今日鼓励", text: "你不需要证明自己值得爱，你本来就值得。" },
+  { type: "一句情话", text: "如果今天有一点疲惫，就把我的想念当作靠枕。" },
+  { type: "一起成长", text: "共同的未来，是由许多个认真生活的今天组成的。" },
+  { type: "学习勉励", text: "开始得晚没有关系，重要的是现在愿意开始。" },
+  { type: "一句情话", text: "我想参与的不只是你的快乐，还有那些不太顺利的日子。" },
+  { type: "温柔提醒", text: "先确认对方的感受，再讨论事情本身，会温柔很多。" },
+  { type: "今日鼓励", text: "今天完成一件小事，也值得认真为自己开心。" },
+  { type: "一句情话", text: "平淡生活里反复选择你，就是我最认真的浪漫。" },
+  { type: "一起成长", text: "愿我们既能共享好消息，也能接住彼此的低谷。" },
+  { type: "学习勉励", text: "放下对完美的要求，专心把这一页读完。" }
+];
+
+const achievementCategories = {
+  daily: {
+    label: "日常陪伴", copy: "普通的小事，认真一起做就会变成共同生活。", items: [
+      "一起完整看完一部电影", "连续七天互道早安和晚安", "一起做一次饭", "一起逛一次超市", "一起散步超过一小时",
+      "一起听完一张专辑", "分享彼此一天中的三件小事", "一起整理房间或书桌", "一起吃一次夜宵", "共同完成一周生活打卡"
+    ]
+  },
+  distance: {
+    label: "异地默契", copy: "隔着距离，也能参与彼此真实而具体的生活。", items: [
+      "视频通话超过三小时", "一起远程看一部电影", "同步点一次相同的食物", "在不同城市拍下同一轮月亮", "寄出一封手写信",
+      "给对方寄一次家乡特产", "一起完成一次远程学习", "连续三十天保持联系", "为下一次见面共同做计划", "在对方最需要时认真陪伴一次"
+    ]
+  },
+  meeting: {
+    label: "见面回忆", copy: "把每一次重逢，都变成可以反复想起的画面。", items: [
+      "第一次正式见面", "第一次牵手散步", "第一次一起拍大头贴", "一起看一场电影", "一起去一次动物园或植物园",
+      "一起逛一次夜市", "一起看日出或日落", "一起淋过一场雨", "留下十次见面记录", "见面时完成一张愿望清单"
+    ]
+  },
+  travel: {
+    label: "一起出发", copy: "去看没有看过的风景，也认识旅途里的彼此。", items: [
+      "第一次一起旅行", "一起坐一次高铁", "一起坐一次飞机", "一起去海边", "一起爬一座山",
+      "一起住一次民宿", "一起去一座陌生城市", "一起看一次城市夜景", "共同规划并完成三天行程", "收集五座城市的合照"
+    ]
+  },
+  romance: {
+    label: "浪漫时刻", copy: "浪漫不必昂贵，重要的是那一刻认真想到了对方。", items: [
+      "互相写一封情书", "准备一次不提前透露的惊喜", "送给对方一束花", "拍一组正式的情侣照", "一起庆祝恋爱纪念日",
+      "亲手制作一份礼物", "为对方准备一次早餐", "一起穿情侣装出门", "互相说出十个喜欢对方的理由", "完成一次只有两个人的烛光晚餐"
+    ]
+  },
+  growth: {
+    label: "共同成长", copy: "爱不是停在原地，而是陪彼此走向更宽阔的地方。", items: [
+      "一起读完一本书", "共同坚持学习七天", "共同坚持学习三十天", "一起完成一个运动目标", "互相教会对方一项技能",
+      "认真完成一次关系复盘", "一起存下第一笔共同旅行基金", "共同改掉一个坏习惯", "支持对方完成一件重要的事", "一起制定下一年的成长计划"
+    ]
+  },
+  fun: {
+    label: "有趣挑战", copy: "保留一点幼稚和好奇，生活就不会只有标准答案。", items: [
+      "一起唱完一首歌", "一起玩通一个双人游戏", "互相模仿对方说话", "一起挑战一道从没做过的菜", "拍一次同款姿势照片",
+      "一起完成你画我猜", "让对方决定自己一天的穿搭", "一起去游乐园", "交换手机壁纸一周", "完成一次随机约会挑战"
+    ]
+  },
+  milestone: {
+    label: "时间里程碑", copy: "时间会经过，而认真保存的日子会留下来。", items: [
+      "在一起100天", "在一起365天", "在一起500天", "在一起1000天", "一起度过第一个生日",
+      "一起度过第一个跨年", "一起度过第一个情人节", "共同相册达到50张照片", "共同留言达到100条", "一起完成全部八类中的第一项成就"
+    ]
+  }
+};
+const achievementDefinitions = Object.entries(achievementCategories).flatMap(([category, group]) =>
+  group.items.map((text, index) => ({ id: `${category}-${index + 1}`, category, text }))
+);
 const encouragements = [
   "慢慢来，今天照顾好自己就已经很好。",
   "健康是和身体做朋友，不是和它较劲。",
@@ -100,6 +204,7 @@ const defaults = {
   },
   loveNotes: [],
   studyLogs: [],
+  achievements: { completed: {}, custom: [] },
   meetings: [
     { id: uid(), title: "下一次见面", date: "", place: "", note: "把想见面的日子先约下来。", planned: true }
   ],
@@ -114,13 +219,16 @@ let state = loadState();
 let selectedMood = state.moods[state.writer].feeling;
 let photoPreviewUrl = "";
 let pairingRedirected = false;
+let activeAchievementFilter = "all";
+let lastCapsuleDate = "";
 
 const els = {
   daysTogether: q("#daysTogether"), editStartDate: q("#editStartDate"), settingsDialog: q("#settingsDialog"), startDateInput: q("#startDateInput"), saveStartDate: q("#saveStartDate"),
   presenceText: q("#presenceText"), openMood: q("#openMood"), moodDialog: q("#moodDialog"), moodDialogTitle: q("#moodDialogTitle"), moodPicker: q("#moodPicker"), moodNote: q("#moodNote"), saveMood: q("#saveMood"), pairingNotice: q("#pairingNotice"), openPairing: q("#openPairing"),
-  tabs: qa(".tab"), screens: qa(".screen"), moodCards: q("#moodCards"), nextMeetingTitle: q("#nextMeetingTitle"), nextMeetingMeta: q("#nextMeetingMeta"), nextMeetingDays: q("#nextMeetingDays"),
+  tabs: qa(".tab"), screens: qa(".screen"), capsuleType: q("#capsuleType"), capsuleDate: q("#capsuleDate"), capsuleText: q("#capsuleText"), moodCards: q("#moodCards"), nextMeetingTitle: q("#nextMeetingTitle"), nextMeetingMeta: q("#nextMeetingMeta"), nextMeetingDays: q("#nextMeetingDays"),
   writerName: q("#writerName"), switchWriter: q("#switchWriter"), messageForm: q("#messageForm"), messageText: q("#messageText"), messageList: q("#messageList"), questionText: q("#questionText"), questionCategory: q("#questionCategory"), questionCategorySelect: q("#questionCategorySelect"), newQuestion: q("#newQuestion"), questionAnswerForm: q("#questionAnswerForm"), questionAnswer: q("#questionAnswer"), questionWriterName: q("#questionWriterName"), questionAnswers: q("#questionAnswers"),
   taskForm: q("#taskForm"), taskText: q("#taskText"), taskList: q("#taskList"), taskStats: q("#taskStats"),
+  achievementStats: q("#achievementStats"), achievementPercent: q("#achievementPercent"), achievementProgressBar: q("#achievementProgressBar"), achievementCategory: q("#achievementCategory"), achievementFilter: q("#achievementFilter"), achievementCategoryCopy: q("#achievementCategoryCopy"), achievementList: q("#achievementList"), achievementForm: q("#achievementForm"), achievementText: q("#achievementText"),
   noteForm: q("#noteForm"), noteReceiver: q("#noteReceiver"), noteUnlockDate: q("#noteUnlockDate"), noteText: q("#noteText"), noteList: q("#noteList"), noteStats: q("#noteStats"),
   studyForm: q("#studyForm"), studyContent: q("#studyContent"), studyDate: q("#studyDate"), studyMinutes: q("#studyMinutes"), studyNote: q("#studyNote"), studyList: q("#studyList"), studyStats: q("#studyStats"),
   meetingForm: q("#meetingForm"), meetingTitle: q("#meetingTitle"), meetingDate: q("#meetingDate"), meetingPlace: q("#meetingPlace"), meetingNote: q("#meetingNote"), meetingList: q("#meetingList"),
@@ -138,6 +246,9 @@ function init() {
   render();
   window.lucide?.createIcons();
   window.LoveSync?.initialize();
+  window.setInterval(() => {
+    if (lastCapsuleDate !== todayString()) renderDailyCapsule();
+  }, 60000);
 }
 
 function bindNavigation() {
@@ -204,6 +315,25 @@ function bindActions() {
     if (!text) return;
     state.tasks.unshift({ id: uid(), text, doneBy: [] });
     els.taskForm.reset();
+    persistAndRender();
+  });
+  els.achievementCategory.addEventListener("change", renderAchievements);
+  els.achievementFilter.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-achievement-filter]");
+    if (!button) return;
+    activeAchievementFilter = button.dataset.achievementFilter;
+    els.achievementFilter.querySelectorAll("button").forEach((item) => item.classList.toggle("is-active", item === button));
+    renderAchievements();
+  });
+  els.achievementForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const text = els.achievementText.value.trim();
+    if (!text) return;
+    state.achievements.custom.unshift({ id: `custom-${uid()}`, text, createdAt: todayString() });
+    els.achievementForm.reset();
+    els.achievementCategory.value = "custom";
+    activeAchievementFilter = "all";
+    els.achievementFilter.querySelectorAll("button").forEach((item) => item.classList.toggle("is-active", item.dataset.achievementFilter === "all"));
     persistAndRender();
   });
   els.noteForm.addEventListener("submit", (event) => {
@@ -349,11 +479,13 @@ function bindSyncEvents() {
 function render() {
   renderDays();
   renderPresence();
+  renderDailyCapsule();
   renderMoods();
   renderMeetingCountdown();
   renderMessages();
   renderQuestion();
   renderTasks();
+  renderAchievements();
   renderLoveNotes();
   renderStudyLogs();
   renderMeetings();
@@ -371,6 +503,18 @@ function renderPresence() {
   const fu = state.moods.fu;
   els.presenceText.textContent = `${people.liu.short}${liu.feeling}，${people.fu.short}${fu.feeling}`;
   els.writerName.textContent = people[state.writer].name;
+}
+
+function renderDailyCapsule() {
+  const date = todayString();
+  let hash = 0;
+  for (const char of date) hash = ((hash * 31) + char.charCodeAt(0)) >>> 0;
+  const capsule = dailyCapsules[hash % dailyCapsules.length];
+  lastCapsuleDate = date;
+  els.capsuleType.textContent = capsule.type;
+  els.capsuleDate.textContent = `${parseDate(date).getMonth() + 1}月${parseDate(date).getDate()}日`;
+  els.capsuleDate.dateTime = date;
+  els.capsuleText.textContent = capsule.text;
 }
 
 function renderMoods() {
@@ -456,6 +600,55 @@ function renderTasks() {
   }));
 }
 
+function renderAchievements() {
+  const achievementState = state.achievements;
+  const custom = (achievementState.custom || []).map((item) => ({ ...item, category: "custom" }));
+  const all = [...achievementDefinitions, ...custom];
+  const completed = achievementState.completed || {};
+  const completedCount = all.filter((item) => completed[item.id]).length;
+  const percent = all.length ? Math.round((completedCount / all.length) * 100) : 0;
+  els.achievementStats.textContent = `${completedCount}/${all.length}`;
+  els.achievementPercent.textContent = `${percent}%`;
+  els.achievementProgressBar.style.width = `${percent}%`;
+
+  const category = els.achievementCategory.value;
+  const group = achievementCategories[category];
+  let items = all.filter((item) => item.category === category);
+  const categoryDone = items.filter((item) => completed[item.id]).length;
+  els.achievementCategoryCopy.textContent = category === "custom"
+    ? `只属于你们的清单 · 已完成 ${categoryDone}/${items.length}`
+    : `${group.copy} · 已完成 ${categoryDone}/${items.length}`;
+  if (activeAchievementFilter === "done") items = items.filter((item) => completed[item.id]);
+  if (activeAchievementFilter === "todo") items = items.filter((item) => !completed[item.id]);
+  if (!items.length) {
+    const emptyText = category === "custom" ? "在下方添加一个只属于你们的成就。" : "这个筛选条件下还没有成就。";
+    renderEmpty(els.achievementList, emptyText);
+  } else {
+    els.achievementList.replaceChildren(...items.map((item) => {
+      const record = completed[item.id];
+      const isDone = Boolean(record);
+      const detail = isDone
+        ? `我们完成于 ${record.date ? formatDate(parseDate(record.date)) : "某个值得纪念的日子"}`
+        : "等待一起完成";
+      const node = document.createElement("article");
+      node.className = `achievement-item${isDone ? " is-done" : ""}`;
+      node.innerHTML = `<label><input type="checkbox" data-achievement-id="${item.id}" ${isDone ? "checked" : ""}><span class="achievement-check" aria-hidden="true">✓</span><span class="achievement-copy"><strong>${escapeHTML(item.text)}</strong><small>${detail}</small></span></label>${item.category === "custom" ? `<button class="delete-button" data-delete-achievement="${item.id}" type="button" aria-label="删除自定义成就">×</button>` : ""}`;
+      return node;
+    }));
+  }
+  els.achievementList.querySelectorAll("[data-achievement-id]").forEach((input) => input.addEventListener("change", () => {
+    if (input.checked) state.achievements.completed[input.dataset.achievementId] = { date: todayString() };
+    else delete state.achievements.completed[input.dataset.achievementId];
+    persistAndRender();
+  }));
+  els.achievementList.querySelectorAll("[data-delete-achievement]").forEach((button) => button.addEventListener("click", () => {
+    const id = button.dataset.deleteAchievement;
+    state.achievements.custom = state.achievements.custom.filter((item) => item.id !== id);
+    delete state.achievements.completed[id];
+    persistAndRender();
+  }));
+}
+
 function renderLoveNotes() {
   const notes = state.loveNotes || [];
   const person = currentPerson();
@@ -466,10 +659,14 @@ function renderLoveNotes() {
     const available = item.unlockDate <= todayString();
     const canRead = item.from === person || (item.to === person && available && item.opened);
     const canOpen = item.to === person && available && !item.opened;
+    const unlockLabel = formatDate(parseDate(item.unlockDate));
+    const status = item.from === person
+      ? (item.opened ? `对方已打开 · 解锁日期 ${unlockLabel}` : (available ? `对方自 ${unlockLabel} 起可以打开` : `对方可于 ${unlockLabel} 打开`))
+      : (item.opened ? `你已打开 · 解锁日期 ${unlockLabel}` : (available ? `已于 ${unlockLabel} 解锁` : `${unlockLabel} 才能打开`));
     const node = document.createElement("article");
     node.className = `love-note${canRead ? "" : " is-locked"}`;
-    const body = canRead ? escapeHTML(item.text) : (available ? "这张纸条已经可以打开了。" : `${formatDate(parseDate(item.unlockDate))} 才能打开`);
-    node.innerHTML = `<header><span>${people[item.from].short} 写给 ${people[item.to].short}</span><time>${formatDate(parseDate(item.createdAt))}</time></header><p>${body}</p>${canOpen ? `<button class="note-open" data-open-note="${item.id}" type="button">打开纸条</button>` : ""}${item.from === person ? `<button class="delete-button" data-delete-note="${item.id}" type="button" aria-label="删除纸条">×</button>` : ""}`;
+    const body = canRead ? escapeHTML(item.text) : (available ? "这张纸条已经可以打开了。" : "内容正在好好保密中。");
+    node.innerHTML = `<header><span>${people[item.from].short} 写给 ${people[item.to].short}</span><time>${formatDate(parseDate(item.createdAt))}</time></header><div class="note-unlock-status">${status}</div><p>${body}</p>${canOpen ? `<button class="note-open" data-open-note="${item.id}" type="button">打开纸条</button>` : ""}${item.from === person ? `<button class="delete-button" data-delete-note="${item.id}" type="button" aria-label="删除纸条">×</button>` : ""}`;
     return node;
   }));
   els.noteList.querySelectorAll("[data-open-note]").forEach((button) => button.addEventListener("click", () => {
@@ -725,6 +922,10 @@ function mergeDefaults(saved) {
     },
     loveNotes: Array.isArray(saved.loveNotes) ? saved.loveNotes : [],
     studyLogs: Array.isArray(saved.studyLogs) ? saved.studyLogs : [],
+    achievements: {
+      completed: { ...base.achievements.completed, ...(saved.achievements?.completed || {}) },
+      custom: Array.isArray(saved.achievements?.custom) ? saved.achievements.custom : []
+    },
     private: {
       liu: mergePrivateSpace(saved.private?.liu, "liu"),
       fu: mergePrivateSpace(saved.private?.fu, "fu")
