@@ -54,7 +54,7 @@ const els = {
   taskForm: q("#taskForm"), taskText: q("#taskText"), taskList: q("#taskList"), taskStats: q("#taskStats"),
   meetingForm: q("#meetingForm"), meetingTitle: q("#meetingTitle"), meetingDate: q("#meetingDate"), meetingPlace: q("#meetingPlace"), meetingNote: q("#meetingNote"), meetingList: q("#meetingList"),
   albumForm: q("#albumForm"), photoInput: q("#photoInput"), photoCaption: q("#photoCaption"), albumGrid: q("#albumGrid"),
-  personOptions: qa(".person-option"), traitForm: q("#traitForm"), traitType: q("#traitType"), traitText: q("#traitText"), traitList: q("#traitList"), healthPanel: q("#healthPanel"), waterCount: q("#waterCount"), moveCount: q("#moveCount"), weightValue: q("#weightValue"), weightForm: q("#weightForm"), weightInput: q("#weightInput"), encourageLine: q("#encourageLine"), cycleForm: q("#cycleForm"), cycleStart: q("#cycleStart"), cycleLength: q("#cycleLength"), cycleNextDate: q("#cycleNextDate"), cycleDaysLeft: q("#cycleDaysLeft"), cycleHistory: q("#cycleHistory")
+  personOptions: qa(".person-option"), traitForm: q("#traitForm"), traitType: q("#traitType"), traitText: q("#traitText"), traitList: q("#traitList"), healthPanel: q("#healthPanel"), waterCount: q("#waterCount"), moveCount: q("#moveCount"), weightValue: q("#weightValue"), weightForm: q("#weightForm"), weightDate: q("#weightDate"), weightInput: q("#weightInput"), weightHistory: q("#weightHistory"), encourageLine: q("#encourageLine"), cycleForm: q("#cycleForm"), cycleStart: q("#cycleStart"), cycleEnd: q("#cycleEnd"), cycleLength: q("#cycleLength"), cycleNextDate: q("#cycleNextDate"), cycleDaysLeft: q("#cycleDaysLeft"), cycleHistory: q("#cycleHistory")
 };
 
 init();
@@ -64,6 +64,7 @@ function init() {
   bindActions();
   bindSyncEvents();
   render();
+  window.lucide?.createIcons();
   window.LoveSync?.initialize();
 }
 
@@ -159,17 +160,19 @@ function bindActions() {
     event.preventDefault();
     const value = Number(els.weightInput.value);
     if (!value || value < 20 || value > 300) return;
-    privateSpace().health.weights.unshift({ id: uid(), value, date: todayString() });
+    privateSpace().health.weights.unshift({ id: uid(), value, date: els.weightDate.value || todayString() });
     els.weightForm.reset();
+    els.weightDate.value = todayString();
     persistAndRender();
   });
   els.cycleForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const start = els.cycleStart.value;
+    const end = els.cycleEnd.value;
     const length = Number(els.cycleLength.value);
-    if (!start || !length || length < 20 || length > 45) return;
+    if (!start || !end || end < start || !length || length < 20 || length > 45) return;
     const cycles = privateSpace().health.cycles;
-    cycles.unshift({ id: uid(), start, length });
+    cycles.unshift({ id: uid(), start, end, length });
     els.cycleForm.reset();
     els.cycleLength.value = "28";
     persistAndRender();
@@ -326,17 +329,21 @@ function renderPrivate() {
     }));
   }
   const health = space.health;
-  const latest = health.weights[0];
+  const weights = sortByDateDesc(health.weights || []);
+  const latest = weights[0];
   els.waterCount.textContent = health.water;
   els.moveCount.textContent = health.movement;
   els.weightValue.textContent = latest ? latest.value : "--";
-  els.encourageLine.textContent = encouragements[(health.water + health.movement + health.weights.length) % encouragements.length];
+  els.encourageLine.textContent = encouragements[(health.water + health.movement + weights.length) % encouragements.length];
+  els.weightDate.value = els.weightDate.value || todayString();
+  renderWeights(weights, health);
   renderCycles(health.cycles || []);
   els.healthPanel.hidden = person !== "fu";
 }
 
 function renderCycles(cycles) {
-  const latest = cycles[0];
+  const orderedCycles = sortByDateDesc(cycles, "start");
+  const latest = orderedCycles[0];
   if (!latest) {
     els.cycleNextDate.textContent = "待记录";
     els.cycleDaysLeft.textContent = "--";
@@ -348,11 +355,34 @@ function renderCycles(cycles) {
   const days = daysBetween(new Date(), next);
   els.cycleNextDate.textContent = formatDate(next);
   els.cycleDaysLeft.textContent = days >= 0 ? days : "已过";
-  els.cycleHistory.replaceChildren(...cycles.slice(0, 4).map((item) => {
+  els.cycleHistory.replaceChildren(...orderedCycles.map((item) => {
     const record = document.createElement("div");
     record.className = "cycle-record";
-    record.innerHTML = `<span>开始于 ${formatDate(parseDate(item.start))}</span><strong>${item.length} 天周期</strong>`;
+    const endText = item.end ? formatDate(parseDate(item.end)) : "未记录";
+    record.innerHTML = `<span><b>${formatDate(parseDate(item.start))} 至 ${endText}</b><small>预计间隔 ${item.length} 天</small></span><button class="delete-button" data-delete-cycle="${item.id}" type="button" aria-label="删除本次月经记录">×</button>`;
     return record;
+  }));
+  els.cycleHistory.querySelectorAll("[data-delete-cycle]").forEach((button) => button.addEventListener("click", () => {
+    const health = privateSpace().health;
+    health.cycles = health.cycles.filter((item) => item.id !== button.dataset.deleteCycle);
+    persistAndRender();
+  }));
+}
+
+function renderWeights(weights, health) {
+  if (!weights.length) {
+    renderEmpty(els.weightHistory, "还没有体重记录。");
+    return;
+  }
+  els.weightHistory.replaceChildren(...weights.map((item) => {
+    const record = document.createElement("div");
+    record.className = "weight-record";
+    record.innerHTML = `<span><b>${item.value} kg</b><small>${formatDate(parseDate(item.date))}</small></span><button class="delete-button" data-delete-weight="${item.id}" type="button" aria-label="删除本次体重记录">×</button>`;
+    return record;
+  }));
+  els.weightHistory.querySelectorAll("[data-delete-weight]").forEach((button) => button.addEventListener("click", () => {
+    health.weights = health.weights.filter((item) => item.id !== button.dataset.deleteWeight);
+    persistAndRender();
   }));
 }
 
@@ -414,6 +444,7 @@ function formatDate(date) { return date ? `${date.getFullYear()}年${date.getMon
 function todayString() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`; }
 function uid() { return window.crypto?.randomUUID?.() || `id-${Date.now()}-${Math.random().toString(16).slice(2)}`; }
 function pickDifferent(items, current) { const options = items.filter((item) => item !== current); return options[Math.floor(Math.random() * options.length)] || items[0]; }
+function sortByDateDesc(items, key = "date") { return [...items].sort((a, b) => (b[key] || "").localeCompare(a[key] || "")); }
 function escapeHTML(value) { return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
 function shrinkImage(file) {
   return new Promise((resolve, reject) => {

@@ -239,9 +239,11 @@
             </div>
           </div>
           <form id="weightForm" class="weight-form">
-            <input id="weightInput" inputmode="decimal" placeholder="记录今日体重（kg）">
+            <label>记录日期<input id="weightDate" type="date"></label>
+            <label>体重（kg）<input id="weightInput" inputmode="decimal" placeholder="例如 52.5"></label>
             <button class="soft-button" type="submit">记录</button>
           </form>
+          <div class="weight-history" id="weightHistory"></div>
           <p class="encourage-line" id="encourageLine">慢慢来，今天照顾好自己就已经很好。</p>
           <div class="cycle-block">
             <div class="section-heading">
@@ -257,6 +259,7 @@
             </div>
             <form id="cycleForm" class="form-grid cycle-form">
               <label>本次开始日期<input id="cycleStart" type="date"></label>
+              <label>本次结束日期<input id="cycleEnd" type="date"></label>
               <label>通常周期（天）<input id="cycleLength" type="number" min="20" max="45" inputmode="numeric" value="28"></label>
               <button class="soft-button" type="submit">保存本次记录</button>
             </form>
@@ -267,10 +270,10 @@
       </section>
 
       <nav class="tabbar" aria-label="主导航">
-        <button class="tab is-active" data-tab="home" type="button"><span aria-hidden="true">⌂</span><b>首页</b></button>
-        <button class="tab" data-tab="together" type="button"><span aria-hidden="true">♡</span><b>我们的</b></button>
-        <button class="tab" data-tab="album" type="button"><span aria-hidden="true">▧</span><b>相册</b></button>
-        <button class="tab" data-tab="me" type="button"><span aria-hidden="true">◌</span><b>我的</b></button>
+        <button class="tab is-active" data-tab="home" type="button"><i data-lucide="house" aria-hidden="true"></i><b>首页</b></button>
+        <button class="tab" data-tab="together" type="button"><i data-lucide="heart" aria-hidden="true"></i><b>我们的</b></button>
+        <button class="tab" data-tab="album" type="button"><i data-lucide="images" aria-hidden="true"></i><b>相册</b></button>
+        <button class="tab" data-tab="me" type="button"><i data-lucide="circle-user-round" aria-hidden="true"></i><b>我的</b></button>
       </nav>
     </main>
 
@@ -297,6 +300,7 @@
       </form>
     </dialog>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
     <script src="supabase-config.js"></script>
     <script src="sync.js"></script>
     <script src="app.js"></script>

@@ -167,7 +167,14 @@ label { display: grid; gap: 6px; color: var(--muted); font-size: .8rem; font-wei
 .health-card span, .health-card small { display: block; color: var(--muted); font-size: .7rem; font-weight: 700; }
 .health-card strong { display: block; margin: 8px 0 1px; color: #56836d; font-size: 1.45rem; line-height: 1; }
 .weight-card { display: block; cursor: default; }
-.weight-form { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin-top: 10px; }
+.weight-form { display: grid; grid-template-columns: .9fr 1.1fr auto; gap: 8px; margin-top: 10px; }
+.weight-form label { min-width: 0; }
+.weight-form input { width: 100%; }
+.weight-history, .cycle-history { display: grid; gap: 6px; margin-top: 10px; }
+.weight-record, .cycle-record { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border-radius: 7px; color: var(--muted); font-size: .76rem; background: rgba(255,255,255,.58); }
+.weight-record span, .cycle-record span { display: grid; min-width: 0; gap: 3px; }
+.weight-record b, .cycle-record b { color: var(--ink); font-size: .8rem; }
+.weight-record small, .cycle-record small { color: var(--muted); }
 .encourage-line { margin: 11px 0 0; color: #56836d; font-size: .8rem; line-height: 1.5; }
 .cycle-block { margin-top: 17px; padding-top: 15px; border-top: 1px solid rgba(117,151,134,.2); }
 .cycle-block h3 { margin: 3px 0 0; font-size: 1.04rem; }
@@ -178,14 +185,12 @@ label { display: grid; gap: 6px; color: var(--muted); font-size: .8rem; font-wei
 .cycle-form { align-items: end; }
 .cycle-form .soft-button { grid-column: 1 / -1; }
 .cycle-note { margin: 9px 0 0; color: var(--muted); font-size: .72rem; line-height: 1.45; }
-.cycle-history { display: grid; gap: 6px; margin-top: 10px; }
-.cycle-record { display: flex; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 7px; color: var(--muted); font-size: .76rem; background: rgba(255,255,255,.58); }
-
-.tabbar { position: fixed; right: 0; bottom: 0; left: 0; z-index: 10; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 3px; width: min(100%, 520px); margin: 0 auto; padding: 7px 10px max(7px, env(safe-area-inset-bottom)); border-top: 1px solid rgba(255,255,255,.75); background: rgba(255,250,248,.92); box-shadow: 0 -8px 22px rgba(91,57,52,.08); backdrop-filter: blur(18px); }
-.tab { display: grid; min-width: 0; min-height: 53px; place-items: center; align-content: center; gap: 3px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; }
-.tab span { font-size: 1.15rem; line-height: 1; }
+.tabbar { position: fixed; right: 0; bottom: 0; left: 0; z-index: 10; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; width: min(100%, 520px); margin: 0 auto; padding: 7px 11px max(8px, env(safe-area-inset-bottom)); border-top: 1px solid rgba(255,255,255,.82); background: rgba(255,250,248,.94); box-shadow: 0 -8px 22px rgba(91,57,52,.08); backdrop-filter: blur(18px); }
+.tab { position: relative; display: grid; min-width: 0; min-height: 55px; place-items: center; align-content: center; gap: 4px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; }
+.tab svg { width: 20px; height: 20px; stroke-width: 2; }
 .tab b { font-size: .69rem; }
 .tab.is-active { color: var(--rose-deep); background: #fff0eb; }
+.tab.is-active::before { position: absolute; top: 5px; width: 20px; height: 2px; border-radius: 2px; background: var(--rose); content: ""; }
 
 dialog { width: min(92vw, 390px); border: 0; border-radius: 8px; padding: 0; color: var(--ink); background: transparent; }
 dialog::backdrop { background: rgba(63,49,47,.38); backdrop-filter: blur(4px); }
@@ -202,5 +207,7 @@ dialog::backdrop { background: rgba(63,49,47,.38); backdrop-filter: blur(4px); }
   .hero { margin-inline: -10px; }
   .compact-form { grid-template-columns: 1fr; }
   .compact-form .primary-button { width: 100%; }
+  .weight-form { grid-template-columns: 1fr 1fr; }
+  .weight-form .soft-button { grid-column: 1 / -1; }
   .health-card strong { font-size: 1.25rem; }
 }

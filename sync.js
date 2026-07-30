@@ -32,15 +32,31 @@
     q("#syncEmailForm").addEventListener("submit", async (event) => {
       event.preventDefault();
       const email = q("#syncEmail").value.trim();
-      if (!email || !sync.client) return;
+      const result = q("#inviteResult");
+      if (!email) {
+        result.textContent = "请先输入邮箱地址。";
+        return;
+      }
+      if (!sync.client) {
+        result.textContent = "同步服务还在加载，请稍等片刻后刷新网页再试。";
+        return;
+      }
       const button = event.currentTarget.querySelector("button");
       button.disabled = true;
-      const { error } = await sync.client.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: window.location.origin + window.location.pathname }
-      });
-      button.disabled = false;
-      q("#inviteResult").textContent = error ? "登录链接发送失败，请检查项目配置。" : "登录链接已发送，请在邮箱中打开。";
+      button.textContent = "发送中...";
+      result.textContent = "正在发送登录链接...";
+      try {
+        const { error } = await sync.client.auth.signInWithOtp({
+          email,
+          options: { emailRedirectTo: window.location.origin + window.location.pathname }
+        });
+        result.textContent = error ? loginLinkError(error) : "登录链接已发送，请在邮箱中打开并回到这里。";
+      } catch (error) {
+        result.textContent = "发送失败：网络连接异常，请检查网络后重试。";
+      } finally {
+        button.disabled = false;
+        button.textContent = "发送登录链接";
+      }
     });
     q("#syncRolePicker").addEventListener("click", (event) => {
       const button = event.target.closest("[data-role]");
@@ -59,6 +75,17 @@
 
   function chosenRole() {
     return q("#syncRolePicker .is-active")?.dataset.role || "liu";
+  }
+
+  function loginLinkError(error) {
+    const detail = [error?.message, error?.details].filter(Boolean).join(" ");
+    if (/rate limit|security purposes|60 seconds|too many/i.test(detail)) {
+      return "刚发送过登录链接，请等 60 秒后再试，并检查邮箱垃圾邮件箱。";
+    }
+    if (/redirect|url/i.test(detail)) {
+      return "发送失败：登录回跳地址未配置正确。请检查 Supabase 的 URL Configuration。";
+    }
+    return detail ? `发送失败：${detail}` : "发送失败，请检查网络和 Supabase 邮箱登录设置。";
   }
 
   function pairingError(action, error) {
