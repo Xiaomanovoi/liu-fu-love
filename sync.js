@@ -50,12 +50,23 @@
           email,
           options: { emailRedirectTo: window.location.origin + window.location.pathname }
         });
-        result.textContent = error ? loginLinkError(error) : "登录链接已发送，请在邮箱中打开并回到这里。";
+        result.textContent = error ? loginLinkError(error) : "登录链接已发送。要在系统浏览器登录，请长按复制邮件链接，再粘贴到下方入口。";
       } catch (error) {
         result.textContent = "发送失败：网络连接异常，请检查网络后重试。";
       } finally {
         button.disabled = false;
         button.textContent = "发送登录链接";
+      }
+    });
+    q("#magicLinkForm").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const value = q("#magicLinkInput").value.trim();
+      try {
+        const link = new URL(value);
+        if (link.protocol !== "https:" || !link.hostname.endsWith("supabase.co")) throw new Error("invalid link");
+        window.location.assign(link.href);
+      } catch {
+        q("#inviteResult").textContent = "登录链接格式不正确，请从邮件中复制完整链接。";
       }
     });
     q("#syncRolePicker").addEventListener("click", (event) => {
@@ -65,6 +76,7 @@
     });
     q("#createPair").addEventListener("click", createPair);
     q("#joinPairForm").addEventListener("submit", joinPair);
+    q("#copyInviteCode").addEventListener("click", copyInviteCode);
     q("#syncSignOut").addEventListener("click", async () => {
       await sync.client.auth.signOut();
       resetConnection();
@@ -75,6 +87,26 @@
 
   function chosenRole() {
     return q("#syncRolePicker .is-active")?.dataset.role || "liu";
+  }
+
+  async function copyInviteCode() {
+    const code = q("#syncInviteCode").textContent.trim();
+    const button = q("#copyInviteCode");
+    if (!code || code === "--------") return;
+    try {
+      await navigator.clipboard.writeText(code);
+    } catch {
+      const input = document.createElement("input");
+      input.value = code;
+      input.style.position = "fixed";
+      input.style.opacity = "0";
+      document.body.append(input);
+      input.select();
+      document.execCommand("copy");
+      input.remove();
+    }
+    button.textContent = "已复制";
+    window.setTimeout(() => { button.textContent = "复制"; }, 1600);
   }
 
   function loginLinkError(error) {
@@ -138,6 +170,7 @@
     sync.coupleId = null;
     sync.role = null;
     sync.channel = null;
+    q("#connectedInvite").hidden = true;
   }
 
   async function refreshSession() {
@@ -167,6 +200,15 @@
     sync.role = member.role;
     updateUi("connected", "已实时同步");
     q("#syncConnectedText").textContent = `已作为${sync.role === "liu" ? "刘向强" : "付嘉颖"}连接到两人空间。`;
+    const { data: couple } = await sync.client
+      .from("love_couples")
+      .select("invite_code")
+      .eq("id", sync.coupleId)
+      .maybeSingle();
+    if (couple?.invite_code) {
+      q("#syncInviteCode").textContent = couple.invite_code;
+      q("#connectedInvite").hidden = false;
+    }
     emit("love-sync-status", { connected: true, role: sync.role });
     await loadRemoteState();
     subscribe();

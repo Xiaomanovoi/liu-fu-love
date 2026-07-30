@@ -180,6 +180,14 @@
               <input id="syncEmail" type="email" autocomplete="email" placeholder="输入你的邮箱">
               <button class="soft-button" type="submit">发送登录链接</button>
             </form>
+            <details class="browser-login">
+              <summary>在当前浏览器登录</summary>
+              <p class="sync-copy">先长按复制邮件里的登录链接，不要直接点开；再回到这里粘贴。</p>
+              <form id="magicLinkForm" class="sync-form">
+                <input id="magicLinkInput" type="url" autocomplete="off" placeholder="粘贴邮件登录链接">
+                <button class="soft-button" type="submit">登录</button>
+              </form>
+            </details>
           </div>
           <div id="syncPairing" hidden>
             <p class="sync-copy">选择自己是谁，再创建或加入你们的空间。</p>
@@ -198,6 +206,11 @@
           </div>
           <div id="syncConnected" hidden>
             <p class="sync-copy" id="syncConnectedText">已连接到你们的私密空间。</p>
+            <div class="connected-invite" id="connectedInvite" hidden>
+              <span>配对邀请码</span>
+              <strong id="syncInviteCode">--------</strong>
+              <button class="text-button" id="copyInviteCode" type="button">复制</button>
+            </div>
             <button class="text-button" id="syncSignOut" type="button">退出此设备</button>
           </div>
         </article>
