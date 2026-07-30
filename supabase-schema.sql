@@ -57,7 +57,7 @@ as $$
 declare code text;
 begin
   loop
-    code := upper(substr(encode(gen_random_bytes(5), 'hex'), 1, 8));
+    code := upper(substr(md5(random()::text || clock_timestamp()::text), 1, 8));
     exit when not exists (select 1 from public.love_couples where invite_code = code);
   end loop;
   return code;

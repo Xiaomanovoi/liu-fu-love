@@ -94,7 +94,7 @@
   function pairingError(action, error) {
     const code = error?.code || "UNKNOWN";
     const detail = [error?.message, error?.details, error?.hint].filter(Boolean).join(" ");
-    if (code === "PGRST202" || /could not find.*function|function.*does not exist|schema cache/i.test(detail)) {
+    if (code === "PGRST202" || /could not find.*public\.(create_love_space|join_love_space).*schema cache/i.test(detail)) {
       return `${action}失败（${code}）：数据库接口缓存尚未识别同步函数，请在 SQL Editor 执行 NOTIFY pgrst, 'reload schema'; 后刷新网页。`;
     }
     if (/already belongs to a couple space/i.test(detail)) {
