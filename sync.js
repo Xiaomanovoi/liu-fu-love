@@ -79,6 +79,9 @@
 
   function loginLinkError(error) {
     const detail = [error?.message, error?.details].filter(Boolean).join(" ");
+    if (/email address not authorized/i.test(detail)) {
+      return "此邮箱未获 Supabase 默认邮件服务授权。请将该邮箱添加为 Supabase 组织成员，或配置自定义 SMTP。";
+    }
     if (/rate limit|security purposes|60 seconds|too many/i.test(detail)) {
       return "刚发送过登录链接，请等 60 秒后再试，并检查邮箱垃圾邮件箱。";
     }

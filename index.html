@@ -142,6 +142,10 @@
               <small>从手机相册选择照片</small>
             </label>
             <input id="photoInput" type="file" accept="image/*" hidden>
+            <div class="photo-preview" id="photoPreview" hidden>
+              <img id="photoPreviewImage" alt="待加入公共相册的照片预览">
+              <button class="delete-button" id="clearPhotoSelection" type="button" aria-label="取消本次照片选择">×</button>
+            </div>
             <input id="photoCaption" autocomplete="off" maxlength="80" placeholder="给这张照片写一句话">
             <button class="primary-button" type="submit">放进公共相册</button>
           </form>
@@ -259,9 +263,9 @@
             </div>
             <form id="cycleForm" class="form-grid cycle-form">
               <label>本次开始日期<input id="cycleStart" type="date"></label>
-              <label>本次结束日期<input id="cycleEnd" type="date"></label>
+              <label>结束日期（可后补）<input id="cycleEnd" type="date"></label>
               <label>通常周期（天）<input id="cycleLength" type="number" min="20" max="45" inputmode="numeric" value="28"></label>
-              <button class="soft-button" type="submit">保存本次记录</button>
+              <button class="soft-button" type="submit">保存开始记录</button>
             </form>
             <p class="cycle-note">仅用于个人记录与提醒，周期变化或身体不适时请咨询医生。</p>
             <div class="cycle-history" id="cycleHistory"></div>

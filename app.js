@@ -3,12 +3,34 @@ const people = {
   liu: { name: "刘向强", short: "向强", color: "rose" },
   fu: { name: "付嘉颖", short: "嘉颖", color: "fu" }
 };
-const moods = ["想你", "开心", "需要抱抱", "在努力"];
+const moods = ["想你", "开心", "平静", "期待", "被治愈", "有安全感", "想撒娇", "想聊天", "需要抱抱", "想安静", "有点累", "有点烦", "委屈", "焦虑", "失落", "孤单", "吃醋了", "烦躁", "紧张", "心动", "感恩", "在努力", "需要鼓励", "想见你"];
 const questions = [
-  "今天最想和对方分享的一件小事是什么？",
-  "最近哪一刻让你觉得被爱着？",
-  "下次见面，你最想一起做什么？",
-  "想谢谢对方的一件事是什么？"
+  "你最害怕我误解你的哪一部分？", "你最近最不想承认的一种情绪是什么？", "什么事会让你觉得自己不够好？", "你最希望我怎么安慰你？",
+  "当你沉默时，通常最希望我做什么？", "你觉得自己最难被看见的一面是什么？", "你最怕在关系里失去什么？", "你最需要被确认的一句话是什么？",
+  "有没有一件小事，你一直想让我知道却没说？", "你最希望我改掉的一个相处习惯是什么？", "什么样的争吵方式最让你受伤？", "你觉得我们最容易误会彼此的地方是什么？",
+  "你在哪个时刻最有被我偏爱的感觉？", "你希望我们以后怎样处理冷战？", "你最想和我建立的一条默契是什么？", "如果只能保留我们的一段回忆，你会选哪一段？",
+  "你最希望我在别人面前怎样介绍你？", "你什么时候会觉得特别没有安全感？", "你最希望我主动问你的一个问题是什么？", "有没有一句我的话，你一直记得？",
+  "你现在最想被理解的压力来自哪里？", "你害怕自己会变成什么样的大人？", "哪一种承诺对你最重要？", "你觉得爱和陪伴最大的区别是什么？",
+  "你最希望我们五年后保留的习惯是什么？", "你会因为什么觉得被冷落？", "你愿意让我更靠近你的哪一个秘密？", "你最不擅长向我表达的需求是什么？",
+  "你需要独处时，希望我怎样做才刚刚好？", "你最羡慕别人的哪一种关系状态？", "如果我们意见完全相反，你最希望我先做什么？", "你希望我怎样参与到你的低谷里？",
+  "你最需要我为你守住的边界是什么？", "哪件关于未来的事最让你焦虑？", "你觉得自己在爱里最像小孩子的时候是什么样？", "你最喜欢我依赖你的哪一种方式？",
+  "你想从我这里获得、却不太敢开口要的是什么？", "你最担心我会离开的理由是什么？", "你最希望我记住的一个脆弱瞬间是什么？", "你觉得我们最需要练习的一项能力是什么？",
+  "什么事情会让你立刻想找我？", "你最想和我一起面对的一件难事是什么？", "你觉得被尊重具体是什么感觉？", "你希望我们的钱和生活怎样安排才安心？",
+  "你在成长过程中最缺少的是什么？", "你最希望从原生家庭里带走什么，又放下什么？", "你希望我怎样对待你的家人和朋友？", "你觉得两个人需要保留多少各自的空间？",
+  "你觉得我最不了解你的哪个优点？", "你最希望我们一起养成的健康习惯是什么？", "你觉得异地最难熬的时刻是什么？", "当我们见面时，你最想先做的事是什么？",
+  "你最想让我替你分担的烦恼是什么？", "你会怎样判断自己是否真正快乐？", "你最希望收到什么样的惊喜？", "你最不能接受的玩笑是什么？",
+  "有没有一件过去的事，现在想起来仍然会难过？", "你最担心别人怎样评价你？", "你觉得自己最需要被原谅的一件事是什么？", "你想让我更懂你的哪种疲惫？",
+  "什么时候你会觉得爱变得很具体？", "你希望我们多久认真聊一次彼此的感受？", "你喜欢被夸奖，还是更喜欢被认真倾听？", "你最想和我一起完成的一件长期计划是什么？",
+  "你希望我在你生病时怎样照顾你？", "什么样的拥抱会让你最安心？", "你觉得我们相爱后自己有什么变化？", "你最想回到我们相处的哪一天？",
+  "如果今天只能对我说一句真心话，会是什么？", "你觉得我什么时候最可爱？", "你最希望我为你勇敢一次的事情是什么？", "你觉得信任被消耗时，怎样才能慢慢修复？",
+  "你有没有过想逃开所有人的时候？那时希望我怎样陪你？", "你最想从我这里听到的一句肯定是什么？", "你觉得自己最值得被爱的地方是什么？", "我们之间哪件小事最让你感到踏实？",
+  "你害怕失去自由吗？在关系里自由对你意味着什么？", "你最想和我共同守护的一个原则是什么？", "如果我们将来很忙，怎样才不会弄丢彼此？", "你现在最想谢谢自己的哪一点？",
+  "你最希望我在纪念日记住什么，而不是只记住日期？", "你愿意和我分享的一件不体面的经历是什么？", "你觉得自己什么时候最有魅力？", "你最希望我理解你的哪个决定？",
+  "你对家的想象里，最重要的画面是什么？", "你最希望我们学会怎样表达不满？", "什么会让你觉得我真的站在你这边？", "你最希望我保护你什么？",
+  "当你对自己失望时，希望我怎样回应？", "你最喜欢我们聊天里的哪一种氛围？", "你最怕我忽略的一个细节是什么？", "你觉得我们在一起后最珍贵的改变是什么？",
+  "你希望我们把哪一种仪式感坚持很多年？", "你最想让我陪你去的一个地方是哪里？", "你对未来最具体的一次期待是什么？", "你希望我们如何庆祝彼此的小进步？",
+  "你最希望我理解你的身体和情绪的哪种变化？", "你最想向我坦白却一直犹豫的一件事是什么？", "你觉得自己真正放松时是什么样子？", "你最希望我怎样成为你的队友？",
+  "你想让我们以后遇到矛盾时先说的暗号是什么？", "你最想一起克服的一种恐惧是什么？", "如果关系需要一次重新开始，你最想先改变什么？", "你最想和我交换体验的一天会怎么安排？"
 ];
 const encouragements = [
   "慢慢来，今天照顾好自己就已经很好。",
@@ -45,6 +67,7 @@ const defaults = {
 
 let state = loadState();
 let selectedMood = state.moods[state.writer].feeling;
+let photoPreviewUrl = "";
 
 const els = {
   daysTogether: q("#daysTogether"), editStartDate: q("#editStartDate"), settingsDialog: q("#settingsDialog"), startDateInput: q("#startDateInput"), saveStartDate: q("#saveStartDate"),
@@ -53,7 +76,7 @@ const els = {
   writerName: q("#writerName"), switchWriter: q("#switchWriter"), messageForm: q("#messageForm"), messageText: q("#messageText"), messageList: q("#messageList"), questionText: q("#questionText"), newQuestion: q("#newQuestion"),
   taskForm: q("#taskForm"), taskText: q("#taskText"), taskList: q("#taskList"), taskStats: q("#taskStats"),
   meetingForm: q("#meetingForm"), meetingTitle: q("#meetingTitle"), meetingDate: q("#meetingDate"), meetingPlace: q("#meetingPlace"), meetingNote: q("#meetingNote"), meetingList: q("#meetingList"),
-  albumForm: q("#albumForm"), photoInput: q("#photoInput"), photoCaption: q("#photoCaption"), albumGrid: q("#albumGrid"),
+  albumForm: q("#albumForm"), photoInput: q("#photoInput"), photoPreview: q("#photoPreview"), photoPreviewImage: q("#photoPreviewImage"), clearPhotoSelection: q("#clearPhotoSelection"), photoCaption: q("#photoCaption"), albumGrid: q("#albumGrid"),
   personOptions: qa(".person-option"), traitForm: q("#traitForm"), traitType: q("#traitType"), traitText: q("#traitText"), traitList: q("#traitList"), healthPanel: q("#healthPanel"), waterCount: q("#waterCount"), moveCount: q("#moveCount"), weightValue: q("#weightValue"), weightForm: q("#weightForm"), weightDate: q("#weightDate"), weightInput: q("#weightInput"), weightHistory: q("#weightHistory"), encourageLine: q("#encourageLine"), cycleForm: q("#cycleForm"), cycleStart: q("#cycleStart"), cycleEnd: q("#cycleEnd"), cycleLength: q("#cycleLength"), cycleNextDate: q("#cycleNextDate"), cycleDaysLeft: q("#cycleDaysLeft"), cycleHistory: q("#cycleHistory")
 };
 
@@ -108,7 +131,7 @@ function bindActions() {
     persistAndRender();
   });
   els.newQuestion.addEventListener("click", () => {
-    els.questionText.textContent = pickDifferent(questions, els.questionText.textContent);
+    els.questionText.textContent = pickRandom(questions);
   });
   els.taskForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -134,7 +157,13 @@ function bindActions() {
     const src = await shrinkImage(file);
     state.photos.unshift({ id: uid(), src, caption: els.photoCaption.value.trim() || "我们的一个瞬间", date: todayString(), person: state.writer });
     els.albumForm.reset();
+    clearPhotoPreview();
     persistAndRender();
+  });
+  els.photoInput.addEventListener("change", () => showPhotoPreview(els.photoInput.files[0]));
+  els.clearPhotoSelection.addEventListener("click", () => {
+    els.photoInput.value = "";
+    clearPhotoPreview();
   });
   els.personOptions.forEach((button) => button.addEventListener("click", () => {
     if (window.LoveSync?.isConnected() && button.dataset.person !== window.LoveSync.getRole()) return;
@@ -170,7 +199,7 @@ function bindActions() {
     const start = els.cycleStart.value;
     const end = els.cycleEnd.value;
     const length = Number(els.cycleLength.value);
-    if (!start || !end || end < start || !length || length < 20 || length > 45) return;
+    if (!start || (end && end < start) || !length || length < 20 || length > 45) return;
     const cycles = privateSpace().health.cycles;
     cycles.unshift({ id: uid(), start, end, length });
     els.cycleForm.reset();
@@ -253,11 +282,15 @@ function renderMeetingCountdown() {
 
 function renderMessages() {
   if (!state.messages.length) return renderEmpty(els.messageList, "第一条留言，留给此刻最想说的话。");
-  els.messageList.replaceChildren(...state.messages.slice(0, 6).map((item) => {
+  els.messageList.replaceChildren(...state.messages.map((item) => {
     const node = document.createElement("article");
     node.className = `message-item ${people[item.person].color}`;
-    node.innerHTML = `<div class="message-meta"><span>${people[item.person].name}</span><time>${formatDate(parseDate(item.date))}</time></div><p>${escapeHTML(item.text)}</p>`;
+    node.innerHTML = `<div class="message-meta"><span>${people[item.person].name}</span><time>${formatDate(parseDate(item.date))}</time><button class="delete-button" data-delete-message="${item.id}" type="button" aria-label="删除留言">×</button></div><p>${escapeHTML(item.text)}</p>`;
     return node;
+  }));
+  els.messageList.querySelectorAll("[data-delete-message]").forEach((button) => button.addEventListener("click", () => {
+    state.messages = state.messages.filter((item) => item.id !== button.dataset.deleteMessage);
+    persistAndRender();
   }));
 }
 
@@ -300,8 +333,12 @@ function renderAlbum() {
   els.albumGrid.replaceChildren(...state.photos.map((photo) => {
     const node = document.createElement("article");
     node.className = "photo-card";
-    node.innerHTML = `<img src="${photo.src}" alt="共同相册照片"><div class="photo-copy"><p>${escapeHTML(photo.caption)}</p><small>${formatDate(parseDate(photo.date))} · ${people[photo.person].name}</small></div>`;
+    node.innerHTML = `<img src="${photo.src}" alt="共同相册照片"><button class="delete-button photo-delete" data-delete-photo="${photo.id}" type="button" aria-label="删除这张照片">×</button><div class="photo-copy"><p>${escapeHTML(photo.caption)}</p><small>${formatDate(parseDate(photo.date))} · ${people[photo.person].name}</small></div>`;
     return node;
+  }));
+  els.albumGrid.querySelectorAll("[data-delete-photo]").forEach((button) => button.addEventListener("click", () => {
+    state.photos = state.photos.filter((item) => item.id !== button.dataset.deletePhoto);
+    persistAndRender();
   }));
 }
 
@@ -358,13 +395,24 @@ function renderCycles(cycles) {
   els.cycleHistory.replaceChildren(...orderedCycles.map((item) => {
     const record = document.createElement("div");
     record.className = "cycle-record";
-    const endText = item.end ? formatDate(parseDate(item.end)) : "未记录";
-    record.innerHTML = `<span><b>${formatDate(parseDate(item.start))} 至 ${endText}</b><small>预计间隔 ${item.length} 天</small></span><button class="delete-button" data-delete-cycle="${item.id}" type="button" aria-label="删除本次月经记录">×</button>`;
+    const endControl = item.end
+      ? `<small>结束：${formatDate(parseDate(item.end))} · 预计间隔 ${item.length} 天</small>`
+      : `<div class="cycle-end-form"><input data-cycle-end type="date" min="${item.start}" aria-label="补录结束日期"><button class="record-save" data-save-cycle-end="${item.id}" type="button">保存</button></div>`;
+    record.innerHTML = `<div class="cycle-copy"><b>开始：${formatDate(parseDate(item.start))}</b>${endControl}</div><button class="delete-button" data-delete-cycle="${item.id}" type="button" aria-label="删除本次月经记录">×</button>`;
     return record;
   }));
   els.cycleHistory.querySelectorAll("[data-delete-cycle]").forEach((button) => button.addEventListener("click", () => {
     const health = privateSpace().health;
     health.cycles = health.cycles.filter((item) => item.id !== button.dataset.deleteCycle);
+    persistAndRender();
+  }));
+  els.cycleHistory.querySelectorAll("[data-save-cycle-end]").forEach((button) => button.addEventListener("click", () => {
+    const input = button.closest(".cycle-record").querySelector("[data-cycle-end]");
+    const end = input.value;
+    const health = privateSpace().health;
+    const record = health.cycles.find((item) => item.id === button.dataset.saveCycleEnd);
+    if (!record || !end || end < record.start) return;
+    record.end = end;
     persistAndRender();
   }));
 }
@@ -443,9 +491,22 @@ function daysBetween(a, b) { return Math.round((startOfDay(b) - startOfDay(a)) /
 function formatDate(date) { return date ? `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日` : ""; }
 function todayString() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`; }
 function uid() { return window.crypto?.randomUUID?.() || `id-${Date.now()}-${Math.random().toString(16).slice(2)}`; }
-function pickDifferent(items, current) { const options = items.filter((item) => item !== current); return options[Math.floor(Math.random() * options.length)] || items[0]; }
+function pickRandom(items) { return items[Math.floor(Math.random() * items.length)] || ""; }
 function sortByDateDesc(items, key = "date") { return [...items].sort((a, b) => (b[key] || "").localeCompare(a[key] || "")); }
 function escapeHTML(value) { return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
+function showPhotoPreview(file) {
+  clearPhotoPreview();
+  if (!file) return;
+  photoPreviewUrl = URL.createObjectURL(file);
+  els.photoPreviewImage.src = photoPreviewUrl;
+  els.photoPreview.hidden = false;
+}
+function clearPhotoPreview() {
+  if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+  photoPreviewUrl = "";
+  els.photoPreviewImage.removeAttribute("src");
+  els.photoPreview.hidden = true;
+}
 function shrinkImage(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
