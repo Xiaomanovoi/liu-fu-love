@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f6a99b">
+    <title>刘向强 × 付嘉颖</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="hero" aria-label="情侣首页">
+        <div class="hero-media" role="img" aria-label="晨光、花束和两只杯子的温柔背景"></div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+          <p class="eyebrow">Our little world</p>
+          <h1>刘向强 <span>×</span> 付嘉颖</h1>
+          <p class="subtitle">把每天的小事，慢慢存成只属于我们的宇宙。</p>
+          <div class="days-card">
+            <div>
+              <span class="metric-label">在一起</span>
+              <strong id="daysTogether">0</strong>
+              <span class="metric-label">天</span>
+            </div>
+            <button class="ghost-button" id="editStartDate" type="button">设置日期</button>
+          </div>
+        </div>
+      </section>
+
+      <nav class="tabbar" aria-label="功能导航">
+        <button class="tab is-active" data-tab="home" type="button">
+          <span aria-hidden="true">⌂</span>
+          <b>首页</b>
+        </button>
+        <button class="tab" data-tab="wishes" type="button">
+          <span aria-hidden="true">✓</span>
+          <b>愿望</b>
+        </button>
+        <button class="tab" data-tab="notes" type="button">
+          <span aria-hidden="true">✎</span>
+          <b>留言</b>
+        </button>
+        <button class="tab" data-tab="memories" type="button">
+          <span aria-hidden="true">◇</span>
+          <b>回忆</b>
+        </button>
+      </nav>
+
+      <section class="screen is-active" id="home" aria-label="今日概览">
+        <div class="quick-grid">
+          <article class="panel next-day">
+            <p class="panel-kicker">下个纪念日</p>
+            <h2 id="nextEventTitle">等待设置</h2>
+            <p id="nextEventMeta">添加一个日期，让我帮你倒计时。</p>
+          </article>
+          <article class="panel mood-panel">
+            <p class="panel-kicker">今日心情</p>
+            <div class="mood-row" id="moodRow"></div>
+          </article>
+        </div>
+
+        <article class="panel quote-panel">
+          <p class="panel-kicker">今天想说</p>
+          <h2 id="dailyLine">喜欢是藏不住的，就像手机总会想打开这个页面。</h2>
+          <button class="soft-button" id="newLine" type="button">换一句</button>
+        </article>
+
+        <article class="panel date-panel">
+          <div>
+            <p class="panel-kicker">随机约会</p>
+            <h2 id="dateIdea">夜晚散步，顺路买一杯热饮。</h2>
+          </div>
+          <button class="primary-button" id="rollDate" type="button">抽一个</button>
+        </article>
+
+        <article class="panel form-panel">
+          <div class="section-heading">
+            <div>
+              <p class="panel-kicker">纪念日</p>
+              <h2>重要日子</h2>
+            </div>
+          </div>
+          <form id="eventForm" class="stack-form">
+            <label>
+              名称
+              <input id="eventTitle" autocomplete="off" placeholder="比如：第一次约会">
+            </label>
+            <label>
+              日期
+              <input id="eventDate" type="date">
+            </label>
+            <button class="primary-button" type="submit">添加纪念日</button>
+          </form>
+          <ul class="item-list" id="eventList"></ul>
+        </article>
+      </section>
+
+      <section class="screen" id="wishes" aria-label="情侣愿望清单">
+        <article class="panel form-panel">
+          <div class="section-heading">
+            <div>
+              <p class="panel-kicker">Wish list</p>
+              <h2>一起完成的事</h2>
+            </div>
+            <span class="mini-stat" id="wishStats">0/0</span>
+          </div>
+          <form id="wishForm" class="inline-form">
+            <input id="wishText" autocomplete="off" placeholder="想一起做什么？">
+            <button class="icon-button" type="submit" aria-label="添加愿望">＋</button>
+          </form>
+          <ul class="item-list" id="wishList"></ul>
+        </article>
+      </section>
+
+      <section class="screen" id="notes" aria-label="每日留言">
+        <article class="panel form-panel">
+          <div class="section-heading">
+            <div>
+              <p class="panel-kicker">Message</p>
+              <h2>给对方的一句话</h2>
+            </div>
+          </div>
+          <form id="noteForm" class="stack-form">
+            <label>
+              今天想说
+              <textarea id="noteText" rows="4" placeholder="写给对方，或者写给今天的我们。"></textarea>
+            </label>
+            <button class="primary-button" type="submit">保存留言</button>
+          </form>
+          <ul class="note-list" id="noteList"></ul>
+        </article>
+      </section>
+
+      <section class="screen" id="memories" aria-label="回忆时间线">
+        <article class="panel form-panel">
+          <div class="section-heading">
+            <div>
+              <p class="panel-kicker">Timeline</p>
+              <h2>回忆时间线</h2>
+            </div>
+          </div>
+          <form id="memoryForm" class="stack-form">
+            <label>
+              标题
+              <input id="memoryTitle" autocomplete="off" placeholder="比如：第一次一起看海">
+            </label>
+            <label>
+              日期
+              <input id="memoryDate" type="date">
+            </label>
+            <label>
+              小故事
+              <textarea id="memoryText" rows="3" placeholder="那天发生了什么？"></textarea>
+            </label>
+            <button class="primary-button" type="submit">存进回忆</button>
+          </form>
+          <div class="timeline" id="memoryList"></div>
+        </article>
+      </section>
+    </main>
+
+    <dialog id="settingsDialog">
+      <form method="dialog" class="dialog-card">
+        <h2>设置在一起的日期</h2>
+        <label>
+          开始日期
+          <input id="startDateInput" type="date">
+        </label>
+        <div class="dialog-actions">
+          <button class="soft-button" value="cancel" type="submit">取消</button>
+          <button class="primary-button" id="saveStartDate" value="default" type="button">保存</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
