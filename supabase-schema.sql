@@ -117,12 +117,21 @@ $$;
 
 grant usage on schema public to authenticated;
 grant select, insert, update on public.love_couples, public.love_members, public.love_shared_state, public.love_private_state to authenticated;
-grant execute on function public.create_love_space(text), public.join_love_space(text) to authenticated;
+grant execute on function public.create_love_space(text), public.join_love_space(text, text) to authenticated;
 
 alter table public.love_couples enable row level security;
 alter table public.love_members enable row level security;
 alter table public.love_shared_state enable row level security;
 alter table public.love_private_state enable row level security;
+
+drop policy if exists "Couple members can read their space" on public.love_couples;
+drop policy if exists "Couple members can see their pair" on public.love_members;
+drop policy if exists "Pair can read shared state" on public.love_shared_state;
+drop policy if exists "Pair can create shared state" on public.love_shared_state;
+drop policy if exists "Pair can update shared state" on public.love_shared_state;
+drop policy if exists "Users can read only their private state" on public.love_private_state;
+drop policy if exists "Users can create only their private state" on public.love_private_state;
+drop policy if exists "Users can update only their private state" on public.love_private_state;
 
 create policy "Couple members can read their space" on public.love_couples
 for select to authenticated using (public.is_love_member(id));
