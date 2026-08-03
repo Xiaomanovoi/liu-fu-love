@@ -209,28 +209,39 @@ const gardenStages = [
   { name: "初次盛开", min: 1400, scene: "bloom", copy: "你们共同照顾的花，已经认真盛开。", reward: "双花盛开与玻璃风铃" },
   { name: "秘密花园", min: 2000, scene: "garden", copy: "花房已经打开，回忆正在长成风景。", reward: "心形藤蔓与星光路灯" },
   { name: "花间小径", min: 2800, scene: "path", copy: "花与路延伸开来，每一步都有共同生活的痕迹。", reward: "秋千、小池塘与花间小径" },
-  { name: "星光庭院", min: 3800, scene: "courtyard", copy: "夜晚也有温柔的光，庭院开始拥有自己的四季。", reward: "星幕、花架与月光拱门" },
-  { name: "四季秘境", min: 5000, scene: "sanctuary", copy: "被认真照顾的爱，终于长成了一座四季都盛开的花园。", reward: "双人亭与完整四季花境" }
+  { name: "星光庭院", min: 3400, scene: "courtyard", copy: "夜晚也有温柔的光，庭院开始拥有自己的四季。", reward: "星幕、花架与月光拱门" },
+  { name: "四季秘境", min: 4300, scene: "sanctuary", copy: "被认真照顾的爱，终于长成了一座四季都盛开的花园。", reward: "双人亭与完整四季花境" }
 ];
 const gardenColorNames = { coral: "珊瑚粉", lavender: "淡紫色", mint: "薄荷绿", gold: "晨光金" };
 const gardenColorHex = { coral: "#df7e8d", lavender: "#9d92c5", mint: "#79a58e", gold: "#d4a45f" };
 const gardenShapeNames = { round: "圆润", star: "星形", heart: "心形", soft: "轻盈" };
 const gardenDecorations = [
-  { id: "plaque", name: "心意木牌", threshold: 200, slot: "foreground", symbol: "LIU ♥ FU" },
-  { id: "stones", name: "月白石径", threshold: 350, slot: "path", symbol: "···" },
-  { id: "lights", name: "暖光灯串", threshold: 500, slot: "overhead", symbol: "✦" },
-  { id: "ribbon", name: "心意飘带", threshold: 700, slot: "atmosphere", symbol: "♡" },
-  { id: "bench", name: "双人长椅", threshold: 900, slot: "left", symbol: "坐" },
-  { id: "mailbox", name: "花园信箱", threshold: 1100, slot: "right", symbol: "信" },
-  { id: "windchime", name: "玻璃风铃", threshold: 1400, slot: "hanging", symbol: "♪" },
-  { id: "arch", name: "蔷薇拱门", threshold: 1700, slot: "structure", symbol: "⌒" },
-  { id: "lanterns", name: "星光路灯", threshold: 2000, slot: "path", symbol: "灯" },
-  { id: "swing", name: "花藤秋千", threshold: 2400, slot: "left", symbol: "↟" },
-  { id: "pond", name: "月影小池", threshold: 2800, slot: "right", symbol: "≈" },
-  { id: "shelf", name: "四季花架", threshold: 3300, slot: "structure", symbol: "花" },
-  { id: "starlight", name: "庭院星幕", threshold: 3800, slot: "atmosphere", symbol: "✧" },
-  { id: "moongate", name: "月光花门", threshold: 4400, slot: "structure", symbol: "月" },
-  { id: "pavilion", name: "双人花亭", threshold: 5000, slot: "structure", symbol: "亭" }
+  { id: "plaque", name: "心意木牌", threshold: 80, slot: "foreground", icon: "signpost" },
+  { id: "mushrooms", name: "蘑菇小灯", threshold: 120, slot: "left", icon: "lamp-desk" },
+  { id: "stones", name: "月白石径", threshold: 160, slot: "path", icon: "footprints" },
+  { id: "planters", name: "彩釉花盆", threshold: 220, slot: "right", icon: "flower-2" },
+  { id: "lights", name: "暖光灯串", threshold: 300, slot: "overhead", icon: "lightbulb" },
+  { id: "picnic", name: "双人野餐毯", threshold: 380, slot: "foreground", icon: "sandwich" },
+  { id: "ribbon", name: "心意飘带", threshold: 460, slot: "atmosphere", icon: "ribbon" },
+  { id: "bench", name: "双人长椅", threshold: 560, slot: "left", icon: "armchair" },
+  { id: "mailbox", name: "花园信箱", threshold: 680, slot: "right", icon: "mailbox" },
+  { id: "birdhouse", name: "林间鸟屋", threshold: 800, slot: "hanging", icon: "house" },
+  { id: "windchime", name: "玻璃风铃", threshold: 920, slot: "hanging", icon: "music-2" },
+  { id: "arch", name: "蔷薇拱门", threshold: 1080, slot: "structure", icon: "landmark" },
+  { id: "lanterns", name: "星光路灯", threshold: 1250, slot: "path", icon: "lamp-wall-up" },
+  { id: "butterflyhouse", name: "蝴蝶小屋", threshold: 1400, slot: "right", icon: "origami" },
+  { id: "swing", name: "花藤秋千", threshold: 1600, slot: "left", icon: "panel-top" },
+  { id: "fountain", name: "晨露喷泉", threshold: 1800, slot: "right", icon: "waves" },
+  { id: "pond", name: "月影小池", threshold: 2000, slot: "right", icon: "circle-dot-dashed" },
+  { id: "bridge", name: "白木小桥", threshold: 2200, slot: "path", icon: "route" },
+  { id: "shelf", name: "四季花架", threshold: 2400, slot: "structure", icon: "library-big" },
+  { id: "flowercart", name: "流动花车", threshold: 2600, slot: "left", icon: "shopping-basket" },
+  { id: "starlight", name: "庭院星幕", threshold: 2800, slot: "atmosphere", icon: "sparkles" },
+  { id: "moonlamp", name: "月亮吊灯", threshold: 3000, slot: "overhead", icon: "moon-star" },
+  { id: "moongate", name: "月光花门", threshold: 3300, slot: "structure", icon: "circle-arch" },
+  { id: "pavilion", name: "双人花亭", threshold: 3600, slot: "structure", icon: "building" },
+  { id: "wishbottles", name: "心愿瓶灯", threshold: 3900, slot: "foreground", icon: "flask-conical" },
+  { id: "seasongate", name: "四季秘境门", threshold: 4300, slot: "structure", icon: "door-open" }
 ];
 const gardenPointCategories = {
   baseline: { name: "历史成长", icon: "heart" }, watering: { name: "共同浇水", icon: "droplets" },
@@ -239,8 +250,16 @@ const gardenPointCategories = {
   task: { name: "双人任务", icon: "list-checks" }, game: { name: "游戏记录", icon: "gamepad-2" },
   seed: { name: "心意种子", icon: "sprout" }, bloom: { name: "双生花", icon: "flower-2" },
   achievement: { name: "情侣成就", icon: "badge-check" }, meeting: { name: "见面记录", icon: "map-pin-heart" },
-  wish: { name: "共同愿望", icon: "sparkles" }
+  wish: { name: "共同愿望", icon: "sparkles" }, coPlant: { name: "共育植物", icon: "leaf" },
+  gardenQuest: { name: "花园任务", icon: "calendar-heart" }, flowerLetter: { name: "花期信箱", icon: "mail-heart" }
 };
+const gardenQuestPool = [
+  "交换一张今天随手拍的照片", "认真听对方分享一件小事", "一起通话至少二十分钟", "互相说一个最近发现的优点",
+  "约好一起看一集剧或一部电影", "各自分享一首最近喜欢的歌", "一起决定下一次见面想吃什么", "互相说一句具体的鼓励",
+  "分享今天最好笑的一件事", "一起完成一次学习或运动打卡", "各自发一段十秒以上的声音", "聊聊最近最想实现的小目标",
+  "找出一张以前没发过的照片", "一起玩一局喜欢的游戏", "睡前认真说一次晚安", "共同写下一件未来想做的事",
+  "互相推荐一个好用的小东西", "分享今天窗外或路上的景色", "一起回忆第一次见面的一个细节", "约定本周的一段专属相处时间"
+];
 
 const defaults = {
   startDate: "2025-02-14",
@@ -271,7 +290,7 @@ const defaults = {
   ],
   photos: [],
   garden: {
-    version: 2,
+    version: 3,
     points: 0,
     baselinePoints: 0,
     migrationComplete: false,
@@ -287,7 +306,11 @@ const defaults = {
     deletedIds: [],
     decorationStates: {},
     featuredDecoration: "none",
-    decorationUpdatedAt: ""
+    decorationUpdatedAt: "",
+    companionPlant: { name: "", species: "rose", createdAt: "", care: {} },
+    flowerLetters: [],
+    weeklyQuests: {},
+    anniversaries: []
   },
   private: {
     liu: { goals: [], traits: [{ id: uid(), type: "优点", text: "她会认真记住我随口说过的小事" }], diaries: [], health: { water: 0, movement: 0, weights: [], cycles: [] } },
@@ -328,10 +351,11 @@ const els = {
   sendMiss: q("#sendMiss"), missHint: q("#missHint"), missSentLabel: q("#missSentLabel"), missSentTotal: q("#missSentTotal"), missSentToday: q("#missSentToday"), missReceivedLabel: q("#missReceivedLabel"), missReceivedTotal: q("#missReceivedTotal"), missReceivedToday: q("#missReceivedToday"),
   writerName: q("#writerName"), switchWriter: q("#switchWriter"), messageForm: q("#messageForm"), messageText: q("#messageText"), messageList: q("#messageList"), questionText: q("#questionText"), questionCategory: q("#questionCategory"), questionCategorySelect: q("#questionCategorySelect"), newQuestion: q("#newQuestion"), questionAnswerForm: q("#questionAnswerForm"), questionAnswer: q("#questionAnswer"), questionWriterName: q("#questionWriterName"), questionAnswers: q("#questionAnswers"),
   recordVoice: q("#recordVoice"), voiceRecordStatus: q("#voiceRecordStatus"), voiceRecordTimer: q("#voiceRecordTimer"), voiceDraft: q("#voiceDraft"), voicePreview: q("#voicePreview"), discardVoice: q("#discardVoice"), sendVoice: q("#sendVoice"), voiceNotice: q("#voiceNotice"), voiceList: q("#voiceList"), voiceCount: q("#voiceCount"),
-  openGardenHome: q("#openGardenHome"), openGardenTogether: q("#openGardenTogether"), closeGarden: q("#closeGarden"), gardenPreviewStatus: q("#gardenPreviewStatus"), gardenShortcutStage: q("#gardenShortcutStage"), gardenShortcutWater: q("#gardenShortcutWater"), gardenWeatherChip: q("#gardenWeatherChip"), gardenStage: q("#gardenStage"), gardenPlant: q("#gardenPlant"), gardenGateSign: q("#gardenGateSign"), gardenStageName: q("#gardenStageName"), gardenPoints: q("#gardenPoints"), gardenProgressBar: q("#gardenProgressBar"), gardenNextStage: q("#gardenNextStage"), gardenWateringStatus: q("#gardenWateringStatus"), waterGarden: q("#waterGarden"), gardenNotice: q("#gardenNotice"), gardenTools: q(".garden-tools"), gardenPanels: qa("[data-garden-content]"), gardenButterfly: q("#gardenButterfly"), gardenMemoryReveal: q("#gardenMemoryReveal"), closeGardenMemory: q("#closeGardenMemory"), gardenMemoryTitle: q("#gardenMemoryTitle"), gardenMemoryText: q("#gardenMemoryText"),
+  openGardenHome: q("#openGardenHome"), openGardenTogether: q("#openGardenTogether"), closeGarden: q("#closeGarden"), gardenPreviewStatus: q("#gardenPreviewStatus"), gardenShortcutStage: q("#gardenShortcutStage"), gardenShortcutWater: q("#gardenShortcutWater"), gardenWeatherChip: q("#gardenWeatherChip"), gardenStage: q("#gardenStage"), gardenPlant: q("#gardenPlant"), gardenGateSign: q("#gardenGateSign"), gardenStageName: q("#gardenStageName"), gardenPoints: q("#gardenPoints"), gardenProgressBar: q("#gardenProgressBar"), gardenNextStage: q("#gardenNextStage"), gardenWateringStatus: q("#gardenWateringStatus"), waterGarden: q("#waterGarden"), gardenNotice: q("#gardenNotice"), gardenTools: q(".garden-tools"), gardenPanels: qa("[data-garden-content]"), gardenButterfly: q("#gardenButterfly"), gardenMemoryReveal: q("#gardenMemoryReveal"), closeGardenMemory: q("#closeGardenMemory"), gardenMemoryTitle: q("#gardenMemoryTitle"), gardenMemoryText: q("#gardenMemoryText"), gardenFestivalScene: q("#gardenFestivalScene"), gardenCompanionScene: q("#gardenCompanionScene"),
   gardenSeedForm: q("#gardenSeedForm"), gardenSeedText: q("#gardenSeedText"), gardenSeedUnlockDate: q("#gardenSeedUnlockDate"), gardenSeedPhoto: q("#gardenSeedPhoto"), gardenSeedVoice: q("#gardenSeedVoice"), gardenSeedCount: q("#gardenSeedCount"), gardenSeedList: q("#gardenSeedList"), gardenWishForm: q("#gardenWishForm"), gardenWishText: q("#gardenWishText"), gardenWishDate: q("#gardenWishDate"), gardenWishCount: q("#gardenWishCount"), gardenWishList: q("#gardenWishList"),
   gardenHybridForm: q("#gardenHybridForm"), gardenHybridColor: q("#gardenHybridColor"), gardenHybridShape: q("#gardenHybridShape"), gardenHybridStatus: q("#gardenHybridStatus"), gardenBloomCount: q("#gardenBloomCount"), gardenBloomGallery: q("#gardenBloomGallery"), gardenMemoryFlowers: q("#gardenMemoryFlowers"), gardenSnapshotCount: q("#gardenSnapshotCount"), gardenStageProgressText: q("#gardenStageProgressText"), gardenStageRemaining: q("#gardenStageRemaining"), gardenRoadmap: q("#gardenRoadmap"), gardenPointBreakdown: q("#gardenPointBreakdown"), gardenPointLedger: q("#gardenPointLedger"), gardenAreaProgress: q("#gardenAreaProgress"), gardenTimeline: q("#gardenTimeline"),
   gardenSceneDecoration: q("#gardenSceneDecoration"), gardenDecorationList: q("#gardenDecorationList"),
+  gardenTogetherSeason: q("#gardenTogetherSeason"), gardenCompanionDisplay: q("#gardenCompanionDisplay"), gardenCompanionForm: q("#gardenCompanionForm"), gardenCompanionName: q("#gardenCompanionName"), gardenCompanionSpecies: q("#gardenCompanionSpecies"), gardenCompanionStatus: q("#gardenCompanionStatus"), gardenCompanionPlantName: q("#gardenCompanionPlantName"), gardenCompanionMeta: q("#gardenCompanionMeta"), gardenCompanionProgress: q("#gardenCompanionProgress"), gardenCompanionCareStatus: q("#gardenCompanionCareStatus"), gardenCompanionCare: q("#gardenCompanionCare"), gardenQuestWeek: q("#gardenQuestWeek"), gardenQuestProgress: q("#gardenQuestProgress"), gardenQuestList: q("#gardenQuestList"), gardenLetterForm: q("#gardenLetterForm"), gardenLetterText: q("#gardenLetterText"), gardenLetterDate: q("#gardenLetterDate"), gardenLetterCount: q("#gardenLetterCount"), gardenLetterList: q("#gardenLetterList"), gardenAnniversaryForm: q("#gardenAnniversaryForm"), gardenAnniversaryTitle: q("#gardenAnniversaryTitle"), gardenAnniversaryDate: q("#gardenAnniversaryDate"), gardenAnniversaryStyle: q("#gardenAnniversaryStyle"), gardenAnniversaryList: q("#gardenAnniversaryList"),
   gardenMemoryDialog: q("#gardenMemoryDialog"), closeGardenMemoryDialog: q("#closeGardenMemoryDialog"), gardenMemoryImage: q("#gardenMemoryImage"), gardenMemoryType: q("#gardenMemoryType"), gardenMemoryDialogTitle: q("#gardenMemoryDialogTitle"), gardenMemoryMeta: q("#gardenMemoryMeta"), gardenMemoryDialogText: q("#gardenMemoryDialogText"),
   taskForm: q("#taskForm"), taskText: q("#taskText"), taskList: q("#taskList"), taskStats: q("#taskStats"),
   achievementStats: q("#achievementStats"), achievementPercent: q("#achievementPercent"), achievementProgressBar: q("#achievementProgressBar"), achievementFilter: q("#achievementFilter"), achievementVisibleCount: q("#achievementVisibleCount"), achievementList: q("#achievementList"), achievementMore: q("#achievementMore"), achievementForm: q("#achievementForm"), achievementText: q("#achievementText"), achievementEditDialog: q("#achievementEditDialog"), achievementEditId: q("#achievementEditId"), achievementEditText: q("#achievementEditText"), saveAchievementEdit: q("#saveAchievementEdit"),
@@ -694,6 +718,50 @@ function bindGardenActions() {
     navigator.vibrate?.(30);
     persistAndRender("双人浇水");
   });
+  els.gardenCompanionForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const name = els.gardenCompanionName.value.trim();
+    if (!name) return;
+    const plant = gardenState().companionPlant;
+    plant.name = name;
+    plant.species = els.gardenCompanionSpecies.value;
+    plant.createdAt = plant.createdAt || new Date().toISOString();
+    plant.updatedAt = new Date().toISOString();
+    persistAndRender(plant.care && Object.keys(plant.care).length ? "为共育植物换了新名字" : "种下双人共育植物");
+  });
+  els.gardenCompanionCare.addEventListener("click", () => {
+    const plant = gardenState().companionPlant;
+    if (!plant.name) {
+      els.gardenNotice.textContent = "先给你们的共育植物取一个名字吧。";
+      activeGardenPanel = "together";
+      renderGardenPanels();
+      els.gardenCompanionName.focus();
+      return;
+    }
+    const date = todayString();
+    const cared = new Set(plant.care?.[date] || []);
+    cared.add(currentPerson());
+    plant.care = { ...(plant.care || {}), [date]: [...cared] };
+    Object.keys(plant.care).sort().slice(0, -180).forEach((key) => delete plant.care[key]);
+    plant.updatedAt = new Date().toISOString();
+    navigator.vibrate?.(25);
+    persistAndRender(cared.size === 2 ? "共同照顾共育植物" : "照顾共育植物");
+  });
+  els.gardenQuestList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-garden-quest]");
+    if (!button) return;
+    const week = gardenState().weeklyQuests[gardenWeekKey()];
+    const quest = week?.items.find((item) => item.id === button.dataset.gardenQuest);
+    if (!quest) return;
+    const doneBy = new Set(gardenQuestDonePeople(quest));
+    const person = currentPerson();
+    const done = !doneBy.has(person);
+    if (done) doneBy.add(person); else doneBy.delete(person);
+    quest.doneBy = [...doneBy];
+    quest.doneState = { ...(quest.doneState || {}), [person]: { done, updatedAt: new Date().toISOString() } };
+    quest.updatedAt = quest.doneState[person].updatedAt;
+    persistAndRender(doneBy.size === 2 ? "共同完成本周花园任务" : "更新本周花园任务");
+  });
   els.gardenSeedForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const text = els.gardenSeedText.value.trim();
@@ -709,6 +777,49 @@ function bindGardenActions() {
     setFormDates();
     els.gardenNotice.textContent = "种子已经埋好，到约定的日子再一起打开。";
     persistAndRender("种下一颗心意");
+  });
+  els.gardenLetterForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const text = els.gardenLetterText.value.trim();
+    if (!text || !els.gardenLetterDate.value) return;
+    gardenState().flowerLetters.unshift({
+      id: uid(), person: currentPerson(), text, unlockDate: els.gardenLetterDate.value,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+    els.gardenLetterForm.reset();
+    setFormDates();
+    persistAndRender("寄出一封花期信");
+  });
+  els.gardenLetterList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-delete-garden-letter]");
+    if (!button || !window.confirm("确定移除这封花期信吗？")) return;
+    const garden = gardenState();
+    garden.deletedIds.push(button.dataset.deleteGardenLetter);
+    garden.deletedIds = [...new Set(garden.deletedIds)].slice(-300);
+    garden.flowerLetters = garden.flowerLetters.filter((item) => item.id !== button.dataset.deleteGardenLetter);
+    persistAndRender("整理花期信箱");
+  });
+  els.gardenAnniversaryForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const title = els.gardenAnniversaryTitle.value.trim();
+    const date = els.gardenAnniversaryDate.value;
+    if (!title || !date) return;
+    gardenState().anniversaries.unshift({
+      id: uid(), title, date, style: els.gardenAnniversaryStyle.value,
+      createdAt: new Date().toISOString(), updatedAt: new Date().toISOString()
+    });
+    els.gardenAnniversaryForm.reset();
+    setFormDates();
+    persistAndRender("记下一枚花园纪念日");
+  });
+  els.gardenAnniversaryList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-delete-garden-anniversary]");
+    if (!button || !window.confirm("确定移除这个纪念日吗？")) return;
+    const garden = gardenState();
+    garden.deletedIds.push(button.dataset.deleteGardenAnniversary);
+    garden.deletedIds = [...new Set(garden.deletedIds)].slice(-300);
+    garden.anniversaries = garden.anniversaries.filter((item) => item.id !== button.dataset.deleteGardenAnniversary);
+    persistAndRender("整理花园纪念日");
   });
   els.gardenWishForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1106,6 +1217,17 @@ function gardenPointCandidates() {
   });
   (state.meetings || []).filter((item) => item.date && item.date <= todayString()).forEach((item) => add(`meeting-${item.id}`, "meeting", 30, `收藏见面：${shortGardenLabel(item.title)}`, item.date));
   (garden.wishes || []).filter((item) => item.done).forEach((item) => add(`wish-${item.id}`, "wish", 35, `共同愿望盛开：${shortGardenLabel(item.text)}`, item.completedAt || todayString(), { dailyCap: 1, capScope: "shared" }));
+  Object.entries(garden.companionPlant?.care || {}).forEach(([date, peopleWhoCared]) => {
+    const cared = [...new Set(peopleWhoCared || [])].filter((person) => people[person]);
+    cared.forEach((person) => add(`co-plant-${date}-${person}`, "coPlant", 2, `${people[person].short}照顾共育植物`, date));
+    if (cared.length === 2) add(`co-plant-${date}-pair`, "coPlant", 4, "两个人共同照顾共育植物", date);
+  });
+  Object.values(garden.weeklyQuests || {}).flatMap((week) => week?.items || []).filter((item) => gardenQuestDonePeople(item).length === 2).forEach((item) => {
+    add(`garden-quest-${item.id}`, "gardenQuest", 12, `完成花园任务：${shortGardenLabel(item.text)}`, item.updatedAt ? localDateString(item.updatedAt) : todayString(), { dailyCap: 3, capScope: "shared" });
+  });
+  (garden.flowerLetters || []).filter((item) => item.unlockDate <= todayString()).forEach((item) => {
+    add(`flower-letter-${item.id}`, "flowerLetter", 10, "一封花期信如约盛开", item.unlockDate, { dailyCap: 2, capScope: "shared" });
+  });
   return events.filter((event) => event.key && event.date);
 }
 
@@ -1125,7 +1247,7 @@ function creditGardenPointEvents() {
   const garden = gardenState();
   const candidates = gardenPointCandidates();
   if (!garden.migrationComplete) {
-    garden.version = 2;
+    garden.version = 3;
     garden.pointEvents = Array.isArray(garden.pointEvents) ? garden.pointEvents : [];
     garden.baselinePoints = Math.max(0, Number(garden.baselinePoints || (garden.pointEvents.length ? 0 : garden.points) || 0));
     garden.creditedKeys = [...new Set([...(garden.creditedKeys || []), ...garden.pointEvents.map((item) => item.key), ...candidates.map((item) => item.key)])];
@@ -1159,7 +1281,8 @@ function calculateGardenPoints() {
 
 function refreshGardenProgress(reason) {
   const garden = gardenState();
-  let changed = creditGardenPointEvents();
+  let changed = ensureGardenWeek();
+  changed = creditGardenPointEvents() || changed;
   const calculated = calculateGardenPoints();
   const points = Math.max(Number(garden.points || 0), calculated);
   const previousStage = Math.min(gardenStages.length - 1, Number(garden.lastStage || 0));
@@ -1181,7 +1304,7 @@ function refreshGardenProgress(reason) {
   if (points >= 900) areas.push("memory-corner");
   if (points >= 2000) areas.push("glasshouse");
   if (points >= 2800) areas.push("flower-path");
-  if (points >= 3800) areas.push("starlight-yard");
+  if (points >= 3400) areas.push("starlight-yard");
   if (areas.join("|") !== (garden.unlockedAreas || []).join("|")) {
     garden.unlockedAreas = areas;
     changed = true;
@@ -1195,6 +1318,55 @@ function commitExternalGardenGrowth(reason) {
   if (!changed) return;
   localStorage.setItem(storageKey, JSON.stringify(state));
   window.LoveSync?.scheduleSave(state);
+}
+
+function gardenWeekKey(date = new Date()) {
+  const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  const weekday = monday.getDay() || 7;
+  monday.setDate(monday.getDate() - weekday + 1);
+  return localDateString(monday);
+}
+
+function ensureGardenWeek() {
+  const garden = gardenState();
+  garden.weeklyQuests = garden.weeklyQuests && typeof garden.weeklyQuests === "object" ? garden.weeklyQuests : {};
+  const key = gardenWeekKey();
+  if (garden.weeklyQuests[key]?.items?.length === 3) return false;
+  const seed = [...key].reduce((sum, character) => (sum * 31 + character.charCodeAt(0)) % 100000, 17);
+  const indexes = [];
+  for (let offset = 0; indexes.length < 3; offset += 1) {
+    const index = (seed + offset * 7 + offset * offset) % gardenQuestPool.length;
+    if (!indexes.includes(index)) indexes.push(index);
+  }
+  garden.weeklyQuests[key] = {
+    id: `garden-week-${key}`, weekKey: key, createdAt: new Date().toISOString(),
+    items: indexes.map((index, order) => ({ id: `garden-quest-${key}-${order + 1}`, text: gardenQuestPool[index], doneBy: [], updatedAt: "" }))
+  };
+  Object.keys(garden.weeklyQuests).sort().slice(0, -26).forEach((oldKey) => delete garden.weeklyQuests[oldKey]);
+  return true;
+}
+
+function gardenQuestDonePeople(item) {
+  if (!item?.doneState || typeof item.doneState !== "object") return [...new Set(item?.doneBy || [])];
+  return Object.keys(people).filter((person) => item.doneState[person]?.done);
+}
+
+function gardenSeasonInfo(date = new Date()) {
+  const month = date.getMonth() + 1;
+  const hour = date.getHours();
+  const season = month >= 3 && month <= 5 ? "spring" : month >= 6 && month <= 8 ? "summer" : month >= 9 && month <= 11 ? "autumn" : "winter";
+  const seasonName = { spring: "春日", summer: "盛夏", autumn: "金秋", winter: "冬日" }[season];
+  const time = hour < 6 || hour >= 19 ? "night" : hour < 10 ? "morning" : hour < 17 ? "day" : "sunset";
+  const timeName = { night: "星夜", morning: "晨光", day: "晴昼", sunset: "晚霞" }[time];
+  return { season, seasonName, time, timeName };
+}
+
+function gardenAnniversaryToday() {
+  const today = todayString().slice(5);
+  const custom = (gardenState().anniversaries || []).find((item) => item.date?.slice(5) === today);
+  if (custom) return custom;
+  if (state.startDate?.slice(5) === today) return { id: "love-anniversary", title: "我们的恋爱纪念日", date: state.startDate, style: "petals" };
+  return null;
 }
 
 function gardenWeather() {
@@ -1216,6 +1388,8 @@ function renderGarden() {
   const progress = next ? Math.round(((points - stage.min) / (next.min - stage.min)) * 100) : 100;
   const growthStep = next ? Math.min(3, Math.floor(Math.max(0, progress) / 25)) : 3;
   const weather = gardenWeather();
+  const season = gardenSeasonInfo();
+  const anniversary = gardenAnniversaryToday();
   const watered = new Set(garden.waterings[todayString()] || []);
   const current = currentPerson();
   const waiting = Object.keys(people).filter((person) => !watered.has(person)).map((person) => people[person].short);
@@ -1233,6 +1407,9 @@ function renderGarden() {
   els.gardenStage.dataset.stage = stage.scene;
   els.gardenStage.dataset.step = growthStep;
   els.gardenStage.dataset.weather = weather.id;
+  els.gardenStage.dataset.season = season.season;
+  els.gardenStage.dataset.time = season.time;
+  els.gardenTogetherSeason.textContent = `${season.seasonName} · ${season.timeName}`;
   els.gardenPlant.dataset.stage = stage.scene;
   els.gardenPlant.dataset.step = growthStep;
   els.gardenGateSign.classList.toggle("is-unlocked", garden.unlockedAreas.includes("glasshouse"));
@@ -1248,8 +1425,13 @@ function renderGarden() {
   els.gardenWateringStatus.innerHTML = Object.keys(people).map((person) => `<span class="${watered.has(person) ? "is-done" : ""}"><i aria-hidden="true">${watered.has(person) ? "✓" : "○"}</i>${people[person].short}</span>`).join("");
   els.waterGarden.disabled = watered.has(current);
   els.waterGarden.querySelector("span").textContent = watered.has(current) ? "今天已经浇水" : "浇一点心意";
+  els.gardenFestivalScene.dataset.style = anniversary?.style || "none";
+  els.gardenFestivalScene.innerHTML = anniversary
+    ? `<strong>${escapeHTML(anniversary.title)}</strong><span>${Array.from({ length: 14 }, () => "<i></i>").join("")}</span>`
+    : "";
   renderGardenSeedOptions();
   renderGardenSeeds();
+  renderGardenTogether();
   renderGardenWishes();
   renderGardenFlowers();
   renderGardenGrowth();
@@ -1290,6 +1472,84 @@ function renderGardenSeedOptions() {
       if ([...els.gardenSeedVoice.options].some((option) => option.value === selectedVoice)) els.gardenSeedVoice.value = selectedVoice;
     }
   }
+}
+
+function renderGardenTogether() {
+  ensureGardenWeek();
+  const garden = gardenState();
+  const plant = garden.companionPlant;
+  const careEntries = Object.values(plant.care || {}).flatMap((entry) => [...new Set(entry || [])]);
+  const careCount = careEntries.length;
+  const levels = [0, 2, 6, 12, 20, 32, 48];
+  let level = 0;
+  levels.forEach((minimum, index) => { if (careCount >= minimum) level = index; });
+  const nextMinimum = levels[level + 1];
+  const levelNames = ["等待种下", "冒出嫩芽", "舒展幼叶", "长成青苗", "孕育花苞", "第一次开花", "共同盛放"];
+  const progress = nextMinimum ? Math.round(((careCount - levels[level]) / (nextMinimum - levels[level])) * 100) : 100;
+  const caredToday = new Set(plant.care?.[todayString()] || []);
+  els.gardenCompanionDisplay.dataset.species = plant.species || "rose";
+  els.gardenCompanionDisplay.dataset.level = String(level);
+  els.gardenCompanionScene.dataset.species = plant.species || "rose";
+  els.gardenCompanionScene.dataset.level = String(level);
+  els.gardenCompanionScene.hidden = !plant.name;
+  els.gardenCompanionPlantName.textContent = plant.name || "还没有取名字";
+  els.gardenCompanionMeta.textContent = plant.name
+    ? `${levelNames[level]} · 已收到 ${careCount} 份照顾${nextMinimum ? ` · 再 ${nextMinimum - careCount} 份进入下一阶段` : ""}`
+    : "一起选择第一株共同照顾的植物";
+  els.gardenCompanionProgress.style.width = `${Math.max(0, Math.min(100, progress))}%`;
+  els.gardenCompanionCareStatus.innerHTML = Object.keys(people).map((person) => `<span class="${caredToday.has(person) ? "is-done" : ""}"><i>${caredToday.has(person) ? "✓" : "○"}</i>${people[person].short}今日${caredToday.has(person) ? "已照顾" : "待照顾"}</span>`).join("");
+  els.gardenCompanionCare.disabled = caredToday.has(currentPerson());
+  els.gardenCompanionCare.querySelector("span").textContent = caredToday.has(currentPerson()) ? "今天已经照顾" : "今天照顾它";
+  if (document.activeElement !== els.gardenCompanionName) els.gardenCompanionName.value = plant.name || "";
+  if (document.activeElement !== els.gardenCompanionSpecies) els.gardenCompanionSpecies.value = plant.species || "rose";
+
+  const week = garden.weeklyQuests[gardenWeekKey()];
+  const completed = week.items.filter((item) => gardenQuestDonePeople(item).length === 2).length;
+  const weekEnd = parseDate(week.weekKey);
+  weekEnd.setDate(weekEnd.getDate() + 6);
+  els.gardenQuestWeek.textContent = `${formatDate(parseDate(week.weekKey))} 至 ${formatDate(weekEnd)}`;
+  els.gardenQuestProgress.textContent = `${completed}/3`;
+  els.gardenQuestProgress.classList.toggle("is-complete", completed === 3);
+  els.gardenQuestList.replaceChildren(...week.items.map((item, index) => {
+    const doneBy = new Set(gardenQuestDonePeople(item));
+    const node = document.createElement("article");
+    node.className = doneBy.size === 2 ? "is-complete" : "";
+    node.innerHTML = `<span class="quest-number">${doneBy.size === 2 ? "✓" : index + 1}</span><div><strong>${escapeHTML(item.text)}</strong><small>${Object.keys(people).map((person) => `<i class="${doneBy.has(person) ? "is-done" : ""}">${people[person].short}</i>`).join("")}</small></div><button data-garden-quest="${item.id}" type="button">${doneBy.has(currentPerson()) ? "取消" : "我完成了"}</button>`;
+    return node;
+  }));
+
+  const letters = garden.flowerLetters || [];
+  const openedCount = letters.filter((item) => item.unlockDate <= todayString()).length;
+  els.gardenLetterCount.textContent = `${openedCount}/${letters.length} 盛开`;
+  if (!letters.length) {
+    renderEmpty(els.gardenLetterList, "第一封花期信，可以写给下一次见面的你们。");
+  } else {
+    els.gardenLetterList.replaceChildren(...letters.map((letter) => {
+      const opened = letter.unlockDate <= todayString();
+      const node = document.createElement("article");
+      node.className = `garden-letter-item${opened ? " is-open" : ""}`;
+      node.innerHTML = `<span class="garden-letter-bloom" aria-hidden="true"><i></i><i></i><i></i><i></i><b></b></span><div><small>${opened ? "花已盛开" : `等待 ${formatDate(parseDate(letter.unlockDate))}`}</small><p>${opened ? escapeHTML(letter.text) : "这朵花正在替你们守住一封信。"}</p><time>${people[letter.person]?.short || "我们"}写下 · ${formatDate(parseDate(letter.unlockDate))}</time></div><button class="delete-button" data-delete-garden-letter="${letter.id}" type="button" aria-label="删除花期信">×</button>`;
+      return node;
+    }));
+  }
+
+  const anniversaries = [
+    ...(state.startDate ? [{ id: "love-anniversary", title: "我们的恋爱纪念日", date: state.startDate, style: "petals", builtIn: true }] : []),
+    ...(garden.anniversaries || [])
+  ].sort((a, b) => a.date.slice(5).localeCompare(b.date.slice(5)));
+  if (!anniversaries.length) {
+    renderEmpty(els.gardenAnniversaryList, "记下一个重要日子，到那天花园会悄悄换上限定景色。");
+  } else {
+    const styleNames = { petals: "花瓣雨", starlight: "星光夜", lantern: "暖灯庭院", celebration: "庆祝彩带" };
+    els.gardenAnniversaryList.replaceChildren(...anniversaries.map((item) => {
+      const active = item.date.slice(5) === todayString().slice(5);
+      const node = document.createElement("article");
+      node.className = active ? "is-today" : "";
+      node.innerHTML = `<span><i data-lucide="${active ? "party-popper" : "calendar-heart"}" aria-hidden="true"></i></span><div><strong>${escapeHTML(item.title)}</strong><small>每年 ${Number(item.date.slice(5, 7))}月${Number(item.date.slice(8, 10))}日 · ${styleNames[item.style] || "限定花园"}</small></div>${item.builtIn ? `<i class="garden-built-in">恋爱日期</i>` : `<button class="delete-button" data-delete-garden-anniversary="${item.id}" type="button" aria-label="删除纪念日">×</button>`}`;
+      return node;
+    }));
+  }
+  window.lucide?.createIcons();
 }
 
 function renderGardenSeeds() {
@@ -1464,12 +1724,14 @@ function renderGardenGrowth() {
   const recentEvents = [...events].sort((a, b) => `${b.createdAt || b.date}-${b.id}`.localeCompare(`${a.createdAt || a.date}-${a.id}`)).slice(0, 24);
   if (!recentEvents.length) {
     els.gardenPointLedger.innerHTML = Number(garden.baselinePoints || 0) > 0
-      ? `<article><span class="garden-ledger-dot"></span><div><strong>旧版花园成长值</strong><small>升级时完整保留</small></div><b>+${garden.baselinePoints}</b></article>`
+      ? `<article data-category="baseline"><span class="garden-ledger-icon"><i data-lucide="heart" aria-hidden="true"></i></span><div><strong>旧版花园成长值</strong><small>升级时完整保留</small></div><b>+${garden.baselinePoints}</b></article>`
       : `<p class="empty">新的心意值明细会从升级后的第一次互动开始记录。</p>`;
   } else {
     els.gardenPointLedger.replaceChildren(...recentEvents.map((event) => {
       const node = document.createElement("article");
-      node.innerHTML = `<span class="garden-ledger-dot"></span><div><strong>${escapeHTML(event.label)}</strong><small>${formatDate(parseDate(event.date))} · ${gardenPointCategories[event.category]?.name || "共同生活"}</small></div><b>+${event.points}</b>`;
+      const category = gardenPointCategories[event.category] || { name: "共同生活", icon: "heart" };
+      node.dataset.category = event.category || "shared";
+      node.innerHTML = `<span class="garden-ledger-icon"><i data-lucide="${category.icon}" aria-hidden="true"></i></span><div><strong>${escapeHTML(event.label)}</strong><small>${formatDate(parseDate(event.date))} · ${category.name}</small></div><b>+${event.points}</b>`;
       return node;
     }));
   }
@@ -1479,7 +1741,7 @@ function renderGardenGrowth() {
     { name: "回忆角落", threshold: 900, copy: "记忆花朵与蝴蝶来访" },
     { name: "晨光花房", threshold: 2000, copy: "心形藤蔓与花房入口" },
     { name: "花间小径", threshold: 2800, copy: "小池与花路延伸" },
-    { name: "星光庭院", threshold: 3800, copy: "夜色中的庭院风景" }
+    { name: "星光庭院", threshold: 3400, copy: "夜色中的庭院风景" }
   ];
   els.gardenAreaProgress.replaceChildren(...areas.map((area) => {
     const unlocked = points >= area.threshold;
@@ -1488,6 +1750,7 @@ function renderGardenGrowth() {
     node.innerHTML = `<span aria-hidden="true">${unlocked ? "✓" : "◇"}</span><div><strong>${area.name}</strong><small>${unlocked ? area.copy : `还差 ${area.threshold - points} 心意值`}</small></div>`;
     return node;
   }));
+  window.lucide?.createIcons();
   if (!garden.snapshots.length) return renderEmpty(els.gardenTimeline, "花园第一次发芽时，会从这里开始记录。");
   els.gardenTimeline.replaceChildren(...garden.snapshots.slice(0, 24).map((snapshot) => {
     const stage = gardenStages[gardenStageIndex(Number(snapshot.points || 0))];
@@ -1522,7 +1785,7 @@ function renderGardenDecorations(points) {
     node.dataset.gardenDecoration = item.id;
     node.disabled = !unlocked;
     node.className = active ? "is-active" : "";
-    node.innerHTML = `<span aria-hidden="true">${unlocked ? item.symbol : "⌁"}</span><strong>${item.name}</strong><small>${unlocked ? (active ? "已布置 · 点击收起" : `布置在${gardenSlotName(item.slot)}`) : `还差 ${Math.max(0, item.threshold - points)} 心意值`}</small><i aria-hidden="true">${active ? "✓" : ""}</i>`;
+    node.innerHTML = `<span aria-hidden="true"><i data-lucide="${unlocked ? item.icon : "lock-keyhole"}"></i></span><strong>${item.name}</strong><small>${unlocked ? (active ? "已布置 · 点击收起" : `布置在${gardenSlotName(item.slot)}`) : `${item.threshold} 心意值解锁 · 还差 ${Math.max(0, item.threshold - points)}`}</small><i aria-hidden="true">${active ? "✓" : ""}</i>`;
     return node;
   }));
   window.lucide?.createIcons();
@@ -1539,20 +1802,31 @@ function gardenSlotName(slot) {
 function gardenDecorationMarkup(id) {
   const markup = {
     plaque: `<span class="garden-decor decor-plaque"><b>LIU ♥ FU</b></span>`,
+    mushrooms: `<span class="garden-decor decor-mushrooms"><i></i><i></i><i></i></span>`,
     stones: `<span class="garden-decor decor-stones"><i></i><i></i><i></i><i></i></span>`,
+    planters: `<span class="garden-decor decor-planters"><i></i><i></i><i></i></span>`,
     lights: `<span class="garden-decor garden-string-lights"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>`,
+    picnic: `<span class="garden-decor decor-picnic"><i></i><b></b></span>`,
     ribbon: `<span class="garden-decor decor-ribbon"><i></i><i></i><i></i></span>`,
     bench: `<span class="garden-decor decor-bench"><i></i></span>`,
     mailbox: `<span class="garden-decor decor-mailbox"><i>♥</i></span>`,
+    birdhouse: `<span class="garden-decor decor-birdhouse"><i></i></span>`,
     windchime: `<span class="garden-decor garden-windchime"><i></i><i></i><i></i></span>`,
     arch: `<span class="garden-decor decor-arch"><i></i><i></i><i></i><i></i><i></i></span>`,
     lanterns: `<span class="garden-decor decor-lanterns"><i></i><i></i></span>`,
+    butterflyhouse: `<span class="garden-decor decor-butterflyhouse"><i></i><b></b></span>`,
     swing: `<span class="garden-decor decor-swing"><i></i></span>`,
+    fountain: `<span class="garden-decor decor-fountain"><i></i><b></b></span>`,
     pond: `<span class="garden-decor decor-pond"><i></i><b></b></span>`,
+    bridge: `<span class="garden-decor decor-bridge"><i></i><i></i><i></i></span>`,
     shelf: `<span class="garden-decor decor-shelf"><i></i><i></i><i></i></span>`,
+    flowercart: `<span class="garden-decor decor-flowercart"><i></i><i></i><b></b></span>`,
     starlight: `<span class="garden-decor decor-starlight"><i></i><i></i><i></i><i></i><i></i></span>`,
+    moonlamp: `<span class="garden-decor decor-moonlamp"><i></i></span>`,
     moongate: `<span class="garden-decor decor-moongate"><i></i></span>`,
-    pavilion: `<span class="garden-decor decor-pavilion"><i></i><b></b></span>`
+    pavilion: `<span class="garden-decor decor-pavilion"><i></i><b></b></span>`,
+    wishbottles: `<span class="garden-decor decor-wishbottles"><i></i><i></i><i></i></span>`,
+    seasongate: `<span class="garden-decor decor-seasongate"><i></i><b></b></span>`
   };
   return markup[id] || "";
 }
@@ -1976,6 +2250,9 @@ function setFormDates() {
   els.gardenSeedUnlockDate.min = today;
   els.gardenSeedUnlockDate.value = els.gardenSeedUnlockDate.value || today;
   els.gardenWishDate.min = today;
+  els.gardenLetterDate.min = today;
+  els.gardenLetterDate.value = els.gardenLetterDate.value || today;
+  els.gardenAnniversaryDate.value = els.gardenAnniversaryDate.value || today;
 }
 function resetDiaryForm() {
   els.diaryForm.reset();
@@ -2043,7 +2320,7 @@ function mergeGarden(savedGarden) {
   return {
     ...base,
     ...(savedGarden || {}),
-    version: 2,
+    version: 3,
     points: Math.max(0, Number(savedGarden?.points || 0)),
     baselinePoints,
     migrationComplete: legacy ? false : Boolean(savedGarden?.migrationComplete),
@@ -2064,7 +2341,15 @@ function mergeGarden(savedGarden) {
     deletedIds: Array.isArray(savedGarden?.deletedIds) ? savedGarden.deletedIds.slice(-200) : [],
     decorationStates,
     featuredDecoration: "none",
-    decorationUpdatedAt: savedGarden?.decorationUpdatedAt || ""
+    decorationUpdatedAt: savedGarden?.decorationUpdatedAt || "",
+    companionPlant: {
+      ...base.companionPlant,
+      ...(savedGarden?.companionPlant || {}),
+      care: { ...base.companionPlant.care, ...(savedGarden?.companionPlant?.care || {}) }
+    },
+    flowerLetters: Array.isArray(savedGarden?.flowerLetters) ? savedGarden.flowerLetters : [],
+    weeklyQuests: savedGarden?.weeklyQuests && typeof savedGarden.weeklyQuests === "object" ? savedGarden.weeklyQuests : {},
+    anniversaries: Array.isArray(savedGarden?.anniversaries) ? savedGarden.anniversaries : []
   };
 }
 function mergeGardenConcurrent(localGarden, remoteGarden) {
@@ -2115,6 +2400,41 @@ function mergeGardenConcurrent(localGarden, remoteGarden) {
     const selected = !localState ? remoteState : (!remoteState ? localState : ((remoteState.updatedAt || "") >= (localState.updatedAt || "") ? remoteState : localState));
     decorationStates[item.id] = { enabled: Boolean(selected.enabled), updatedAt: selected.updatedAt || "", legacy: Boolean(localState?.legacy || remoteState?.legacy) };
   });
+  const localPlant = local.companionPlant || {};
+  const remotePlant = remote.companionPlant || {};
+  const plantIdentity = (remotePlant.updatedAt || "") >= (localPlant.updatedAt || "") ? remotePlant : localPlant;
+  const plantCare = { ...(localPlant.care || {}), ...(remotePlant.care || {}) };
+  [...new Set([...Object.keys(localPlant.care || {}), ...Object.keys(remotePlant.care || {})])].forEach((date) => {
+    plantCare[date] = [...new Set([...(localPlant.care?.[date] || []), ...(remotePlant.care?.[date] || [])])];
+  });
+  const weeklyQuests = {};
+  [...new Set([...Object.keys(local.weeklyQuests || {}), ...Object.keys(remote.weeklyQuests || {})])].forEach((weekKey) => {
+    const left = local.weeklyQuests?.[weekKey];
+    const right = remote.weeklyQuests?.[weekKey];
+    const items = new Map();
+    [...(left?.items || []), ...(right?.items || [])].forEach((item) => {
+      const previous = items.get(item.id);
+      if (!previous) {
+        const doneState = { ...(item.doneState || {}) };
+        (item.doneBy || []).forEach((person) => { if (!doneState[person]) doneState[person] = { done: true, updatedAt: item.updatedAt || "" }; });
+        items.set(item.id, { ...item, doneState, doneBy: Object.keys(people).filter((person) => doneState[person]?.done) });
+        return;
+      }
+      const doneState = {};
+      Object.keys(people).forEach((person) => {
+        const leftState = previous.doneState?.[person] || ((previous.doneBy || []).includes(person) ? { done: true, updatedAt: previous.updatedAt || "" } : null);
+        const rightState = item.doneState?.[person] || ((item.doneBy || []).includes(person) ? { done: true, updatedAt: item.updatedAt || "" } : null);
+        if (!leftState && !rightState) return;
+        doneState[person] = !leftState ? rightState : (!rightState ? leftState : ((rightState.updatedAt || "") >= (leftState.updatedAt || "") ? rightState : leftState));
+      });
+      items.set(item.id, {
+        ...((item.updatedAt || "") >= (previous.updatedAt || "") ? item : previous),
+        doneState,
+        doneBy: Object.keys(people).filter((person) => doneState[person]?.done)
+      });
+    });
+    weeklyQuests[weekKey] = { ...(left || {}), ...(right || {}), weekKey, items: [...items.values()] };
+  });
   if (choices.liu && choices.fu) {
     const bloomId = `garden-bloom-${round}`;
     if (!blooms.some((bloom) => bloom.id === bloomId)) {
@@ -2133,7 +2453,7 @@ function mergeGardenConcurrent(localGarden, remoteGarden) {
   return {
     ...local,
     ...remote,
-    version: 2,
+    version: 3,
     points: Math.max(local.points, remote.points),
     baselinePoints: Math.max(local.baselinePoints, remote.baselinePoints),
     migrationComplete: local.migrationComplete || remote.migrationComplete,
@@ -2153,7 +2473,11 @@ function mergeGardenConcurrent(localGarden, remoteGarden) {
     deletedIds,
     decorationStates,
     featuredDecoration: "none",
-    decorationUpdatedAt: Object.values(decorationStates).reduce((latest, item) => item.updatedAt > latest ? item.updatedAt : latest, "")
+    decorationUpdatedAt: Object.values(decorationStates).reduce((latest, item) => item.updatedAt > latest ? item.updatedAt : latest, ""),
+    companionPlant: { ...localPlant, ...remotePlant, ...plantIdentity, care: plantCare },
+    flowerLetters: mergeRecords(local.flowerLetters, remote.flowerLetters),
+    weeklyQuests,
+    anniversaries: mergeRecords(local.anniversaries, remote.anniversaries)
   };
 }
 function mergePrivateSpace(savedSpace, person) {
