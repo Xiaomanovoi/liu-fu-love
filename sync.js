@@ -5,7 +5,8 @@
   const sync = {
     client: null, user: null, coupleId: null, role: null, channel: null,
     timer: null, voiceRefreshTimer: null, refreshPromise: null, forceRefreshQueued: false,
-    pendingState: null, saveInFlight: false, lastForegroundRefresh: 0
+    pendingState: null, saveInFlight: false, lastForegroundRefresh: 0,
+    hydrated: false, applyingRemote: false
   };
 
   function emit(name, detail) {
@@ -210,6 +211,8 @@
     clearInterval(sync.voiceRefreshTimer);
     sync.timer = null;
     sync.pendingState = null;
+    sync.hydrated = false;
+    sync.applyingRemote = false;
     sync.user = null;
     sync.coupleId = null;
     sync.role = null;
@@ -261,6 +264,7 @@
     }
     sync.coupleId = member.couple_id;
     sync.role = member.role;
+    sync.hydrated = false;
     updateUi("connected", "正在刷新");
     q("#syncConnectedText").textContent = `已作为${sync.role === "liu" ? "刘向强" : "付嘉颖"}连接到两人空间。`;
     q("#connectedInvite").hidden = true;
@@ -292,12 +296,21 @@
     ]);
     if (sharedError || privateError) throw sharedError || privateError;
     const sharedData = shared?.data || {};
-    emit("love-sync-remote", {
-      shared: sharedData,
-      privateData: privateRow?.data || null,
-      role: sync.role,
-      initializeEmptySpace: Object.keys(sharedData).length === 0
-    });
+    const firstHydration = !sync.hydrated;
+    if (firstHydration) sync.pendingState = null;
+    sync.applyingRemote = true;
+    try {
+      emit("love-sync-remote", {
+        shared: sharedData,
+        privateData: privateRow?.data || null,
+        role: sync.role,
+        initializeEmptySpace: Object.keys(sharedData).length === 0
+      });
+    } finally {
+      sync.applyingRemote = false;
+      sync.hydrated = true;
+    }
+    if (sync.pendingState && !sync.timer) sync.timer = setTimeout(flushSave, 0);
   }
 
   function subscribe() {
@@ -305,9 +318,11 @@
     sync.channel = sync.client
       .channel(`love-space-${sync.coupleId}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "love_shared_state", filter: `couple_id=eq.${sync.coupleId}` }, (payload) => {
+        if (!sync.hydrated) return;
         emit("love-sync-remote", { shared: payload.new.data || {}, privateData: null, role: sync.role });
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "love_private_state", filter: `user_id=eq.${sync.user.id}` }, (payload) => {
+        if (!sync.hydrated) return;
         emit("love-sync-remote", { shared: null, privateData: payload.new.data || {}, role: sync.role });
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "love_miss_events", filter: `couple_id=eq.${sync.coupleId}` }, () => {
@@ -432,15 +447,19 @@
 
   function scheduleSave(state) {
     if (!sync.client || !sync.coupleId || !sync.user) return;
+    if (!sync.hydrated && !sync.applyingRemote) {
+      updateUi("connected", "正在加载原有数据");
+      return;
+    }
     sync.pendingState = state;
     clearTimeout(sync.timer);
-    sync.timer = setTimeout(flushSave, 80);
+    if (sync.hydrated) sync.timer = setTimeout(flushSave, 80);
   }
 
   async function flushSave() {
     clearTimeout(sync.timer);
     sync.timer = null;
-    if (!sync.client || !sync.coupleId || !sync.user || !sync.pendingState || sync.saveInFlight) return;
+    if (!sync.client || !sync.coupleId || !sync.user || !sync.hydrated || !sync.pendingState || sync.saveInFlight) return;
     const snapshot = structuredClone(sync.pendingState);
     sync.pendingState = null;
     sync.saveInFlight = true;

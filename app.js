@@ -1,4 +1,5 @@
 const storageKey = "love-tool-liu-fu-v2";
+const recoveryBackupKey = "love-tool-liu-fu-shared-backup-v1";
 const people = {
   liu: { name: "刘向强", short: "向强", color: "rose" },
   fu: { name: "付嘉颖", short: "嘉颖", color: "fu" }
@@ -375,6 +376,7 @@ function init() {
   bindGardenActions();
   bindSyncEvents();
   setFormDates();
+  backupSharedState(state, "页面启动");
   if (refreshGardenProgress("花园开始生长")) localStorage.setItem(storageKey, JSON.stringify(state));
   render();
   window.lucide?.createIcons();
@@ -913,7 +915,10 @@ function bindSyncEvents() {
   });
   window.addEventListener("love-sync-remote", (event) => {
     const { shared, privateData, role, initializeEmptySpace } = event.detail;
-    const mergedShared = shared ? { ...shared, garden: mergeGardenConcurrent(state.garden, shared.garden) } : shared;
+    if (shared) backupSharedState(state, "接收云端数据前");
+    const recoveryNeeded = Boolean(shared && !initializeEmptySpace && shouldRecoverSharedState(state, shared));
+    const safeShared = recoveryNeeded ? mergeRecoverySharedState(state, shared) : shared;
+    const mergedShared = safeShared ? { ...safeShared, garden: mergeGardenConcurrent(state.garden, safeShared.garden) } : safeShared;
     const next = {
       ...state,
       ...(mergedShared || {}),
@@ -928,9 +933,15 @@ function bindSyncEvents() {
       state.garden.migrationComplete = false;
     }
     saveLocalAndRender();
-    if (initializeEmptySpace || (shared && !shared.garden) || Number(shared?.garden?.version || 1) < 2 || gardenNeedsResync) {
+    if (initializeEmptySpace || recoveryNeeded || (shared && !shared.garden) || Number(shared?.garden?.version || 1) < 2 || gardenNeedsResync) {
       gardenNeedsResync = false;
       window.LoveSync?.scheduleSave(state);
+    }
+    if (recoveryNeeded) {
+      window.setTimeout(() => {
+        const connectedText = q("#syncConnectedText");
+        if (connectedText) connectedText.textContent = "检测到云端公共数据异常，已使用本机旧数据自动恢复并重新同步。";
+      }, 50);
     }
   });
 }
@@ -2265,15 +2276,97 @@ function resetDiaryForm() {
 function privateSpace() { return state.private[state.privatePerson]; }
 function persistAndRender(gardenReason = "共同生活") {
   refreshGardenProgress(gardenReason);
+  backupSharedState(state, "本机记录更新");
   localStorage.setItem(storageKey, JSON.stringify(state));
   render();
   window.LoveSync?.scheduleSave(state);
 }
-function saveLocalAndRender() { refreshGardenProgress("同步新的共同回忆"); localStorage.setItem(storageKey, JSON.stringify(state)); render(); }
+function saveLocalAndRender() { refreshGardenProgress("同步新的共同回忆"); backupSharedState(state, "同步前快照"); localStorage.setItem(storageKey, JSON.stringify(state)); render(); }
+
+function sharedStateScore(value) {
+  if (!value || typeof value !== "object") return 0;
+  const listFields = ["messages", "tasks", "questionHistory", "loveNotes", "studyLogs", "gameRecords", "photos"];
+  let score = listFields.reduce((sum, field) => sum + (Array.isArray(value[field]) ? value[field].length : 0), 0);
+  score += (value.meetings || []).filter((item) => item?.date || item?.place || (item?.title && item.title !== "下一次见面")).length;
+  score += Object.values(value.dailyQuestion?.answers || {}).filter((answer) => String(answer || "").trim()).length;
+  score += Object.keys(value.achievements?.completed || {}).length + (value.achievements?.custom || []).length;
+  const garden = value.garden || {};
+  score += (garden.seeds || []).length + (garden.wishes || []).length + (garden.hybrid?.blooms || []).length;
+  score += (garden.pointEvents || []).length + (garden.snapshots || []).length + Object.keys(garden.waterings || {}).length;
+  score += (garden.flowerLetters || []).length + (garden.anniversaries || []).length;
+  if (Number(garden.points || 0) > 0) score += 2;
+  if (garden.companionPlant?.name) score += 1;
+  return score;
+}
+
+function sharedOnly(value) {
+  const { private: privateSpaces, writer, privatePerson, ...shared } = value || {};
+  return structuredClone(shared);
+}
+
+function readSharedBackup() {
+  try { return JSON.parse(localStorage.getItem(recoveryBackupKey))?.data || null; }
+  catch { return null; }
+}
+
+function backupSharedState(value, reason) {
+  const data = sharedOnly(value);
+  const score = sharedStateScore(data);
+  if (score < 7) return;
+  const existing = readSharedBackup();
+  if (existing && sharedStateScore(existing) > score) return;
+  try {
+    localStorage.setItem(recoveryBackupKey, JSON.stringify({ savedAt: new Date().toISOString(), reason, score, data }));
+  } catch { /* The active state remains available even when browser backup storage is full. */ }
+}
+
+function bestRecoverySharedState(localState) {
+  const localShared = sharedOnly(localState);
+  const backup = readSharedBackup();
+  return backup && sharedStateScore(backup) > sharedStateScore(localShared) ? backup : localShared;
+}
+
+function shouldRecoverSharedState(localState, remoteShared) {
+  const candidateScore = sharedStateScore(bestRecoverySharedState(localState));
+  const remoteScore = sharedStateScore(remoteShared);
+  return remoteScore <= 6 && candidateScore >= 7 && candidateScore >= remoteScore + 4;
+}
+
+function mergeRecoverySharedState(localState, remoteShared) {
+  const localShared = bestRecoverySharedState(localState);
+  const mergeRecords = (remoteItems, localItems) => {
+    const records = new Map();
+    [...(remoteItems || []), ...(localItems || [])].forEach((item) => {
+      if (!item?.id) return;
+      records.set(item.id, item);
+    });
+    return [...records.values()];
+  };
+  const merged = { ...remoteShared, ...localShared };
+  ["messages", "tasks", "loveNotes", "studyLogs", "gameRecords", "meetings", "photos"].forEach((field) => {
+    merged[field] = mergeRecords(remoteShared?.[field], localShared?.[field]);
+  });
+  merged.questionHistory = [...new Set([...(localShared.questionHistory || []), ...(remoteShared?.questionHistory || [])])].slice(0, 30);
+  merged.achievements = {
+    ...(remoteShared?.achievements || {}), ...(localShared.achievements || {}),
+    completed: { ...(remoteShared?.achievements?.completed || {}), ...(localShared.achievements?.completed || {}) },
+    edits: { ...(remoteShared?.achievements?.edits || {}), ...(localShared.achievements?.edits || {}) },
+    custom: mergeRecords(remoteShared?.achievements?.custom, localShared.achievements?.custom)
+  };
+  merged.garden = mergeGardenConcurrent(localShared.garden, remoteShared?.garden);
+  return merged;
+}
+
 function loadState() {
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey));
-    if (saved) return mergeDefaults(saved);
+    if (saved) {
+      const backup = readSharedBackup();
+      if (backup && sharedStateScore(saved) <= 6 && sharedStateScore(backup) >= sharedStateScore(saved) + 4) {
+        return mergeDefaults({ ...saved, ...backup, private: saved.private, writer: saved.writer, privatePerson: saved.privatePerson });
+      }
+      return mergeDefaults(saved);
+    }
   } catch { /* Start fresh when stored data is invalid. */ }
   return structuredClone(defaults);
 }
