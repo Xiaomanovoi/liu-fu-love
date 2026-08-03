@@ -1,7 +1,12 @@
 (function () {
   const config = window.LOVE_SYNC_CONFIG || {};
   const hasConfig = Boolean(config.url && config.publishableKey);
-  const sync = { client: null, user: null, coupleId: null, role: null, channel: null, timer: null, voiceRefreshTimer: null };
+  const featureCacheKey = "love-sync-feature-cache-v1";
+  const sync = {
+    client: null, user: null, coupleId: null, role: null, channel: null,
+    timer: null, voiceRefreshTimer: null, refreshPromise: null, forceRefreshQueued: false,
+    pendingState: null, saveInFlight: false, lastForegroundRefresh: 0
+  };
 
   function emit(name, detail) {
     window.dispatchEvent(new CustomEvent(name, { detail }));
@@ -9,6 +14,38 @@
 
   function q(selector) {
     return document.querySelector(selector);
+  }
+
+  function readFeatureCache() {
+    try { return JSON.parse(localStorage.getItem(featureCacheKey)) || {}; }
+    catch { return {}; }
+  }
+
+  function writeFeatureCache(userId, patch) {
+    if (!userId) return;
+    const cache = readFeatureCache();
+    cache[userId] = { ...(cache[userId] || {}), ...patch };
+    localStorage.setItem(featureCacheKey, JSON.stringify(cache));
+  }
+
+  function emitCachedFeatures(userId) {
+    const cached = readFeatureCache()[userId];
+    if (!cached) return;
+    if (cached.missStats) emit("love-miss-stats", cached.missStats);
+    if (Array.isArray(cached.voiceMessages)) {
+      const signedUrlsFresh = Date.now() - Number(cached.voicesCachedAt || 0) < 50 * 60 * 1000;
+      const messages = signedUrlsFresh
+        ? cached.voiceMessages
+        : cached.voiceMessages.map((message) => ({ ...message, signedUrl: "" }));
+      emit("love-voice-messages", messages);
+    }
+  }
+
+  function clearFeatureCache(userId) {
+    if (!userId) return;
+    const cache = readFeatureCache();
+    delete cache[userId];
+    localStorage.setItem(featureCacheKey, JSON.stringify(cache));
   }
 
   function updateUi(mode, message) {
@@ -78,7 +115,10 @@
     q("#joinPairForm").addEventListener("submit", joinPair);
     q("#copyInviteCode").addEventListener("click", copyInviteCode);
     q("#syncSignOut").addEventListener("click", async () => {
+      const userId = sync.user?.id;
+      await flushSave();
       await sync.client.auth.signOut();
+      clearFeatureCache(userId);
       resetConnection();
       updateUi("signed-out", "请登录");
       emit("love-sync-status", { connected: false, authenticated: false, needsPairing: false, role: null });
@@ -149,7 +189,7 @@
       return;
     }
     q("#inviteResult").textContent = `邀请码：${data.invite_code}，请发给对方。`;
-    await refreshSession();
+    await refreshSession(true);
   }
 
   async function joinPair(event) {
@@ -161,12 +201,15 @@
       q("#inviteResult").textContent = pairingError("加入", error);
       return;
     }
-    await refreshSession();
+    await refreshSession(true);
   }
 
   function resetConnection() {
     if (sync.channel) sync.client.removeChannel(sync.channel);
+    clearTimeout(sync.timer);
     clearInterval(sync.voiceRefreshTimer);
+    sync.timer = null;
+    sync.pendingState = null;
     sync.user = null;
     sync.coupleId = null;
     sync.role = null;
@@ -175,7 +218,22 @@
     q("#connectedInvite").hidden = true;
   }
 
-  async function refreshSession() {
+  function refreshSession(force = false) {
+    if (sync.refreshPromise) {
+      sync.forceRefreshQueued ||= force;
+      return sync.refreshPromise;
+    }
+    sync.refreshPromise = performSessionRefresh(force).finally(() => {
+      sync.refreshPromise = null;
+      if (sync.forceRefreshQueued) {
+        sync.forceRefreshQueued = false;
+        window.setTimeout(() => refreshSession(true), 0);
+      }
+    });
+    return sync.refreshPromise;
+  }
+
+  async function performSessionRefresh(force) {
     const { data: { session } } = await sync.client.auth.getSession();
     if (!session) {
       resetConnection();
@@ -183,7 +241,9 @@
       emit("love-sync-status", { connected: false, authenticated: false, needsPairing: false, role: null });
       return;
     }
+    if (!force && sync.user?.id === session.user.id && sync.coupleId) return;
     sync.user = session.user;
+    emitCachedFeatures(sync.user.id);
     const { data: member, error } = await sync.client
       .from("love_members")
       .select("couple_id, role")
@@ -201,30 +261,36 @@
     }
     sync.coupleId = member.couple_id;
     sync.role = member.role;
-    updateUi("connected", "已实时同步");
+    updateUi("connected", "正在刷新");
     q("#syncConnectedText").textContent = `已作为${sync.role === "liu" ? "刘向强" : "付嘉颖"}连接到两人空间。`;
-    const { data: couple } = await sync.client
-      .from("love_couples")
-      .select("invite_code")
-      .eq("id", sync.coupleId)
-      .maybeSingle();
-    if (couple?.invite_code) {
-      q("#syncInviteCode").textContent = couple.invite_code;
-      q("#connectedInvite").hidden = false;
-    }
-    emit("love-sync-status", { connected: true, authenticated: true, needsPairing: false, role: sync.role });
-    await loadRemoteState();
+    q("#connectedInvite").hidden = true;
     subscribe();
-    await Promise.all([refreshMissStats(), refreshVoiceMessages()]);
+    emit("love-sync-status", { connected: true, authenticated: true, needsPairing: false, role: sync.role });
+    const results = await Promise.allSettled([loadInviteCode(), loadRemoteState(), refreshMissStats(), refreshVoiceMessages()]);
+    const coreFailed = results.slice(0, 2).some((result) => result.status === "rejected");
+    updateUi("connected", coreFailed ? "部分数据重试中" : "已实时同步");
     clearInterval(sync.voiceRefreshTimer);
     sync.voiceRefreshTimer = setInterval(refreshVoiceMessages, 45 * 60 * 1000);
   }
 
+  async function loadInviteCode() {
+    const { data: couple, error } = await sync.client
+      .from("love_couples")
+      .select("invite_code")
+      .eq("id", sync.coupleId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!couple?.invite_code) return;
+    q("#syncInviteCode").textContent = couple.invite_code;
+    q("#connectedInvite").hidden = false;
+  }
+
   async function loadRemoteState() {
-    const [{ data: shared }, { data: privateRow }] = await Promise.all([
+    const [{ data: shared, error: sharedError }, { data: privateRow, error: privateError }] = await Promise.all([
       sync.client.from("love_shared_state").select("data").eq("couple_id", sync.coupleId).maybeSingle(),
       sync.client.from("love_private_state").select("data").eq("couple_id", sync.coupleId).eq("user_id", sync.user.id).maybeSingle()
     ]);
+    if (sharedError || privateError) throw sharedError || privateError;
     const sharedData = shared?.data || {};
     emit("love-sync-remote", {
       shared: sharedData,
@@ -269,6 +335,7 @@
       featureError("miss", error);
       return null;
     }
+    writeFeatureCache(sync.user?.id, { missStats: data || {} });
     emit("love-miss-stats", data || {});
     return data;
   }
@@ -277,6 +344,7 @@
     if (!sync.client || !sync.coupleId) throw new Error("not connected");
     const { data, error } = await sync.client.rpc("send_love_miss");
     if (error) throw error;
+    writeFeatureCache(sync.user?.id, { missStats: data || {} });
     emit("love-miss-stats", data || {});
     return data;
   }
@@ -293,10 +361,19 @@
       featureError("voice", error);
       return [];
     }
-    const messages = await Promise.all((data || []).map(async (message) => {
-      const { data: signed } = await sync.client.storage.from("love-voices").createSignedUrl(message.storage_path, 3600);
-      return { ...message, signedUrl: signed?.signedUrl || "" };
-    }));
+    const rows = data || [];
+    let messages = [];
+    if (rows.length) {
+      const paths = rows.map((message) => message.storage_path);
+      const { data: signedRows, error: signedError } = await sync.client.storage.from("love-voices").createSignedUrls(paths, 3600);
+      if (signedError) featureError("voice", signedError);
+      const signedByPath = new Map((signedRows || []).map((item, index) => [item.path || paths[index], item.signedUrl || ""]));
+      messages = rows.map((message, index) => ({
+        ...message,
+        signedUrl: signedByPath.get(message.storage_path) || signedRows?.[index]?.signedUrl || ""
+      }));
+    }
+    writeFeatureCache(sync.user?.id, { voiceMessages: messages, voicesCachedAt: Date.now() });
     emit("love-voice-messages", messages);
     return messages;
   }
@@ -355,20 +432,71 @@
 
   function scheduleSave(state) {
     if (!sync.client || !sync.coupleId || !sync.user) return;
+    sync.pendingState = state;
     clearTimeout(sync.timer);
-    sync.timer = setTimeout(async () => {
-      const { shared, privateData } = splitState(state);
+    sync.timer = setTimeout(flushSave, 80);
+  }
+
+  async function flushSave() {
+    clearTimeout(sync.timer);
+    sync.timer = null;
+    if (!sync.client || !sync.coupleId || !sync.user || !sync.pendingState || sync.saveInFlight) return;
+    const snapshot = structuredClone(sync.pendingState);
+    sync.pendingState = null;
+    sync.saveInFlight = true;
+    updateUi("connected", "正在保存");
+    try {
+      const { shared, privateData } = splitState(snapshot);
       const [sharedResult, privateResult] = await Promise.all([
         sync.client.from("love_shared_state").upsert({ couple_id: sync.coupleId, data: shared, updated_by: sync.user.id }),
         sync.client.from("love_private_state").upsert({ couple_id: sync.coupleId, user_id: sync.user.id, data: privateData })
       ]);
-      if (sharedResult.error || privateResult.error) updateUi("connected", "同步重试中");
-    }, 500);
+      if (sharedResult.error || privateResult.error) {
+        sync.pendingState ||= snapshot;
+        updateUi("connected", "同步重试中");
+        sync.timer = setTimeout(flushSave, 1500);
+      } else {
+        updateUi("connected", "已实时同步");
+      }
+    } catch {
+      sync.pendingState ||= snapshot;
+      updateUi("connected", "同步重试中");
+      sync.timer = setTimeout(flushSave, 1500);
+    } finally {
+      sync.saveInFlight = false;
+      if (sync.pendingState && !sync.timer) sync.timer = setTimeout(flushSave, 0);
+    }
+  }
+
+  async function refreshVisibleData() {
+    if (!sync.client || !sync.coupleId || !sync.user) return;
+    if (sync.pendingState || sync.saveInFlight) {
+      window.setTimeout(refreshVisibleData, 500);
+      return;
+    }
+    if (Date.now() - sync.lastForegroundRefresh < 3000) return;
+    sync.lastForegroundRefresh = Date.now();
+    updateUi("connected", "正在刷新");
+    const results = await Promise.allSettled([loadRemoteState(), refreshMissStats(), refreshVoiceMessages()]);
+    updateUi("connected", results[0].status === "rejected" ? "部分数据重试中" : "已实时同步");
+  }
+
+  function bindLifecycleFlush() {
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") flushSave();
+      else refreshVisibleData();
+    });
+    window.addEventListener("pagehide", flushSave);
+    window.addEventListener("online", () => {
+      flushSave();
+      refreshVisibleData();
+    });
   }
 
   window.LoveSync = {
     async initialize() {
       bindUi();
+      bindLifecycleFlush();
       if (!hasConfig || !window.supabase) {
         updateUi("local", "本机模式");
         return;
@@ -380,11 +508,13 @@
       await refreshSession();
     },
     scheduleSave,
+    flushSave,
     sendMiss,
     refreshMissStats,
     uploadVoice,
     deleteVoice,
     refreshVoiceMessages,
+    refreshVisibleData,
     isConnected: () => Boolean(sync.coupleId),
     getRole: () => sync.role
   };

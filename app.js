@@ -702,7 +702,10 @@ function renderVoiceMessages() {
     node.className = `voice-message ${message.role === "fu" ? "fu" : "liu"}`;
     const own = message.role === currentPerson();
     const date = new Date(message.created_at);
-    node.innerHTML = `<header><span>${people[message.role]?.name || "我们"}</span><time>${formatDateTime(date)}</time>${own ? `<button class="delete-button" data-delete-voice="${message.id}" data-storage-path="${escapeHTML(message.storage_path)}" type="button" aria-label="删除语音">×</button>` : ""}</header><div class="voice-message-body"><span class="voice-duration">${formatDuration(Number(message.duration_seconds) || 0)}</span><audio controls preload="none" src="${escapeHTML(message.signedUrl || "")}"></audio></div>`;
+    const player = message.signedUrl
+      ? `<audio controls preload="none" src="${escapeHTML(message.signedUrl)}"></audio>`
+      : `<span class="voice-refreshing">正在更新播放链接...</span>`;
+    node.innerHTML = `<header><span>${people[message.role]?.name || "我们"}</span><time>${formatDateTime(date)}</time>${own ? `<button class="delete-button" data-delete-voice="${message.id}" data-storage-path="${escapeHTML(message.storage_path)}" type="button" aria-label="删除语音">×</button>` : ""}</header><div class="voice-message-body"><span class="voice-duration">${formatDuration(Number(message.duration_seconds) || 0)}</span>${player}</div>`;
     return node;
   }));
   els.voiceList.querySelectorAll("[data-delete-voice]").forEach((button) => button.addEventListener("click", async () => {
