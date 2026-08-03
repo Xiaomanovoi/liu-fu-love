@@ -99,6 +99,17 @@
           <span class="countdown-number" id="nextMeetingDays">--</span>
         </article>
 
+        <button class="garden-preview" id="openGardenHome" type="button" aria-label="进入我们的秘密花园">
+          <span class="garden-preview-shade" aria-hidden="true"></span>
+          <span class="garden-mini-plant" aria-hidden="true"><i></i><i></i><b></b></span>
+          <span class="garden-preview-copy">
+            <small>Our secret garden</small>
+            <strong>我们的秘密花园</strong>
+            <span id="gardenPreviewStatus">心意种子正在等待发芽</span>
+          </span>
+          <span class="garden-preview-enter" aria-hidden="true"><i data-lucide="door-open"></i></span>
+        </button>
+
         <article class="panel message-panel">
           <div class="section-heading">
             <div>
@@ -184,6 +195,16 @@
           </div>
           <span class="mini-stat" id="taskStats">0/0</span>
         </div>
+
+        <button class="garden-shortcut" id="openGardenTogether" type="button">
+          <span class="garden-shortcut-mark" aria-hidden="true"><i data-lucide="sprout"></i></span>
+          <span>
+            <small>我们的秘密花园</small>
+            <strong id="gardenShortcutStage">心意种子 · 0%</strong>
+          </span>
+          <span class="garden-shortcut-water" id="gardenShortcutWater">今天等待浇水</span>
+          <i data-lucide="chevron-right" aria-hidden="true"></i>
+        </button>
 
         <article class="panel form-panel">
           <form id="taskForm" class="stack-form compact-form">
@@ -333,6 +354,136 @@
             <button class="soft-button" type="submit">添加</button>
           </form>
         </article>
+      </section>
+
+      <section class="screen garden-screen" id="garden" aria-label="我们的秘密花园">
+        <header class="garden-topbar">
+          <button class="garden-back" id="closeGarden" type="button" aria-label="返回上一页" title="返回">
+            <i data-lucide="arrow-left" aria-hidden="true"></i>
+          </button>
+          <div>
+            <p class="section-kicker">Liu &amp; Fu · growing together</p>
+            <h2>我们的秘密花园</h2>
+          </div>
+          <span class="garden-weather-chip" id="gardenWeatherChip">晨光</span>
+        </header>
+
+        <section class="garden-stage" id="gardenStage" aria-label="秘密花园场景">
+          <div class="garden-light" aria-hidden="true"></div>
+          <div class="garden-fireflies" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+          <div class="garden-scene-decoration" id="gardenSceneDecoration" aria-hidden="true"></div>
+          <button class="garden-butterfly" id="gardenButterfly" type="button" aria-label="打开今日回忆" title="今日回忆">
+            <span aria-hidden="true">♡</span>
+            <small>今日回忆</small>
+          </button>
+          <div class="garden-gate-sign" id="gardenGateSign"><i data-lucide="lock-keyhole" aria-hidden="true"></i><span>花房尚未解锁</span></div>
+          <div class="garden-plant" id="gardenPlant" aria-hidden="true">
+            <span class="garden-stem stem-left"><i class="leaf leaf-a"></i><i class="leaf leaf-b"></i><b class="garden-flower flower-left"></b></span>
+            <span class="garden-stem stem-right"><i class="leaf leaf-a"></i><i class="leaf leaf-b"></i><b class="garden-flower flower-right"></b></span>
+            <span class="garden-heart-vine"></span>
+            <span class="garden-pot"><b>LIU ♥ FU</b></span>
+          </div>
+          <div class="garden-memory-reveal" id="gardenMemoryReveal" hidden>
+            <button id="closeGardenMemory" type="button" aria-label="关闭今日回忆">×</button>
+            <small>蝴蝶带回一段往日</small>
+            <strong id="gardenMemoryTitle"></strong>
+            <p id="gardenMemoryText"></p>
+          </div>
+        </section>
+
+        <section class="garden-status-band">
+          <div class="garden-growth-copy">
+            <span id="gardenStageName">心意种子</span>
+            <strong id="gardenPoints">0 心意值</strong>
+          </div>
+          <div class="garden-progress" aria-label="花园成长进度"><i id="gardenProgressBar"></i></div>
+          <div class="garden-watering-status" id="gardenWateringStatus"></div>
+          <button class="garden-water-button" id="waterGarden" type="button">
+            <i data-lucide="droplets" aria-hidden="true"></i>
+            <span>浇一点心意</span>
+          </button>
+          <p class="garden-notice" id="gardenNotice" aria-live="polite"></p>
+        </section>
+
+        <nav class="garden-tools" aria-label="秘密花园功能">
+          <button class="is-active" data-garden-panel="seeds" type="button"><i data-lucide="sprout" aria-hidden="true"></i><span>心意种子</span></button>
+          <button data-garden-panel="wishes" type="button"><i data-lucide="flower-2" aria-hidden="true"></i><span>愿望花苞</span></button>
+          <button data-garden-panel="flowers" type="button"><i data-lucide="book-heart" aria-hidden="true"></i><span>花朵图鉴</span></button>
+          <button data-garden-panel="growth" type="button"><i data-lucide="history" aria-hidden="true"></i><span>成长记录</span></button>
+        </nav>
+
+        <div class="garden-workbench">
+          <section class="garden-panel is-active" id="gardenPanelSeeds" data-garden-content="seeds">
+            <div class="garden-panel-heading">
+              <div><p class="section-kicker">A message under the soil</p><h3>埋下一颗心意种子</h3></div>
+              <span id="gardenSeedCount">0 颗</span>
+            </div>
+            <form class="garden-form" id="gardenSeedForm">
+              <label>想藏进去的话<textarea id="gardenSeedText" rows="3" maxlength="240" placeholder="等它开花时，再一起看见..."></textarea></label>
+              <div class="form-grid">
+                <label>开花日期<input id="gardenSeedUnlockDate" type="date"></label>
+                <label>关联一张照片<select id="gardenSeedPhoto"><option value="">不关联照片</option></select></label>
+              </div>
+              <label>关联一段声音<select id="gardenSeedVoice"><option value="">不关联声音</option></select></label>
+              <button class="primary-button" type="submit">把种子埋进花园</button>
+            </form>
+            <div class="garden-list" id="gardenSeedList"></div>
+          </section>
+
+          <section class="garden-panel" id="gardenPanelWishes" data-garden-content="wishes" hidden>
+            <div class="garden-panel-heading">
+              <div><p class="section-kicker">Something for our future</p><h3>愿望花苞</h3></div>
+              <span id="gardenWishCount">0 个</span>
+            </div>
+            <form class="garden-form garden-wish-form" id="gardenWishForm">
+              <label>想一起完成的事<input id="gardenWishText" maxlength="100" autocomplete="off" placeholder="例如：一起去海边看日出"></label>
+              <label>期待日期<input id="gardenWishDate" type="date"></label>
+              <button class="primary-button" type="submit">种下愿望花苞</button>
+            </form>
+            <div class="garden-list" id="gardenWishList"></div>
+          </section>
+
+          <section class="garden-panel" id="gardenPanelFlowers" data-garden-content="flowers" hidden>
+            <div class="garden-panel-heading">
+              <div><p class="section-kicker">Two choices, one bloom</p><h3>培育双色花</h3></div>
+              <span id="gardenBloomCount">0 朵</span>
+            </div>
+            <form class="garden-form hybrid-form" id="gardenHybridForm">
+              <div class="form-grid">
+                <label>我的花色
+                  <select id="gardenHybridColor">
+                    <option value="coral">珊瑚粉</option><option value="lavender">淡紫色</option><option value="mint">薄荷绿</option><option value="gold">晨光金</option>
+                  </select>
+                </label>
+                <label>我的花瓣
+                  <select id="gardenHybridShape">
+                    <option value="round">圆润花瓣</option><option value="star">星形花瓣</option><option value="heart">心形花瓣</option><option value="soft">轻盈花瓣</option>
+                  </select>
+                </label>
+              </div>
+              <button class="soft-button" type="submit">保存我的选择</button>
+              <p class="hybrid-status" id="gardenHybridStatus"></p>
+            </form>
+            <div class="garden-bloom-gallery" id="gardenBloomGallery"></div>
+            <div class="garden-panel-heading memory-flower-heading">
+              <div><p class="section-kicker">Memories in bloom</p><h3>记忆花朵</h3></div>
+            </div>
+            <div class="garden-memory-grid" id="gardenMemoryFlowers"></div>
+          </section>
+
+          <section class="garden-panel" id="gardenPanelGrowth" data-garden-content="growth" hidden>
+            <div class="garden-panel-heading">
+              <div><p class="section-kicker">How our garden grew</p><h3>成长记录</h3></div>
+              <span id="gardenSnapshotCount">0 次</span>
+            </div>
+            <div class="garden-panel-heading garden-decoration-heading">
+              <div><p class="section-kicker">A little corner of our own</p><h3>选择花园装饰</h3></div>
+            </div>
+            <div class="garden-decoration-list" id="gardenDecorationList"></div>
+            <div class="garden-area-progress" id="gardenAreaProgress"></div>
+            <div class="garden-timeline" id="gardenTimeline"></div>
+          </section>
+        </div>
       </section>
 
       <section class="screen" id="album" aria-label="公共相册">

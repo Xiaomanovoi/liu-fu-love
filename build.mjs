@@ -20,6 +20,7 @@ const files = {
   "/sync.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("sync.js"))} },
   "/questions-extra.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("questions-extra.js"))} },
   "/supabase-config.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("supabase-config.js"))} },
+  "/assets/garden-glasshouse.svg": { type: "image/svg+xml; charset=utf-8", body: ${JSON.stringify(readText("assets/garden-glasshouse.svg"))} },
   "/assets/hero-bg.jpg": { type: "image/jpeg", base64: "${readBase64("assets/hero-bg.jpg")}" }
 };
 
