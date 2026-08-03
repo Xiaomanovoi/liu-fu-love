@@ -378,9 +378,10 @@
           </button>
           <div class="garden-gate-sign" id="gardenGateSign"><i data-lucide="lock-keyhole" aria-hidden="true"></i><span>花房尚未解锁</span></div>
           <div class="garden-plant" id="gardenPlant" aria-hidden="true">
-            <span class="garden-stem stem-left"><i class="leaf leaf-a"></i><i class="leaf leaf-b"></i><b class="garden-flower flower-left"></b></span>
-            <span class="garden-stem stem-right"><i class="leaf leaf-a"></i><i class="leaf leaf-b"></i><b class="garden-flower flower-right"></b></span>
+            <span class="garden-stem stem-left"><i class="leaf leaf-a"></i><i class="leaf leaf-b"></i><i class="leaf leaf-c"></i><b class="garden-flower flower-left"><i></i><i></i><i></i><i></i><i></i><i></i><em></em></b></span>
+            <span class="garden-stem stem-right"><i class="leaf leaf-a"></i><i class="leaf leaf-b"></i><i class="leaf leaf-c"></i><b class="garden-flower flower-right"><i></i><i></i><i></i><i></i><i></i><i></i><em></em></b></span>
             <span class="garden-heart-vine"></span>
+            <span class="garden-ground-blooms"><i></i><i></i><i></i><i></i><i></i></span>
             <span class="garden-pot"><b>LIU ♥ FU</b></span>
           </div>
           <div class="garden-memory-reveal" id="gardenMemoryReveal" hidden>
@@ -397,6 +398,7 @@
             <strong id="gardenPoints">0 心意值</strong>
           </div>
           <div class="garden-progress" aria-label="花园成长进度"><i id="gardenProgressBar"></i></div>
+          <p class="garden-next-stage" id="gardenNextStage">距离下一次成长还差 200 心意值</p>
           <div class="garden-watering-status" id="gardenWateringStatus"></div>
           <button class="garden-water-button" id="waterGarden" type="button">
             <i data-lucide="droplets" aria-hidden="true"></i>
@@ -476,11 +478,41 @@
               <div><p class="section-kicker">How our garden grew</p><h3>成长记录</h3></div>
               <span id="gardenSnapshotCount">0 次</span>
             </div>
+            <section class="garden-growth-overview">
+              <div class="garden-stage-summary">
+                <span>当前成长</span>
+                <strong id="gardenStageProgressText">0 / 200</strong>
+                <small id="gardenStageRemaining">距离刚刚发芽还差 200</small>
+              </div>
+              <div class="garden-roadmap" id="gardenRoadmap" aria-label="花园成长地图"></div>
+            </section>
+            <div class="garden-panel-heading garden-points-heading">
+              <div><p class="section-kicker">Where every heart point came from</p><h3>心意值账本</h3></div>
+            </div>
+            <details class="garden-point-rules">
+              <summary>查看心意值规则与每日上限</summary>
+              <div>
+                <span>共同浇水 <b>最多 +6/日</b></span><span>每日问答 <b>最多 +8/题</b></span>
+                <span>共同留言 <b>+1，最多 4 条/日</b></span><span>声音信箱 <b>+5，每人最多 2 条/日</b></span>
+                <span>公共照片 <b>+8，最多 3 张/日</b></span><span>双人任务 <b>+10，最多 3 项/日</b></span>
+                <span>游戏记录 <b>+12，最多 2 条/日</b></span><span>心意种子开放 <b>+15，最多 2 颗/日</b></span>
+                <span>双生花 <b>+20，最多 1 朵/日</b></span><span>情侣成就 <b>+20，最多 3 项/日</b></span>
+                <span>见面记录 <b>+30</b></span><span>共同愿望 <b>+35，最多 1 项/日</b></span>
+              </div>
+            </details>
+            <div class="garden-point-breakdown" id="gardenPointBreakdown"></div>
+            <div class="garden-point-ledger" id="gardenPointLedger"></div>
             <div class="garden-panel-heading garden-decoration-heading">
-              <div><p class="section-kicker">A little corner of our own</p><h3>选择花园装饰</h3></div>
+              <div><p class="section-kicker">A little corner of our own</p><h3>布置我们的花园</h3></div>
             </div>
             <div class="garden-decoration-list" id="gardenDecorationList"></div>
+            <div class="garden-panel-heading garden-area-heading">
+              <div><p class="section-kicker">Places waiting for us</p><h3>区域解锁</h3></div>
+            </div>
             <div class="garden-area-progress" id="gardenAreaProgress"></div>
+            <div class="garden-panel-heading garden-timeline-heading">
+              <div><p class="section-kicker">Milestones we have reached</p><h3>成长时间线</h3></div>
+            </div>
             <div class="garden-timeline" id="gardenTimeline"></div>
           </section>
         </div>
@@ -728,6 +760,16 @@
           <button class="primary-button" id="saveAchievementEdit" value="default" type="button">保存修改</button>
         </div>
       </form>
+    </dialog>
+    <dialog id="gardenMemoryDialog" class="garden-memory-dialog">
+      <article class="garden-memory-card">
+        <button class="garden-memory-close" id="closeGardenMemoryDialog" type="button" aria-label="关闭回忆详情"><i data-lucide="x" aria-hidden="true"></i></button>
+        <img id="gardenMemoryImage" alt="回忆图片" hidden>
+        <p class="section-kicker" id="gardenMemoryType">Memories in bloom</p>
+        <h2 id="gardenMemoryDialogTitle">一朵记忆花</h2>
+        <small id="gardenMemoryMeta"></small>
+        <p id="gardenMemoryDialogText"></p>
+      </article>
     </dialog>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>

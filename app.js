@@ -202,23 +202,45 @@ const encouragements = [
 ];
 
 const gardenStages = [
-  { name: "心意种子", min: 0, next: 15, scene: "seed", copy: "一颗属于你们的种子，正在安静等待。" },
-  { name: "刚刚发芽", min: 15, next: 40, scene: "sprout", copy: "第一片嫩叶，记住了你们的认真。" },
-  { name: "双生幼苗", min: 40, next: 80, scene: "seedling", copy: "两株花藤，正在向彼此靠近。" },
-  { name: "心意花苞", min: 80, next: 140, scene: "bud", copy: "花苞已经出现，离第一次盛开不远了。" },
-  { name: "初次盛开", min: 140, next: 220, scene: "bloom", copy: "你们共同照顾的花，已经认真盛开。" },
-  { name: "秘密花园", min: 220, next: 320, scene: "garden", copy: "花房已经打开，回忆正在长成风景。" }
+  { name: "心意种子", min: 0, scene: "seed", copy: "一颗属于你们的种子，正在安静等待。", reward: "泥土里会出现第一点嫩绿" },
+  { name: "刚刚发芽", min: 200, scene: "sprout", copy: "第一片嫩叶，记住了你们的认真。", reward: "解锁心意木牌与新叶" },
+  { name: "双生幼苗", min: 500, scene: "seedling", copy: "两株花藤，正在向彼此靠近。", reward: "双枝幼苗与暖光灯串" },
+  { name: "心意花苞", min: 900, scene: "bud", copy: "花苞已经出现，离第一次盛开不远了。", reward: "花苞、长椅与新的叶片" },
+  { name: "初次盛开", min: 1400, scene: "bloom", copy: "你们共同照顾的花，已经认真盛开。", reward: "双花盛开与玻璃风铃" },
+  { name: "秘密花园", min: 2000, scene: "garden", copy: "花房已经打开，回忆正在长成风景。", reward: "心形藤蔓与星光路灯" },
+  { name: "花间小径", min: 2800, scene: "path", copy: "花与路延伸开来，每一步都有共同生活的痕迹。", reward: "秋千、小池塘与花间小径" },
+  { name: "星光庭院", min: 3800, scene: "courtyard", copy: "夜晚也有温柔的光，庭院开始拥有自己的四季。", reward: "星幕、花架与月光拱门" },
+  { name: "四季秘境", min: 5000, scene: "sanctuary", copy: "被认真照顾的爱，终于长成了一座四季都盛开的花园。", reward: "双人亭与完整四季花境" }
 ];
 const gardenColorNames = { coral: "珊瑚粉", lavender: "淡紫色", mint: "薄荷绿", gold: "晨光金" };
 const gardenColorHex = { coral: "#df7e8d", lavender: "#9d92c5", mint: "#79a58e", gold: "#d4a45f" };
 const gardenShapeNames = { round: "圆润", star: "星形", heart: "心形", soft: "轻盈" };
 const gardenDecorations = [
-  { id: "none", name: "自然花园", threshold: 0 },
-  { id: "lights", name: "暖光灯串", threshold: 40 },
-  { id: "ribbon", name: "心意丝带", threshold: 80 },
-  { id: "windchime", name: "玻璃风铃", threshold: 140 },
-  { id: "lantern", name: "星光路灯", threshold: 220 }
+  { id: "plaque", name: "心意木牌", threshold: 200, slot: "foreground", symbol: "LIU ♥ FU" },
+  { id: "stones", name: "月白石径", threshold: 350, slot: "path", symbol: "···" },
+  { id: "lights", name: "暖光灯串", threshold: 500, slot: "overhead", symbol: "✦" },
+  { id: "ribbon", name: "心意飘带", threshold: 700, slot: "atmosphere", symbol: "♡" },
+  { id: "bench", name: "双人长椅", threshold: 900, slot: "left", symbol: "坐" },
+  { id: "mailbox", name: "花园信箱", threshold: 1100, slot: "right", symbol: "信" },
+  { id: "windchime", name: "玻璃风铃", threshold: 1400, slot: "hanging", symbol: "♪" },
+  { id: "arch", name: "蔷薇拱门", threshold: 1700, slot: "structure", symbol: "⌒" },
+  { id: "lanterns", name: "星光路灯", threshold: 2000, slot: "path", symbol: "灯" },
+  { id: "swing", name: "花藤秋千", threshold: 2400, slot: "left", symbol: "↟" },
+  { id: "pond", name: "月影小池", threshold: 2800, slot: "right", symbol: "≈" },
+  { id: "shelf", name: "四季花架", threshold: 3300, slot: "structure", symbol: "花" },
+  { id: "starlight", name: "庭院星幕", threshold: 3800, slot: "atmosphere", symbol: "✧" },
+  { id: "moongate", name: "月光花门", threshold: 4400, slot: "structure", symbol: "月" },
+  { id: "pavilion", name: "双人花亭", threshold: 5000, slot: "structure", symbol: "亭" }
 ];
+const gardenPointCategories = {
+  baseline: { name: "历史成长", icon: "heart" }, watering: { name: "共同浇水", icon: "droplets" },
+  question: { name: "每日问答", icon: "messages-square" }, message: { name: "共同留言", icon: "message-circle-heart" },
+  voice: { name: "声音信箱", icon: "mic-2" }, photo: { name: "公共相册", icon: "image" },
+  task: { name: "双人任务", icon: "list-checks" }, game: { name: "游戏记录", icon: "gamepad-2" },
+  seed: { name: "心意种子", icon: "sprout" }, bloom: { name: "双生花", icon: "flower-2" },
+  achievement: { name: "情侣成就", icon: "badge-check" }, meeting: { name: "见面记录", icon: "map-pin-heart" },
+  wish: { name: "共同愿望", icon: "sparkles" }
+};
 
 const defaults = {
   startDate: "2025-02-14",
@@ -249,8 +271,12 @@ const defaults = {
   ],
   photos: [],
   garden: {
-    version: 1,
+    version: 2,
     points: 0,
+    baselinePoints: 0,
+    migrationComplete: false,
+    creditedKeys: [],
+    pointEvents: [],
     lastStage: 0,
     waterings: {},
     seeds: [],
@@ -259,6 +285,7 @@ const defaults = {
     snapshots: [],
     unlockedAreas: [],
     deletedIds: [],
+    decorationStates: {},
     featuredDecoration: "none",
     decorationUpdatedAt: ""
   },
@@ -290,6 +317,9 @@ let gardenReturnTab = "home";
 let gardenReturnScroll = 0;
 let activeGardenPanel = "seeds";
 let gardenNeedsResync = false;
+let gardenSeedPhotoOptionsKey = "";
+let gardenSeedVoiceOptionsKey = "";
+let gardenSeedOptionsPending = false;
 
 const els = {
   daysTogether: q("#daysTogether"), editStartDate: q("#editStartDate"), settingsDialog: q("#settingsDialog"), startDateInput: q("#startDateInput"), saveStartDate: q("#saveStartDate"),
@@ -298,10 +328,11 @@ const els = {
   sendMiss: q("#sendMiss"), missHint: q("#missHint"), missSentLabel: q("#missSentLabel"), missSentTotal: q("#missSentTotal"), missSentToday: q("#missSentToday"), missReceivedLabel: q("#missReceivedLabel"), missReceivedTotal: q("#missReceivedTotal"), missReceivedToday: q("#missReceivedToday"),
   writerName: q("#writerName"), switchWriter: q("#switchWriter"), messageForm: q("#messageForm"), messageText: q("#messageText"), messageList: q("#messageList"), questionText: q("#questionText"), questionCategory: q("#questionCategory"), questionCategorySelect: q("#questionCategorySelect"), newQuestion: q("#newQuestion"), questionAnswerForm: q("#questionAnswerForm"), questionAnswer: q("#questionAnswer"), questionWriterName: q("#questionWriterName"), questionAnswers: q("#questionAnswers"),
   recordVoice: q("#recordVoice"), voiceRecordStatus: q("#voiceRecordStatus"), voiceRecordTimer: q("#voiceRecordTimer"), voiceDraft: q("#voiceDraft"), voicePreview: q("#voicePreview"), discardVoice: q("#discardVoice"), sendVoice: q("#sendVoice"), voiceNotice: q("#voiceNotice"), voiceList: q("#voiceList"), voiceCount: q("#voiceCount"),
-  openGardenHome: q("#openGardenHome"), openGardenTogether: q("#openGardenTogether"), closeGarden: q("#closeGarden"), gardenPreviewStatus: q("#gardenPreviewStatus"), gardenShortcutStage: q("#gardenShortcutStage"), gardenShortcutWater: q("#gardenShortcutWater"), gardenWeatherChip: q("#gardenWeatherChip"), gardenStage: q("#gardenStage"), gardenPlant: q("#gardenPlant"), gardenGateSign: q("#gardenGateSign"), gardenStageName: q("#gardenStageName"), gardenPoints: q("#gardenPoints"), gardenProgressBar: q("#gardenProgressBar"), gardenWateringStatus: q("#gardenWateringStatus"), waterGarden: q("#waterGarden"), gardenNotice: q("#gardenNotice"), gardenTools: q(".garden-tools"), gardenPanels: qa("[data-garden-content]"), gardenButterfly: q("#gardenButterfly"), gardenMemoryReveal: q("#gardenMemoryReveal"), closeGardenMemory: q("#closeGardenMemory"), gardenMemoryTitle: q("#gardenMemoryTitle"), gardenMemoryText: q("#gardenMemoryText"),
+  openGardenHome: q("#openGardenHome"), openGardenTogether: q("#openGardenTogether"), closeGarden: q("#closeGarden"), gardenPreviewStatus: q("#gardenPreviewStatus"), gardenShortcutStage: q("#gardenShortcutStage"), gardenShortcutWater: q("#gardenShortcutWater"), gardenWeatherChip: q("#gardenWeatherChip"), gardenStage: q("#gardenStage"), gardenPlant: q("#gardenPlant"), gardenGateSign: q("#gardenGateSign"), gardenStageName: q("#gardenStageName"), gardenPoints: q("#gardenPoints"), gardenProgressBar: q("#gardenProgressBar"), gardenNextStage: q("#gardenNextStage"), gardenWateringStatus: q("#gardenWateringStatus"), waterGarden: q("#waterGarden"), gardenNotice: q("#gardenNotice"), gardenTools: q(".garden-tools"), gardenPanels: qa("[data-garden-content]"), gardenButterfly: q("#gardenButterfly"), gardenMemoryReveal: q("#gardenMemoryReveal"), closeGardenMemory: q("#closeGardenMemory"), gardenMemoryTitle: q("#gardenMemoryTitle"), gardenMemoryText: q("#gardenMemoryText"),
   gardenSeedForm: q("#gardenSeedForm"), gardenSeedText: q("#gardenSeedText"), gardenSeedUnlockDate: q("#gardenSeedUnlockDate"), gardenSeedPhoto: q("#gardenSeedPhoto"), gardenSeedVoice: q("#gardenSeedVoice"), gardenSeedCount: q("#gardenSeedCount"), gardenSeedList: q("#gardenSeedList"), gardenWishForm: q("#gardenWishForm"), gardenWishText: q("#gardenWishText"), gardenWishDate: q("#gardenWishDate"), gardenWishCount: q("#gardenWishCount"), gardenWishList: q("#gardenWishList"),
-  gardenHybridForm: q("#gardenHybridForm"), gardenHybridColor: q("#gardenHybridColor"), gardenHybridShape: q("#gardenHybridShape"), gardenHybridStatus: q("#gardenHybridStatus"), gardenBloomCount: q("#gardenBloomCount"), gardenBloomGallery: q("#gardenBloomGallery"), gardenMemoryFlowers: q("#gardenMemoryFlowers"), gardenSnapshotCount: q("#gardenSnapshotCount"), gardenAreaProgress: q("#gardenAreaProgress"), gardenTimeline: q("#gardenTimeline"),
+  gardenHybridForm: q("#gardenHybridForm"), gardenHybridColor: q("#gardenHybridColor"), gardenHybridShape: q("#gardenHybridShape"), gardenHybridStatus: q("#gardenHybridStatus"), gardenBloomCount: q("#gardenBloomCount"), gardenBloomGallery: q("#gardenBloomGallery"), gardenMemoryFlowers: q("#gardenMemoryFlowers"), gardenSnapshotCount: q("#gardenSnapshotCount"), gardenStageProgressText: q("#gardenStageProgressText"), gardenStageRemaining: q("#gardenStageRemaining"), gardenRoadmap: q("#gardenRoadmap"), gardenPointBreakdown: q("#gardenPointBreakdown"), gardenPointLedger: q("#gardenPointLedger"), gardenAreaProgress: q("#gardenAreaProgress"), gardenTimeline: q("#gardenTimeline"),
   gardenSceneDecoration: q("#gardenSceneDecoration"), gardenDecorationList: q("#gardenDecorationList"),
+  gardenMemoryDialog: q("#gardenMemoryDialog"), closeGardenMemoryDialog: q("#closeGardenMemoryDialog"), gardenMemoryImage: q("#gardenMemoryImage"), gardenMemoryType: q("#gardenMemoryType"), gardenMemoryDialogTitle: q("#gardenMemoryDialogTitle"), gardenMemoryMeta: q("#gardenMemoryMeta"), gardenMemoryDialogText: q("#gardenMemoryDialogText"),
   taskForm: q("#taskForm"), taskText: q("#taskText"), taskList: q("#taskList"), taskStats: q("#taskStats"),
   achievementStats: q("#achievementStats"), achievementPercent: q("#achievementPercent"), achievementProgressBar: q("#achievementProgressBar"), achievementFilter: q("#achievementFilter"), achievementVisibleCount: q("#achievementVisibleCount"), achievementList: q("#achievementList"), achievementMore: q("#achievementMore"), achievementForm: q("#achievementForm"), achievementText: q("#achievementText"), achievementEditDialog: q("#achievementEditDialog"), achievementEditId: q("#achievementEditId"), achievementEditText: q("#achievementEditText"), saveAchievementEdit: q("#saveAchievementEdit"),
   noteForm: q("#noteForm"), noteReceiver: q("#noteReceiver"), noteUnlockDate: q("#noteUnlockDate"), noteText: q("#noteText"), noteList: q("#noteList"), noteStats: q("#noteStats"),
@@ -320,7 +351,7 @@ function init() {
   bindGardenActions();
   bindSyncEvents();
   setFormDates();
-  refreshGardenProgress("花园开始生长");
+  if (refreshGardenProgress("花园开始生长")) localStorage.setItem(storageKey, JSON.stringify(state));
   render();
   window.lucide?.createIcons();
   window.LoveSync?.initialize();
@@ -632,9 +663,18 @@ function bindGardenActions() {
     const button = event.target.closest("[data-garden-decoration]");
     if (!button || button.disabled) return;
     const garden = gardenState();
-    garden.featuredDecoration = button.dataset.gardenDecoration;
-    garden.decorationUpdatedAt = new Date().toISOString();
-    persistAndRender("一起装饰秘密花园");
+    const item = gardenDecorations.find((entry) => entry.id === button.dataset.gardenDecoration);
+    if (!item) return;
+    const now = new Date().toISOString();
+    const enabled = !garden.decorationStates[item.id]?.enabled;
+    if (enabled) {
+      gardenDecorations.filter((entry) => entry.slot === item.slot && entry.id !== item.id).forEach((entry) => {
+        garden.decorationStates[entry.id] = { enabled: false, updatedAt: now };
+      });
+    }
+    garden.decorationStates[item.id] = { enabled, updatedAt: now };
+    garden.decorationUpdatedAt = now;
+    persistAndRender(enabled ? `布置${item.name}` : `收起${item.name}`);
   });
   els.waterGarden.addEventListener("click", () => {
     const person = currentPerson();
@@ -710,6 +750,17 @@ function bindGardenActions() {
     els.gardenMemoryReveal.hidden = false;
   });
   els.closeGardenMemory.addEventListener("click", () => { els.gardenMemoryReveal.hidden = true; });
+  els.gardenMemoryFlowers.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-garden-memory]");
+    if (button) openGardenMemory(button.dataset.gardenMemory);
+  });
+  els.closeGardenMemoryDialog.addEventListener("click", () => els.gardenMemoryDialog.close());
+  els.gardenMemoryDialog.addEventListener("click", (event) => { if (event.target === els.gardenMemoryDialog) els.gardenMemoryDialog.close(); });
+  [els.gardenSeedPhoto, els.gardenSeedVoice].forEach((select) => select.addEventListener("blur", () => {
+    if (!gardenSeedOptionsPending) return;
+    gardenSeedOptionsPending = false;
+    renderGardenSeedOptions();
+  }));
 }
 
 function bindSyncEvents() {
@@ -761,8 +812,12 @@ function bindSyncEvents() {
     };
     if (privateData && role) next.private[role] = privateData;
     state = mergeDefaults(next);
+    if (shared?.garden && Number(shared.garden.version || 1) < 2) {
+      state.garden.baselinePoints = Math.max(Number(state.garden.baselinePoints || 0), Number(shared.garden.points || 0));
+      state.garden.migrationComplete = false;
+    }
     saveLocalAndRender();
-    if (initializeEmptySpace || (shared && !shared.garden) || gardenNeedsResync) {
+    if (initializeEmptySpace || (shared && !shared.garden) || Number(shared?.garden?.version || 1) < 2 || gardenNeedsResync) {
       gardenNeedsResync = false;
       window.LoveSync?.scheduleSave(state);
     }
@@ -1015,40 +1070,101 @@ function gardenStageIndex(points) {
   return index;
 }
 
+function gardenPointCandidates() {
+  const garden = gardenState();
+  const events = [];
+  const add = (key, category, points, label, date = todayString(), options = {}) => events.push({ key, category, points, label, date, ...options });
+
+  Object.entries(garden.waterings || {}).forEach(([date, peopleWhoWatered]) => {
+    const watered = [...new Set(peopleWhoWatered || [])].filter((person) => people[person]);
+    watered.forEach((person) => add(`watering-${date}-${person}`, "watering", 1, `${people[person].short}完成今日浇水`, date));
+    if (watered.length === 2) add(`watering-${date}-pair`, "watering", 4, "两个人共同完成今日浇水", date);
+  });
+
+  const question = state.dailyQuestion || {};
+  const answered = Object.keys(people).filter((person) => question.answers?.[person]?.trim());
+  answered.forEach((person) => add(`question-${question.id}-${person}`, "question", 3, `${people[person].short}回答每日问题`, question.date || todayString()));
+  if (question.id && answered.length === 2) add(`question-${question.id}-pair`, "question", 2, "两个人完成同一道每日问题", question.date || todayString());
+
+  (state.messages || []).forEach((item) => add(`message-${item.id}`, "message", 1, `${people[item.person]?.short || "我们"}留下一句共同留言`, item.date || todayString(), { dailyCap: 4, capScope: "shared" }));
+  (voiceMessages || []).forEach((item) => {
+    const date = localDateString(item.created_at);
+    add(`voice-${item.id}`, "voice", 5, `${people[item.role]?.short || "我们"}存入一段声音`, date, { dailyCap: 2, capScope: item.role || "shared" });
+  });
+  (state.photos || []).forEach((item) => add(`photo-${item.id}`, "photo", 8, `保存照片：${shortGardenLabel(item.caption || "共同回忆")}`, item.date || todayString(), { dailyCap: 3, capScope: "shared" }));
+  (state.tasks || []).filter((item) => new Set(item.doneBy || []).size === 2).forEach((item) => add(`task-${item.id}`, "task", 10, `完成双人任务：${shortGardenLabel(item.text)}`, item.completedAt || todayString(), { dailyCap: 3, capScope: "shared" }));
+  (state.gameRecords || []).forEach((item) => add(`game-${item.id}`, "game", 12, `记录游戏：${shortGardenLabel(item.game)}`, item.date || todayString(), { dailyCap: 2, capScope: "shared" }));
+  (garden.seeds || []).filter((item) => item.unlockDate <= todayString()).forEach((item) => add(`seed-${item.id}`, "seed", 15, "一颗心意种子如约开花", item.unlockDate, { dailyCap: 2, capScope: "shared" }));
+  (garden.hybrid?.blooms || []).forEach((item) => add(`bloom-${item.id}`, "bloom", 20, `培育双生花：${shortGardenLabel(item.name)}`, item.date || todayString(), { dailyCap: 1, capScope: "shared" }));
+
+  const customAchievements = new Map((state.achievements?.custom || []).map((item) => [item.id, item.text]));
+  Object.entries(state.achievements?.completed || {}).forEach(([id, record]) => {
+    const definition = achievementDefinitions.find((item) => item.id === id);
+    const title = state.achievements?.edits?.[id] || customAchievements.get(id) || definition?.text || "共同成就";
+    const date = typeof record === "string" ? record : record?.date || todayString();
+    add(`achievement-${id}`, "achievement", 20, `完成情侣成就：${shortGardenLabel(title)}`, date, { dailyCap: 3, capScope: "shared" });
+  });
+  (state.meetings || []).filter((item) => item.date && item.date <= todayString()).forEach((item) => add(`meeting-${item.id}`, "meeting", 30, `收藏见面：${shortGardenLabel(item.title)}`, item.date));
+  (garden.wishes || []).filter((item) => item.done).forEach((item) => add(`wish-${item.id}`, "wish", 35, `共同愿望盛开：${shortGardenLabel(item.text)}`, item.completedAt || todayString(), { dailyCap: 1, capScope: "shared" }));
+  return events.filter((event) => event.key && event.date);
+}
+
+function effectiveGardenPointEvents(events = gardenState().pointEvents || []) {
+  const counts = new Map();
+  return [...events].sort((a, b) => `${a.createdAt || a.date}-${a.id}`.localeCompare(`${b.createdAt || b.date}-${b.id}`)).filter((event) => {
+    if (!event.dailyCap) return true;
+    const scope = `${event.category}-${event.date}-${event.capScope || "shared"}`;
+    const count = counts.get(scope) || 0;
+    if (count >= event.dailyCap) return false;
+    counts.set(scope, count + 1);
+    return true;
+  });
+}
+
+function creditGardenPointEvents() {
+  const garden = gardenState();
+  const candidates = gardenPointCandidates();
+  if (!garden.migrationComplete) {
+    garden.version = 2;
+    garden.pointEvents = Array.isArray(garden.pointEvents) ? garden.pointEvents : [];
+    garden.baselinePoints = Math.max(0, Number(garden.baselinePoints || (garden.pointEvents.length ? 0 : garden.points) || 0));
+    garden.creditedKeys = [...new Set([...(garden.creditedKeys || []), ...garden.pointEvents.map((item) => item.key), ...candidates.map((item) => item.key)])];
+    garden.migrationComplete = true;
+    garden.lastStage = gardenStageIndex(garden.baselinePoints);
+    if (!garden.snapshots.some((item) => item.reason === "成长规则升级，已有心意值完整保留")) {
+      garden.snapshots.unshift({ id: "garden-v2-migration", stage: garden.lastStage, points: garden.baselinePoints, date: todayString(), reason: "成长规则升级，已有心意值完整保留", updatedAt: new Date().toISOString() });
+    }
+    return true;
+  }
+
+  const credited = new Set(garden.creditedKeys || []);
+  let changed = false;
+  candidates.forEach((candidate) => {
+    if (credited.has(candidate.key)) return;
+    credited.add(candidate.key);
+    const event = { id: candidate.key, ...candidate, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    const accepted = effectiveGardenPointEvents([...(garden.pointEvents || []), event]).some((item) => item.id === event.id);
+    if (accepted) garden.pointEvents.push(event);
+    changed = true;
+  });
+  garden.creditedKeys = [...credited];
+  return changed;
+}
+
 function calculateGardenPoints() {
   const garden = gardenState();
-  const completedTasks = (state.tasks || []).filter((task) => (task.doneBy || []).length === 2).length;
-  const completedAchievements = Object.keys(state.achievements?.completed || {}).length;
-  const finishedMeetings = (state.meetings || []).filter((item) => item.date && item.date <= todayString()).length;
-  const pairedWaterings = Object.values(garden.waterings || {}).filter((items) => new Set(items || []).size === 2).length;
-  const singleWaterings = Object.values(garden.waterings || {}).reduce((sum, items) => sum + Math.min(new Set(items || []).size, 2), 0);
-  const unlockedSeeds = (garden.seeds || []).filter((seed) => seed.unlockDate <= todayString()).length;
-  const completedWishes = (garden.wishes || []).filter((wish) => wish.done).length;
-  const missPoints = Math.min(40, Number(missStats.sentTotal || 0) + Number(missStats.receivedTotal || 0));
-  return Math.round(
-    Math.min(100, (state.messages || []).length) +
-    Math.min(40, (state.questionHistory || []).length * 2) +
-    completedTasks * 4 +
-    Math.min(40, (state.loveNotes || []).length) +
-    Math.min(30, (state.studyLogs || []).length) +
-    Math.min(30, (state.gameRecords || []).length * 2) +
-    finishedMeetings * 10 +
-    Math.min(80, (state.photos || []).length * 2) +
-    completedAchievements * 5 +
-    Math.min(40, voiceMessages.length) + missPoints + 2 +
-    singleWaterings + pairedWaterings * 2 +
-    (garden.seeds || []).length + unlockedSeeds +
-    completedWishes * 5 + (garden.hybrid?.blooms || []).length * 5
-  );
+  const earned = effectiveGardenPointEvents().reduce((sum, event) => sum + Number(event.points || 0), 0);
+  return Math.max(0, Math.round(Number(garden.baselinePoints || 0) + earned));
 }
 
 function refreshGardenProgress(reason) {
   const garden = gardenState();
+  let changed = creditGardenPointEvents();
   const calculated = calculateGardenPoints();
   const points = Math.max(Number(garden.points || 0), calculated);
   const previousStage = Math.min(gardenStages.length - 1, Number(garden.lastStage || 0));
   const nextStage = gardenStageIndex(points);
-  let changed = points !== garden.points;
+  changed = changed || points !== garden.points;
   garden.points = points;
   if (!garden.snapshots.length) {
     garden.snapshots.push({ id: uid(), stage: 0, points, date: todayString(), reason: "属于你们的花园被轻轻种下" });
@@ -1062,8 +1178,10 @@ function refreshGardenProgress(reason) {
     changed = true;
   }
   const areas = ["main"];
-  if (points >= 140) areas.push("memory-corner");
-  if (points >= 220) areas.push("glasshouse");
+  if (points >= 900) areas.push("memory-corner");
+  if (points >= 2000) areas.push("glasshouse");
+  if (points >= 2800) areas.push("flower-path");
+  if (points >= 3800) areas.push("starlight-yard");
   if (areas.join("|") !== (garden.unlockedAreas || []).join("|")) {
     garden.unlockedAreas = areas;
     changed = true;
@@ -1091,11 +1209,12 @@ function gardenWeather() {
 
 function renderGarden() {
   const garden = gardenState();
-  const points = Math.max(garden.points, calculateGardenPoints());
+  const points = Math.max(Number(garden.points || 0), calculateGardenPoints());
   const stageIndex = gardenStageIndex(points);
   const stage = gardenStages[stageIndex];
   const next = gardenStages[stageIndex + 1];
   const progress = next ? Math.round(((points - stage.min) / (next.min - stage.min)) * 100) : 100;
+  const growthStep = next ? Math.min(3, Math.floor(Math.max(0, progress) / 25)) : 3;
   const weather = gardenWeather();
   const watered = new Set(garden.waterings[todayString()] || []);
   const current = currentPerson();
@@ -1107,11 +1226,15 @@ function renderGarden() {
   els.gardenWeatherChip.textContent = weather.label;
   els.gardenStageName.textContent = stage.name;
   els.gardenPoints.textContent = `${points} 心意值`;
+  els.gardenNextStage.textContent = next ? `距离「${next.name}」还差 ${Math.max(0, next.min - points)} 心意值 · ${next.reward}` : "四季已经在这里盛开，接下来的每一分都是新的共同回忆";
   els.gardenProgressBar.style.width = `${Math.max(0, Math.min(100, progress))}%`;
   els.openGardenHome.dataset.stage = stage.scene;
+  els.openGardenHome.dataset.step = growthStep;
   els.gardenStage.dataset.stage = stage.scene;
+  els.gardenStage.dataset.step = growthStep;
   els.gardenStage.dataset.weather = weather.id;
   els.gardenPlant.dataset.stage = stage.scene;
+  els.gardenPlant.dataset.step = growthStep;
   els.gardenGateSign.classList.toggle("is-unlocked", garden.unlockedAreas.includes("glasshouse"));
   const gateMode = garden.unlockedAreas.includes("glasshouse") ? "open" : "locked";
   if (els.gardenGateSign.dataset.mode !== gateMode) {
@@ -1121,7 +1244,7 @@ function renderGarden() {
       : `<i data-lucide="lock-keyhole" aria-hidden="true"></i><span></span>`;
     window.lucide?.createIcons();
   }
-  els.gardenGateSign.querySelector("span").textContent = gateMode === "open" ? "晨光花房已经打开" : `秘密花房 · ${Math.max(0, 220 - points)} 心意值后解锁`;
+  els.gardenGateSign.querySelector("span").textContent = gateMode === "open" ? "晨光花房已经打开" : `秘密花房 · 还差 ${Math.max(0, 2000 - points)} 心意值`;
   els.gardenWateringStatus.innerHTML = Object.keys(people).map((person) => `<span class="${watered.has(person) ? "is-done" : ""}"><i aria-hidden="true">${watered.has(person) ? "✓" : "○"}</i>${people[person].short}</span>`).join("");
   els.waterGarden.disabled = watered.has(current);
   els.waterGarden.querySelector("span").textContent = watered.has(current) ? "今天已经浇水" : "浇一点心意";
@@ -1140,15 +1263,33 @@ function renderGardenPanels() {
     panel.hidden = !active;
     panel.classList.toggle("is-active", active);
   });
+  if (activeGardenPanel === "growth") positionGardenRoadmap();
 }
 
 function renderGardenSeedOptions() {
   const selectedPhoto = els.gardenSeedPhoto.value;
   const selectedVoice = els.gardenSeedVoice.value;
-  els.gardenSeedPhoto.innerHTML = `<option value="">不关联照片</option>${state.photos.slice(0, 30).map((photo) => `<option value="${photo.id}">${escapeHTML(photo.caption)} · ${photo.date}</option>`).join("")}`;
-  els.gardenSeedVoice.innerHTML = `<option value="">不关联声音</option>${voiceMessages.slice(0, 30).map((voice) => `<option value="${voice.id}">${people[voice.role]?.short || "我们"}的声音 · ${formatDate(new Date(voice.created_at))}</option>`).join("")}`;
-  if ([...els.gardenSeedPhoto.options].some((option) => option.value === selectedPhoto)) els.gardenSeedPhoto.value = selectedPhoto;
-  if ([...els.gardenSeedVoice.options].some((option) => option.value === selectedVoice)) els.gardenSeedVoice.value = selectedVoice;
+  const photos = state.photos.slice(0, 40);
+  const voices = voiceMessages.slice(0, 40);
+  const photoKey = photos.map((photo) => `${photo.id}:${photo.caption}:${photo.date}`).join("|");
+  const voiceKey = voices.map((voice) => `${voice.id}:${voice.role}:${voice.created_at}:${voice.duration_seconds}`).join("|");
+
+  if (photoKey !== gardenSeedPhotoOptionsKey) {
+    if (document.activeElement === els.gardenSeedPhoto) gardenSeedOptionsPending = true;
+    else {
+      els.gardenSeedPhoto.innerHTML = `<option value="">不关联照片</option>${photos.map((photo) => `<option value="${photo.id}">${escapeHTML(formatDate(parseDate(photo.date)))} · ${escapeHTML(photo.caption || "未命名照片")}</option>`).join("")}`;
+      gardenSeedPhotoOptionsKey = photoKey;
+      if ([...els.gardenSeedPhoto.options].some((option) => option.value === selectedPhoto)) els.gardenSeedPhoto.value = selectedPhoto;
+    }
+  }
+  if (voiceKey !== gardenSeedVoiceOptionsKey) {
+    if (document.activeElement === els.gardenSeedVoice) gardenSeedOptionsPending = true;
+    else {
+      els.gardenSeedVoice.innerHTML = `<option value="">不关联声音</option>${voices.map((voice) => `<option value="${voice.id}">${escapeHTML(formatDateTime(new Date(voice.created_at)))} · ${escapeHTML(people[voice.role]?.short || "我们")} · ${formatDuration(voice.duration_seconds)}</option>`).join("")}`;
+      gardenSeedVoiceOptionsKey = voiceKey;
+      if ([...els.gardenSeedVoice.options].some((option) => option.value === selectedVoice)) els.gardenSeedVoice.value = selectedVoice;
+    }
+  }
 }
 
 function renderGardenSeeds() {
@@ -1240,19 +1381,21 @@ function renderGardenFlowers() {
   const memories = gardenMemories().slice(0, 16);
   if (!memories.length) return renderEmpty(els.gardenMemoryFlowers, "照片、见面和共同成就会慢慢长成记忆花朵。");
   els.gardenMemoryFlowers.replaceChildren(...memories.map((memory, index) => {
-    const node = document.createElement("article");
+    const node = document.createElement("button");
+    node.type = "button";
+    node.dataset.gardenMemory = memory.id;
     node.className = `memory-flower memory-flower-${index % 4}`;
-    node.innerHTML = `${memory.image ? `<img src="${memory.image}" alt="${escapeHTML(memory.title)}">` : `<span aria-hidden="true">✿</span>`}<div><strong>${escapeHTML(memory.title)}</strong><small>${memory.date ? formatDate(parseDate(memory.date)) : "共同回忆"} · ${escapeHTML(memory.type)}</small></div>`;
+    node.innerHTML = `${memory.image ? `<img src="${memory.image}" alt="${escapeHTML(memory.title)}" loading="lazy">` : `<span class="memory-flower-mark" aria-hidden="true">✿</span>`}<div><strong>${escapeHTML(memory.title)}</strong><p>${escapeHTML(memory.copy || memory.title)}</p><small>${memory.date ? formatDate(parseDate(memory.date)) : "共同回忆"} · ${escapeHTML(memory.type)}</small></div><i class="memory-flower-arrow" aria-hidden="true">›</i>`;
     return node;
   }));
 }
 
 function gardenMemories() {
   const memories = [];
-  state.photos.forEach((photo) => memories.push({ id: `photo-${photo.id}`, type: "照片", title: photo.caption, copy: `你们在${formatDate(parseDate(photo.date))}留下的一张照片。`, date: photo.date, image: photo.src }));
+  state.photos.forEach((photo) => memories.push({ id: `photo-${photo.id}`, type: "照片", title: photo.caption || "一张共同照片", copy: `你们在${formatDate(parseDate(photo.date))}留下的一张照片。`, date: photo.date, image: photo.src }));
   state.meetings.filter((item) => item.date).forEach((item) => memories.push({ id: `meeting-${item.id}`, type: "见面", title: item.title, copy: [item.place, item.note].filter(Boolean).join(" · ") || "一次值得收藏的见面。", date: item.date }));
-  state.gameRecords.forEach((item) => memories.push({ id: `game-${item.id}`, type: "游戏", title: item.game, copy: item.achievement, date: item.date, image: item.image }));
-  state.messages.slice(0, 24).forEach((item) => memories.push({ id: `message-${item.id}`, type: "留言", title: `${people[item.person]?.short || "我们"}留下的一句话`, copy: item.text, date: item.date }));
+  state.gameRecords.forEach((item) => memories.push({ id: `game-${item.id}`, type: "游戏", title: item.game, copy: item.achievement || "一起玩过的一段开心时光。", date: item.date, image: item.image }));
+  state.messages.slice(0, 24).forEach((item) => memories.push({ id: `message-${item.id}`, type: "留言", title: shortGardenLabel(item.text, 24), copy: item.text, date: item.date, person: item.person }));
   const customAchievements = new Map((state.achievements.custom || []).map((item) => [item.id, item.text]));
   Object.entries(state.achievements.completed || {}).forEach(([id, record]) => {
     const definition = achievementDefinitions.find((item) => item.id === id);
@@ -1260,6 +1403,24 @@ function gardenMemories() {
     if (title) memories.push({ id: `achievement-${id}`, type: "成就", title, copy: "一件由你们共同完成的小事。", date: typeof record === "string" ? record : record?.date || "" });
   });
   return memories.sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+}
+
+function openGardenMemory(memoryId) {
+  const memory = gardenMemories().find((item) => item.id === memoryId);
+  if (!memory) return;
+  els.gardenMemoryType.textContent = `${memory.type} · MEMORIES IN BLOOM`;
+  els.gardenMemoryDialogTitle.textContent = memory.title;
+  els.gardenMemoryMeta.textContent = [memory.person ? `${people[memory.person]?.name || "我们"}留下` : "共同收藏", memory.date ? formatDate(parseDate(memory.date)) : "某个值得记住的日子"].join(" · ");
+  els.gardenMemoryDialogText.textContent = memory.copy || memory.title;
+  if (memory.image) {
+    els.gardenMemoryImage.src = memory.image;
+    els.gardenMemoryImage.alt = memory.title;
+    els.gardenMemoryImage.hidden = false;
+  } else {
+    els.gardenMemoryImage.removeAttribute("src");
+    els.gardenMemoryImage.hidden = true;
+  }
+  if (!els.gardenMemoryDialog.open) els.gardenMemoryDialog.showModal();
 }
 
 function gardenDailyMemory() {
@@ -1271,13 +1432,54 @@ function gardenDailyMemory() {
 
 function renderGardenGrowth() {
   const garden = gardenState();
-  const points = garden.points;
+  const points = Math.max(Number(garden.points || 0), calculateGardenPoints());
+  const stageIndex = gardenStageIndex(points);
+  const nextStage = gardenStages[stageIndex + 1];
+  const events = effectiveGardenPointEvents();
   renderGardenDecorations(points);
   els.gardenSnapshotCount.textContent = `${garden.snapshots.length} 次`;
+  els.gardenStageProgressText.textContent = nextStage ? `${points} / ${nextStage.min}` : `${points} · 已抵达最高阶段`;
+  els.gardenStageRemaining.textContent = nextStage ? `距离「${nextStage.name}」还差 ${Math.max(0, nextStage.min - points)} 心意值` : "四季秘境会继续收藏此后的每一份心意";
+  els.gardenRoadmap.replaceChildren(...gardenStages.map((stage, index) => {
+    const node = document.createElement("article");
+    node.className = index < stageIndex ? "is-complete" : (index === stageIndex ? "is-current" : "is-locked");
+    node.innerHTML = `<span>${index < stageIndex ? "✓" : index + 1}</span><div><strong>${stage.name}</strong><small>${stage.min} 心意值 · ${stage.reward}</small></div>`;
+    return node;
+  }));
+
+  const totals = new Map();
+  if (Number(garden.baselinePoints || 0) > 0) totals.set("baseline", Number(garden.baselinePoints));
+  events.forEach((event) => totals.set(event.category, (totals.get(event.category) || 0) + Number(event.points || 0)));
+  if (!totals.size) {
+    renderEmpty(els.gardenPointBreakdown, "第一次共同浇水后，这里会出现清楚的心意值来源。");
+  } else {
+    els.gardenPointBreakdown.replaceChildren(...[...totals.entries()].sort((a, b) => b[1] - a[1]).map(([category, total]) => {
+      const item = gardenPointCategories[category] || { name: "共同生活", icon: "heart" };
+      const node = document.createElement("article");
+      node.innerHTML = `<span><i data-lucide="${item.icon}" aria-hidden="true"></i></span><div><strong>${item.name}</strong><small>${category === "baseline" ? "升级前已经积累" : `${events.filter((event) => event.category === category).length} 次记录`}</small></div><b>+${total}</b>`;
+      return node;
+    }));
+  }
+
+  const recentEvents = [...events].sort((a, b) => `${b.createdAt || b.date}-${b.id}`.localeCompare(`${a.createdAt || a.date}-${a.id}`)).slice(0, 24);
+  if (!recentEvents.length) {
+    els.gardenPointLedger.innerHTML = Number(garden.baselinePoints || 0) > 0
+      ? `<article><span class="garden-ledger-dot"></span><div><strong>旧版花园成长值</strong><small>升级时完整保留</small></div><b>+${garden.baselinePoints}</b></article>`
+      : `<p class="empty">新的心意值明细会从升级后的第一次互动开始记录。</p>`;
+  } else {
+    els.gardenPointLedger.replaceChildren(...recentEvents.map((event) => {
+      const node = document.createElement("article");
+      node.innerHTML = `<span class="garden-ledger-dot"></span><div><strong>${escapeHTML(event.label)}</strong><small>${formatDate(parseDate(event.date))} · ${gardenPointCategories[event.category]?.name || "共同生活"}</small></div><b>+${event.points}</b>`;
+      return node;
+    }));
+  }
+
   const areas = [
     { name: "主花园", threshold: 0, copy: "浇水、种子与双生花" },
-    { name: "回忆角落", threshold: 140, copy: "记忆花朵与蝴蝶来访" },
-    { name: "晨光花房", threshold: 220, copy: "盛开后的新空间" }
+    { name: "回忆角落", threshold: 900, copy: "记忆花朵与蝴蝶来访" },
+    { name: "晨光花房", threshold: 2000, copy: "心形藤蔓与花房入口" },
+    { name: "花间小径", threshold: 2800, copy: "小池与花路延伸" },
+    { name: "星光庭院", threshold: 3800, copy: "夜色中的庭院风景" }
   ];
   els.gardenAreaProgress.replaceChildren(...areas.map((area) => {
     const unlocked = points >= area.threshold;
@@ -1288,7 +1490,7 @@ function renderGardenGrowth() {
   }));
   if (!garden.snapshots.length) return renderEmpty(els.gardenTimeline, "花园第一次发芽时，会从这里开始记录。");
   els.gardenTimeline.replaceChildren(...garden.snapshots.slice(0, 24).map((snapshot) => {
-    const stage = gardenStages[Math.min(snapshot.stage, gardenStages.length - 1)];
+    const stage = gardenStages[gardenStageIndex(Number(snapshot.points || 0))];
     const node = document.createElement("article");
     node.className = "garden-timeline-item";
     node.innerHTML = `<span aria-hidden="true"></span><div><header><strong>${stage.name}</strong><time>${formatDate(parseDate(snapshot.date))}</time></header><p>${escapeHTML(snapshot.reason || stage.copy)}</p><small>${snapshot.points} 心意值</small></div>`;
@@ -1296,29 +1498,63 @@ function renderGardenGrowth() {
   }));
 }
 
+function positionGardenRoadmap() {
+  const stageIndex = gardenStageIndex(Math.max(Number(gardenState().points || 0), calculateGardenPoints()));
+  if (els.gardenRoadmap.dataset.positionedStage === String(stageIndex)) return;
+  window.requestAnimationFrame(() => {
+    const current = els.gardenRoadmap.children[stageIndex];
+    if (!current || !current.offsetWidth) return;
+    els.gardenRoadmap.scrollLeft = Math.max(0, current.offsetLeft - 3);
+    els.gardenRoadmap.dataset.positionedStage = String(stageIndex);
+  });
+}
+
 function renderGardenDecorations(points) {
   const garden = gardenState();
-  const selected = gardenDecorations.some((item) => item.id === garden.featuredDecoration && points >= item.threshold) ? garden.featuredDecoration : "none";
-  els.gardenSceneDecoration.dataset.decoration = selected;
-  els.gardenSceneDecoration.innerHTML = selected === "lights"
-    ? `<span class="garden-string-lights"><i></i><i></i><i></i><i></i><i></i></span>`
-    : selected === "ribbon"
-      ? `<span class="garden-pot-ribbon">♥</span>`
-      : selected === "windchime"
-        ? `<span class="garden-windchime"><i></i><i></i><i></i></span>`
-        : selected === "lantern"
-          ? `<span class="garden-lantern"><i></i></span>`
-          : "";
+  const enabled = gardenDecorations.filter((item) => garden.decorationStates[item.id]?.enabled && gardenDecorationUnlocked(item, garden, points));
+  els.gardenSceneDecoration.dataset.decorationCount = String(enabled.length);
+  els.gardenSceneDecoration.innerHTML = enabled.map((item) => gardenDecorationMarkup(item.id)).join("");
   els.gardenDecorationList.replaceChildren(...gardenDecorations.map((item) => {
-    const unlocked = points >= item.threshold;
+    const unlocked = gardenDecorationUnlocked(item, garden, points);
+    const active = Boolean(garden.decorationStates[item.id]?.enabled && unlocked);
     const node = document.createElement("button");
     node.type = "button";
     node.dataset.gardenDecoration = item.id;
     node.disabled = !unlocked;
-    node.className = selected === item.id ? "is-active" : "";
-    node.innerHTML = `<span aria-hidden="true">${unlocked ? (selected === item.id ? "✓" : "◇") : "⌁"}</span><strong>${item.name}</strong><small>${unlocked ? (selected === item.id ? "正在展示" : "点击布置") : `${item.threshold} 心意值解锁`}</small>`;
+    node.className = active ? "is-active" : "";
+    node.innerHTML = `<span aria-hidden="true">${unlocked ? item.symbol : "⌁"}</span><strong>${item.name}</strong><small>${unlocked ? (active ? "已布置 · 点击收起" : `布置在${gardenSlotName(item.slot)}`) : `还差 ${Math.max(0, item.threshold - points)} 心意值`}</small><i aria-hidden="true">${active ? "✓" : ""}</i>`;
     return node;
   }));
+  window.lucide?.createIcons();
+}
+
+function gardenDecorationUnlocked(item, garden, points) {
+  return points >= item.threshold || Boolean(garden.decorationStates[item.id]?.legacy);
+}
+
+function gardenSlotName(slot) {
+  return ({ foreground: "前景", path: "小径", overhead: "花房上方", atmosphere: "氛围层", left: "左侧", right: "右侧", hanging: "檐下", structure: "远景" })[slot] || "花园";
+}
+
+function gardenDecorationMarkup(id) {
+  const markup = {
+    plaque: `<span class="garden-decor decor-plaque"><b>LIU ♥ FU</b></span>`,
+    stones: `<span class="garden-decor decor-stones"><i></i><i></i><i></i><i></i></span>`,
+    lights: `<span class="garden-decor garden-string-lights"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>`,
+    ribbon: `<span class="garden-decor decor-ribbon"><i></i><i></i><i></i></span>`,
+    bench: `<span class="garden-decor decor-bench"><i></i></span>`,
+    mailbox: `<span class="garden-decor decor-mailbox"><i>♥</i></span>`,
+    windchime: `<span class="garden-decor garden-windchime"><i></i><i></i><i></i></span>`,
+    arch: `<span class="garden-decor decor-arch"><i></i><i></i><i></i><i></i><i></i></span>`,
+    lanterns: `<span class="garden-decor decor-lanterns"><i></i><i></i></span>`,
+    swing: `<span class="garden-decor decor-swing"><i></i></span>`,
+    pond: `<span class="garden-decor decor-pond"><i></i><b></b></span>`,
+    shelf: `<span class="garden-decor decor-shelf"><i></i><i></i><i></i></span>`,
+    starlight: `<span class="garden-decor decor-starlight"><i></i><i></i><i></i><i></i><i></i></span>`,
+    moongate: `<span class="garden-decor decor-moongate"><i></i></span>`,
+    pavilion: `<span class="garden-decor decor-pavilion"><i></i><b></b></span>`
+  };
+  return markup[id] || "";
 }
 
 function renderMessages() {
@@ -1792,11 +2028,28 @@ function mergeDefaults(saved) {
 }
 function mergeGarden(savedGarden) {
   const base = structuredClone(defaults).garden;
+  const legacy = Number(savedGarden?.version || 1) < 2;
+  const baselinePoints = legacy ? Math.max(0, Number(savedGarden?.points || 0)) : Math.max(0, Number(savedGarden?.baselinePoints || 0));
+  const legacyDecorationMap = { lights: "lights", ribbon: "ribbon", windchime: "windchime", lantern: "lanterns" };
+  const decorationStates = {};
+  Object.entries(savedGarden?.decorationStates || {}).forEach(([id, value]) => {
+    if (!gardenDecorations.some((item) => item.id === id)) return;
+    decorationStates[id] = { enabled: Boolean(value?.enabled), updatedAt: value?.updatedAt || "", legacy: Boolean(value?.legacy) };
+  });
+  const legacyDecoration = legacyDecorationMap[savedGarden?.featuredDecoration];
+  if (legacyDecoration && !decorationStates[legacyDecoration]) {
+    decorationStates[legacyDecoration] = { enabled: true, updatedAt: savedGarden?.decorationUpdatedAt || new Date().toISOString(), legacy: true };
+  }
   return {
     ...base,
     ...(savedGarden || {}),
+    version: 2,
     points: Math.max(0, Number(savedGarden?.points || 0)),
-    lastStage: Math.max(0, Number(savedGarden?.lastStage || 0)),
+    baselinePoints,
+    migrationComplete: legacy ? false : Boolean(savedGarden?.migrationComplete),
+    creditedKeys: Array.isArray(savedGarden?.creditedKeys) ? [...new Set(savedGarden.creditedKeys)] : [],
+    pointEvents: Array.isArray(savedGarden?.pointEvents) ? savedGarden.pointEvents.filter((item) => item?.id && item?.key) : [],
+    lastStage: legacy ? gardenStageIndex(baselinePoints) : Math.max(0, Number(savedGarden?.lastStage || 0)),
     waterings: { ...base.waterings, ...(savedGarden?.waterings || {}) },
     seeds: Array.isArray(savedGarden?.seeds) ? savedGarden.seeds : [],
     wishes: Array.isArray(savedGarden?.wishes) ? savedGarden.wishes : [],
@@ -1809,7 +2062,8 @@ function mergeGarden(savedGarden) {
     snapshots: Array.isArray(savedGarden?.snapshots) ? savedGarden.snapshots : [],
     unlockedAreas: Array.isArray(savedGarden?.unlockedAreas) ? savedGarden.unlockedAreas : [],
     deletedIds: Array.isArray(savedGarden?.deletedIds) ? savedGarden.deletedIds.slice(-200) : [],
-    featuredDecoration: gardenDecorations.some((item) => item.id === savedGarden?.featuredDecoration) ? savedGarden.featuredDecoration : "none",
+    decorationStates,
+    featuredDecoration: "none",
     decorationUpdatedAt: savedGarden?.decorationUpdatedAt || ""
   };
 }
@@ -1845,9 +2099,22 @@ function mergeGardenConcurrent(localGarden, remoteGarden) {
   });
   const blooms = mergeRecords(local.hybrid.blooms, remote.hybrid.blooms);
   const snapshotMap = new Map();
-  mergeRecords(local.snapshots, remote.snapshots).forEach((snapshot) => snapshotMap.set(`${snapshot.stage}-${snapshot.date}`, snapshot));
-  const snapshots = [...snapshotMap.values()].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
-  const decorationSource = remote.decorationUpdatedAt >= local.decorationUpdatedAt ? remote : local;
+  mergeRecords(local.snapshots, remote.snapshots).forEach((snapshot) => {
+    const key = snapshot.id === "garden-v2-migration" ? snapshot.id : `${gardenStageIndex(Number(snapshot.points || 0))}-${snapshot.date}`;
+    const previous = snapshotMap.get(key);
+    if (!previous || (snapshot.updatedAt || "") >= (previous.updatedAt || "")) snapshotMap.set(key, snapshot);
+  });
+  const snapshots = [...snapshotMap.values()].sort((a, b) => `${b.date || ""}-${b.updatedAt || ""}`.localeCompare(`${a.date || ""}-${a.updatedAt || ""}`));
+  const pointEvents = mergeRecords(local.pointEvents, remote.pointEvents);
+  const creditedKeys = [...new Set([...(local.creditedKeys || []), ...(remote.creditedKeys || [])])];
+  const decorationStates = {};
+  gardenDecorations.forEach((item) => {
+    const localState = local.decorationStates?.[item.id];
+    const remoteState = remote.decorationStates?.[item.id];
+    if (!localState && !remoteState) return;
+    const selected = !localState ? remoteState : (!remoteState ? localState : ((remoteState.updatedAt || "") >= (localState.updatedAt || "") ? remoteState : localState));
+    decorationStates[item.id] = { enabled: Boolean(selected.enabled), updatedAt: selected.updatedAt || "", legacy: Boolean(localState?.legacy || remoteState?.legacy) };
+  });
   if (choices.liu && choices.fu) {
     const bloomId = `garden-bloom-${round}`;
     if (!blooms.some((bloom) => bloom.id === bloomId)) {
@@ -1862,10 +2129,16 @@ function mergeGardenConcurrent(localGarden, remoteGarden) {
       gardenNeedsResync = true;
     }
   }
+  if (pointEvents.length > Math.max(local.pointEvents.length, remote.pointEvents.length) || creditedKeys.length > Math.max(local.creditedKeys.length, remote.creditedKeys.length)) gardenNeedsResync = true;
   return {
     ...local,
     ...remote,
+    version: 2,
     points: Math.max(local.points, remote.points),
+    baselinePoints: Math.max(local.baselinePoints, remote.baselinePoints),
+    migrationComplete: local.migrationComplete || remote.migrationComplete,
+    creditedKeys,
+    pointEvents,
     lastStage: Math.max(local.lastStage, remote.lastStage),
     waterings,
     seeds: mergeRecords(local.seeds, remote.seeds),
@@ -1878,8 +2151,9 @@ function mergeGardenConcurrent(localGarden, remoteGarden) {
     },
     unlockedAreas: [...new Set([...local.unlockedAreas, ...remote.unlockedAreas])],
     deletedIds,
-    featuredDecoration: decorationSource.featuredDecoration,
-    decorationUpdatedAt: decorationSource.decorationUpdatedAt
+    decorationStates,
+    featuredDecoration: "none",
+    decorationUpdatedAt: Object.values(decorationStates).reduce((latest, item) => item.updatedAt > latest ? item.updatedAt : latest, "")
   };
 }
 function mergePrivateSpace(savedSpace, person) {
@@ -1908,6 +2182,15 @@ function formatDateTime(date) {
 function formatDuration(seconds) {
   const value = Math.max(0, Math.round(Number(seconds) || 0));
   return `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
+}
+function localDateString(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return todayString();
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+function shortGardenLabel(value, max = 18) {
+  const text = String(value || "共同回忆").trim();
+  return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 function todayString() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`; }
 function uid() { return window.crypto?.randomUUID?.() || `id-${Date.now()}-${Math.random().toString(16).slice(2)}`; }
