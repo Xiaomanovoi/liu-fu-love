@@ -3,7 +3,21 @@ const people = {
   liu: { name: "刘向强", short: "向强", color: "rose" },
   fu: { name: "付嘉颖", short: "嘉颖", color: "fu" }
 };
-const moods = ["想你", "开心", "平静", "期待", "被治愈", "有安全感", "想撒娇", "想聊天", "需要抱抱", "想安静", "有点累", "有点烦", "委屈", "焦虑", "失落", "孤单", "吃醋了", "烦躁", "紧张", "心动", "感恩", "在努力", "需要鼓励", "想见你"];
+const moodGroups = [
+  {
+    label: "此刻心情",
+    items: ["想你", "超级想你", "开心", "平静", "期待", "心动", "被治愈", "有安全感", "感恩", "兴奋", "满足", "想撒娇", "想聊天", "需要抱抱", "委屈", "焦虑", "失落", "孤单", "吃醋了", "烦躁", "紧张", "有点烦", "有点累", "情绪低落", "需要鼓励", "想安静一下"]
+  },
+  {
+    label: "正在做什么",
+    items: ["在学习", "在工作", "在上课", "在忙", "在路上", "在通勤", "在吃饭", "在做饭", "在运动", "在健身", "在散步", "在打游戏", "在追剧", "在听歌", "在休息", "准备睡觉", "刚刚睡醒", "和朋友一起", "陪家人中", "等待见面"]
+  },
+  {
+    label: "身体状态",
+    items: ["元气满满", "有点困", "饿了", "身体不舒服", "姨妈期", "头有点痛", "需要休息", "慢慢恢复中"]
+  }
+];
+const moods = moodGroups.flatMap((group) => group.items);
 const deepQuestions = [
   "你最害怕我误解你的哪一部分？", "你最近最不想承认的一种情绪是什么？", "什么事会让你觉得自己不够好？", "你最希望我怎么安慰你？",
   "当你沉默时，通常最希望我做什么？", "你觉得自己最难被看见的一面是什么？", "你最怕在关系里失去什么？", "你最需要被确认的一句话是什么？",
@@ -71,6 +85,10 @@ const questionBank = {
     "有什么只适合我们两个人玩的约会小游戏？", "你最喜欢我什么时候表现出占有欲，但仍尊重你？", "哪一首歌最适合做我们独处时的背景音乐？", "你愿意和我交换一个从没说出口的心动幻想吗？", "下一次见面，你想给我一个怎样的惊喜？"
   ]
 };
+Object.entries(window.EXTRA_LOVE_QUESTIONS || {}).forEach(([category, questions]) => {
+  if (!questionBank[category] || !Array.isArray(questions)) return;
+  questionBank[category] = [...new Set([...questionBank[category], ...questions])];
+});
 const questionCategoryNames = { daily: "日常", romance: "浪漫", memory: "回忆", future: "未来", deep: "深入", private: "私密", flirty: "情趣" };
 const dailyCapsules = [
   { type: "一句情话", text: "隔着不同的城市，也要把喜欢认真放进每一天。" },
@@ -202,6 +220,7 @@ const defaults = {
   dailyQuestion: {
     id: uid(), category: "daily", text: questionBank.daily[0], date: todayString(), answers: { liu: "", fu: "" }
   },
+  questionHistory: [],
   loveNotes: [],
   studyLogs: [],
   gameRecords: [],
@@ -211,8 +230,8 @@ const defaults = {
   ],
   photos: [],
   private: {
-    liu: { traits: [{ id: uid(), type: "优点", text: "她会认真记住我随口说过的小事" }], diaries: [], health: { water: 0, movement: 0, weights: [], cycles: [] } },
-    fu: { traits: [{ id: uid(), type: "习惯", text: "他会在忙完后第一时间分享今天" }], diaries: [], health: { water: 0, movement: 0, weights: [], cycles: [] } }
+    liu: { goals: [], traits: [{ id: uid(), type: "优点", text: "她会认真记住我随口说过的小事" }], diaries: [], health: { water: 0, movement: 0, weights: [], cycles: [] } },
+    fu: { goals: [], traits: [{ id: uid(), type: "习惯", text: "他会在忙完后第一时间分享今天" }], diaries: [], health: { water: 0, movement: 0, weights: [], cycles: [] } }
   }
 };
 
@@ -224,12 +243,24 @@ let pairingRedirected = false;
 let activeAchievementFilter = "all";
 let achievementsExpanded = false;
 let lastCapsuleDate = "";
+let missStats = emptyMissStats();
+let voiceMessages = [];
+let voiceRecorder = null;
+let voiceStream = null;
+let voiceChunks = [];
+let voiceStartedAt = 0;
+let voiceTimer = null;
+let voiceStopTimer = null;
+let voiceDraft = null;
+let voiceDraftUrl = "";
 
 const els = {
   daysTogether: q("#daysTogether"), editStartDate: q("#editStartDate"), settingsDialog: q("#settingsDialog"), startDateInput: q("#startDateInput"), saveStartDate: q("#saveStartDate"),
   presenceText: q("#presenceText"), openMood: q("#openMood"), moodDialog: q("#moodDialog"), moodDialogTitle: q("#moodDialogTitle"), moodPicker: q("#moodPicker"), moodNote: q("#moodNote"), saveMood: q("#saveMood"), pairingNotice: q("#pairingNotice"), openPairing: q("#openPairing"),
   tabs: qa(".tab"), screens: qa(".screen"), capsuleType: q("#capsuleType"), capsuleDate: q("#capsuleDate"), capsuleText: q("#capsuleText"), moodCards: q("#moodCards"), nextMeetingTitle: q("#nextMeetingTitle"), nextMeetingMeta: q("#nextMeetingMeta"), nextMeetingDays: q("#nextMeetingDays"),
+  sendMiss: q("#sendMiss"), missHint: q("#missHint"), missSentLabel: q("#missSentLabel"), missSentTotal: q("#missSentTotal"), missSentToday: q("#missSentToday"), missReceivedLabel: q("#missReceivedLabel"), missReceivedTotal: q("#missReceivedTotal"), missReceivedToday: q("#missReceivedToday"),
   writerName: q("#writerName"), switchWriter: q("#switchWriter"), messageForm: q("#messageForm"), messageText: q("#messageText"), messageList: q("#messageList"), questionText: q("#questionText"), questionCategory: q("#questionCategory"), questionCategorySelect: q("#questionCategorySelect"), newQuestion: q("#newQuestion"), questionAnswerForm: q("#questionAnswerForm"), questionAnswer: q("#questionAnswer"), questionWriterName: q("#questionWriterName"), questionAnswers: q("#questionAnswers"),
+  recordVoice: q("#recordVoice"), voiceRecordStatus: q("#voiceRecordStatus"), voiceRecordTimer: q("#voiceRecordTimer"), voiceDraft: q("#voiceDraft"), voicePreview: q("#voicePreview"), discardVoice: q("#discardVoice"), sendVoice: q("#sendVoice"), voiceNotice: q("#voiceNotice"), voiceList: q("#voiceList"), voiceCount: q("#voiceCount"),
   taskForm: q("#taskForm"), taskText: q("#taskText"), taskList: q("#taskList"), taskStats: q("#taskStats"),
   achievementStats: q("#achievementStats"), achievementPercent: q("#achievementPercent"), achievementProgressBar: q("#achievementProgressBar"), achievementFilter: q("#achievementFilter"), achievementVisibleCount: q("#achievementVisibleCount"), achievementList: q("#achievementList"), achievementMore: q("#achievementMore"), achievementForm: q("#achievementForm"), achievementText: q("#achievementText"), achievementEditDialog: q("#achievementEditDialog"), achievementEditId: q("#achievementEditId"), achievementEditText: q("#achievementEditText"), saveAchievementEdit: q("#saveAchievementEdit"),
   noteForm: q("#noteForm"), noteReceiver: q("#noteReceiver"), noteUnlockDate: q("#noteUnlockDate"), noteText: q("#noteText"), noteList: q("#noteList"), noteStats: q("#noteStats"),
@@ -237,7 +268,7 @@ const els = {
   gameForm: q("#gameForm"), gameDate: q("#gameDate"), gameName: q("#gameName"), gameAchievement: q("#gameAchievement"), gamePhotoInput: q("#gamePhotoInput"), gamePhotoPreview: q("#gamePhotoPreview"), gamePhotoPreviewImage: q("#gamePhotoPreviewImage"), clearGamePhoto: q("#clearGamePhoto"), gameList: q("#gameList"), gameStats: q("#gameStats"),
   meetingForm: q("#meetingForm"), meetingTitle: q("#meetingTitle"), meetingDate: q("#meetingDate"), meetingPlace: q("#meetingPlace"), meetingNote: q("#meetingNote"), meetingList: q("#meetingList"),
   albumForm: q("#albumForm"), photoInput: q("#photoInput"), photoPreview: q("#photoPreview"), photoPreviewImage: q("#photoPreviewImage"), clearPhotoSelection: q("#clearPhotoSelection"), photoCaption: q("#photoCaption"), albumGrid: q("#albumGrid"),
-  personOptions: qa(".person-option"), traitForm: q("#traitForm"), traitType: q("#traitType"), traitText: q("#traitText"), traitList: q("#traitList"), diaryForm: q("#diaryForm"), diaryEditId: q("#diaryEditId"), diaryDate: q("#diaryDate"), diaryMood: q("#diaryMood"), diaryTitle: q("#diaryTitle"), diaryText: q("#diaryText"), diaryList: q("#diaryList"), saveDiary: q("#saveDiary"), cancelDiaryEdit: q("#cancelDiaryEdit"), healthPanel: q("#healthPanel"), waterCount: q("#waterCount"), moveCount: q("#moveCount"), weightValue: q("#weightValue"), weightForm: q("#weightForm"), weightDate: q("#weightDate"), weightInput: q("#weightInput"), weightHistory: q("#weightHistory"), encourageLine: q("#encourageLine"), cycleForm: q("#cycleForm"), cycleStart: q("#cycleStart"), cycleEnd: q("#cycleEnd"), cycleLength: q("#cycleLength"), cycleNextDate: q("#cycleNextDate"), cycleDaysLeft: q("#cycleDaysLeft"), cycleHistory: q("#cycleHistory")
+  personOptions: qa(".person-option"), goalForm: q("#goalForm"), goalText: q("#goalText"), goalList: q("#goalList"), goalStats: q("#goalStats"), traitForm: q("#traitForm"), traitType: q("#traitType"), traitText: q("#traitText"), traitList: q("#traitList"), diaryForm: q("#diaryForm"), diaryEditId: q("#diaryEditId"), diaryDate: q("#diaryDate"), diaryMood: q("#diaryMood"), diaryTitle: q("#diaryTitle"), diaryText: q("#diaryText"), diaryList: q("#diaryList"), saveDiary: q("#saveDiary"), cancelDiaryEdit: q("#cancelDiaryEdit"), healthPanel: q("#healthPanel"), waterCount: q("#waterCount"), moveCount: q("#moveCount"), weightValue: q("#weightValue"), weightForm: q("#weightForm"), weightDate: q("#weightDate"), weightInput: q("#weightInput"), weightHistory: q("#weightHistory"), encourageLine: q("#encourageLine"), cycleForm: q("#cycleForm"), cycleStart: q("#cycleStart"), cycleEnd: q("#cycleEnd"), cycleLength: q("#cycleLength"), cycleNextDate: q("#cycleNextDate"), cycleDaysLeft: q("#cycleDaysLeft"), cycleHistory: q("#cycleHistory")
 };
 
 init();
@@ -289,6 +320,27 @@ function bindActions() {
     els.moodDialog.close();
     persistAndRender();
   });
+  els.sendMiss.addEventListener("click", async () => {
+    if (!window.LoveSync?.isConnected()) {
+      els.missHint.textContent = "登录并进入两人空间后，想念才能抵达对方。";
+      return;
+    }
+    els.sendMiss.disabled = true;
+    els.sendMiss.classList.remove("is-sent");
+    try {
+      const stats = await window.LoveSync.sendMiss();
+      if (stats) missStats = normalizeMissStats(stats);
+      renderMissStats();
+      els.sendMiss.classList.add("is-sent");
+      els.missHint.textContent = `这一次想念已经送给${people[otherPerson(currentPerson())].short}。`;
+      navigator.vibrate?.(35);
+      window.setTimeout(() => els.sendMiss.classList.remove("is-sent"), 650);
+    } catch (error) {
+      els.missHint.textContent = syncFeatureError(error, "想你信号");
+    } finally {
+      els.sendMiss.disabled = false;
+    }
+  });
   els.switchWriter.addEventListener("click", () => {
     if (window.LoveSync?.isConnected()) return;
     state.writer = state.writer === "liu" ? "fu" : "liu";
@@ -313,6 +365,12 @@ function bindActions() {
     els.questionAnswer.value = "";
     persistAndRender();
   });
+  els.recordVoice.addEventListener("click", () => {
+    if (voiceRecorder?.state === "recording") stopVoiceRecording();
+    else startVoiceRecording();
+  });
+  els.discardVoice.addEventListener("click", clearVoiceDraft);
+  els.sendVoice.addEventListener("click", sendVoiceDraft);
   els.taskForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const text = els.taskText.value.trim();
@@ -442,6 +500,14 @@ function bindActions() {
     resetDiaryForm();
     persistAndRender();
   }));
+  els.goalForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const text = els.goalText.value.trim();
+    if (!text) return;
+    privateSpace().goals.unshift({ id: uid(), text, completed: false, completedAt: "", createdAt: todayString() });
+    els.goalForm.reset();
+    persistAndRender();
+  });
   els.traitForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const text = els.traitText.value.trim();
@@ -497,8 +563,14 @@ function bindActions() {
 
 function bindSyncEvents() {
   window.addEventListener("love-sync-status", (event) => {
-    const { role, needsPairing } = event.detail;
+    const { connected, role, needsPairing } = event.detail;
     els.pairingNotice.hidden = !needsPairing;
+    if (!connected) {
+      missStats = emptyMissStats();
+      voiceMessages = [];
+      renderMissStats();
+      renderVoiceMessages();
+    }
     if (needsPairing && !pairingRedirected) {
       pairingRedirected = true;
       activateTab("me", q("#syncPanel"));
@@ -510,6 +582,19 @@ function bindSyncEvents() {
       setFormDates();
       saveLocalAndRender();
     }
+  });
+  window.addEventListener("love-miss-stats", (event) => {
+    missStats = normalizeMissStats(event.detail);
+    renderMissStats();
+  });
+  window.addEventListener("love-voice-messages", (event) => {
+    voiceMessages = Array.isArray(event.detail) ? event.detail : [];
+    renderVoiceMessages();
+  });
+  window.addEventListener("love-sync-feature-error", (event) => {
+    const { feature, message } = event.detail || {};
+    if (feature === "voice") els.voiceNotice.textContent = message;
+    if (feature === "miss") els.missHint.textContent = message;
   });
   window.addEventListener("love-sync-remote", (event) => {
     const { shared, privateData, role, initializeEmptySpace } = event.detail;
@@ -532,9 +617,11 @@ function render() {
   renderPresence();
   renderDailyCapsule();
   renderMoods();
+  renderMissStats();
   renderMeetingCountdown();
   renderMessages();
   renderQuestion();
+  renderVoiceMessages();
   renderTasks();
   renderLoveNotes();
   renderStudyLogs();
@@ -577,6 +664,172 @@ function renderMoods() {
     card.innerHTML = `<p>${people[id].name}</p><h3>${escapeHTML(mood.feeling)}</h3><small>${escapeHTML(mood.note || "今天也在想你")}</small>`;
     return card;
   }));
+}
+
+function emptyMissStats() {
+  return { liu: { total: 0, today: 0 }, fu: { total: 0, today: 0 } };
+}
+
+function normalizeMissStats(value) {
+  const empty = emptyMissStats();
+  return {
+    ...empty,
+    liu: { total: Number(value?.liu?.total) || 0, today: Number(value?.liu?.today) || 0 },
+    fu: { total: Number(value?.fu?.total) || 0, today: Number(value?.fu?.today) || 0 }
+  };
+}
+
+function otherPerson(person) { return person === "liu" ? "fu" : "liu"; }
+
+function renderMissStats() {
+  const person = currentPerson();
+  const other = otherPerson(person);
+  const sent = missStats[person] || { total: 0, today: 0 };
+  const received = missStats[other] || { total: 0, today: 0 };
+  els.missSentLabel.textContent = `我想${people[other].short}`;
+  els.missReceivedLabel.textContent = `${people[other].short}想我`;
+  els.missSentTotal.textContent = sent.total;
+  els.missSentToday.textContent = sent.today;
+  els.missReceivedTotal.textContent = received.total;
+  els.missReceivedToday.textContent = received.today;
+}
+
+function renderVoiceMessages() {
+  els.voiceCount.textContent = `${voiceMessages.length} 封`;
+  if (!voiceMessages.length) return renderEmpty(els.voiceList, "第一封心声，等一句熟悉的声音。");
+  els.voiceList.replaceChildren(...voiceMessages.map((message) => {
+    const node = document.createElement("article");
+    node.className = `voice-message ${message.role === "fu" ? "fu" : "liu"}`;
+    const own = message.role === currentPerson();
+    const date = new Date(message.created_at);
+    node.innerHTML = `<header><span>${people[message.role]?.name || "我们"}</span><time>${formatDateTime(date)}</time>${own ? `<button class="delete-button" data-delete-voice="${message.id}" data-storage-path="${escapeHTML(message.storage_path)}" type="button" aria-label="删除语音">×</button>` : ""}</header><div class="voice-message-body"><span class="voice-duration">${formatDuration(Number(message.duration_seconds) || 0)}</span><audio controls preload="none" src="${escapeHTML(message.signedUrl || "")}"></audio></div>`;
+    return node;
+  }));
+  els.voiceList.querySelectorAll("[data-delete-voice]").forEach((button) => button.addEventListener("click", async () => {
+    if (!window.confirm("确定删除这封心声吗？")) return;
+    button.disabled = true;
+    els.voiceNotice.textContent = "正在删除...";
+    try {
+      await window.LoveSync.deleteVoice(button.dataset.deleteVoice, button.dataset.storagePath);
+      els.voiceNotice.textContent = "这封心声已经删除。";
+    } catch (error) {
+      els.voiceNotice.textContent = syncFeatureError(error, "心声信箱");
+      button.disabled = false;
+    }
+  }));
+}
+
+async function startVoiceRecording() {
+  if (!window.LoveSync?.isConnected()) {
+    els.voiceNotice.textContent = "登录并进入两人空间后才能保存语音。";
+    return;
+  }
+  if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+    els.voiceNotice.textContent = "当前浏览器不支持网页录音，请使用手机系统浏览器打开。";
+    return;
+  }
+  clearVoiceDraft();
+  try {
+    voiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const preferredTypes = ["audio/webm;codecs=opus", "audio/mp4", "audio/webm"];
+    const mimeType = preferredTypes.find((type) => MediaRecorder.isTypeSupported?.(type));
+    voiceRecorder = new MediaRecorder(voiceStream, mimeType ? { mimeType, audioBitsPerSecond: 64000 } : undefined);
+    voiceChunks = [];
+    voiceStartedAt = Date.now();
+    voiceRecorder.addEventListener("dataavailable", (event) => {
+      if (event.data.size) voiceChunks.push(event.data);
+    });
+    voiceRecorder.addEventListener("stop", finishVoiceRecording, { once: true });
+    voiceRecorder.start(250);
+    els.voiceNotice.textContent = "";
+    setVoiceRecordingUi(true);
+    updateVoiceTimer();
+    voiceTimer = window.setInterval(updateVoiceTimer, 250);
+    voiceStopTimer = window.setTimeout(stopVoiceRecording, 90000);
+  } catch (error) {
+    cleanupVoiceStream();
+    els.voiceNotice.textContent = error?.name === "NotAllowedError"
+      ? "没有获得麦克风权限，请在浏览器设置中允许后重试。"
+      : "暂时无法启动录音，请检查麦克风是否被其他应用占用。";
+  }
+}
+
+function stopVoiceRecording() {
+  if (voiceRecorder?.state === "recording") voiceRecorder.stop();
+  window.clearInterval(voiceTimer);
+  window.clearTimeout(voiceStopTimer);
+  voiceTimer = null;
+  voiceStopTimer = null;
+  setVoiceRecordingUi(false);
+  cleanupVoiceStream();
+}
+
+function finishVoiceRecording() {
+  const duration = Math.min(90, Math.max(1, Math.round((Date.now() - voiceStartedAt) / 1000)));
+  const mimeType = voiceRecorder?.mimeType || voiceChunks[0]?.type || "audio/webm";
+  const blob = new Blob(voiceChunks, { type: mimeType });
+  voiceRecorder = null;
+  voiceChunks = [];
+  if (!blob.size) {
+    els.voiceNotice.textContent = "没有录到声音，请重新录制。";
+    return;
+  }
+  voiceDraft = { blob, duration, mimeType };
+  voiceDraftUrl = URL.createObjectURL(blob);
+  els.voicePreview.src = voiceDraftUrl;
+  els.voiceDraft.hidden = false;
+  els.voiceRecordStatus.textContent = "录音完成，可以先试听";
+  els.voiceRecordTimer.textContent = `${formatDuration(duration)} · 待发送`;
+}
+
+function setVoiceRecordingUi(recording) {
+  els.recordVoice.classList.toggle("is-recording", recording);
+  els.recordVoice.setAttribute("aria-label", recording ? "停止录音" : "开始录音");
+  els.recordVoice.title = recording ? "停止录音" : "开始录音";
+  els.recordVoice.innerHTML = `<i data-lucide="${recording ? "square" : "mic"}" aria-hidden="true"></i>`;
+  els.voiceRecordStatus.textContent = recording ? "正在录音" : "按下麦克风，留一段声音";
+  if (!recording && !voiceDraft) els.voiceRecordTimer.textContent = "最长 01:30";
+  window.lucide?.createIcons();
+}
+
+function updateVoiceTimer() {
+  const seconds = Math.min(90, Math.floor((Date.now() - voiceStartedAt) / 1000));
+  els.voiceRecordTimer.textContent = `${formatDuration(seconds)} / 01:30`;
+}
+
+function cleanupVoiceStream() {
+  voiceStream?.getTracks().forEach((track) => track.stop());
+  voiceStream = null;
+}
+
+function clearVoiceDraft() {
+  if (voiceDraftUrl) URL.revokeObjectURL(voiceDraftUrl);
+  voiceDraftUrl = "";
+  voiceDraft = null;
+  els.voicePreview.pause();
+  els.voicePreview.removeAttribute("src");
+  els.voiceDraft.hidden = true;
+  els.voiceRecordStatus.textContent = "按下麦克风，留一段声音";
+  els.voiceRecordTimer.textContent = "最长 01:30";
+}
+
+async function sendVoiceDraft() {
+  if (!voiceDraft) return;
+  els.sendVoice.disabled = true;
+  els.discardVoice.disabled = true;
+  els.sendVoice.textContent = "存入中...";
+  els.voiceNotice.textContent = "正在把声音安全地存入信箱...";
+  try {
+    await window.LoveSync.uploadVoice(voiceDraft.blob, voiceDraft.duration, voiceDraft.mimeType);
+    clearVoiceDraft();
+    els.voiceNotice.textContent = "心声已经送达。";
+  } catch (error) {
+    els.voiceNotice.textContent = syncFeatureError(error, "心声信箱");
+  } finally {
+    els.sendVoice.disabled = false;
+    els.discardVoice.disabled = false;
+    els.sendVoice.textContent = "存入信箱";
+  }
 }
 
 function renderMeetingCountdown() {
@@ -818,6 +1071,7 @@ function renderPrivate() {
     button.disabled = Boolean(syncedRole && button.dataset.person !== person);
   });
   const space = privateSpace();
+  renderGoals(space);
   if (!space.traits.length) {
     renderEmpty(els.traitList, "把你发现的一个小优点记下来。");
   } else {
@@ -844,6 +1098,35 @@ function renderPrivate() {
   renderWeights(weights, health);
   renderCycles(health.cycles || []);
   els.healthPanel.hidden = person !== "fu";
+}
+
+function renderGoals(space) {
+  const goals = space.goals || [];
+  const completed = goals.filter((goal) => goal.completed).length;
+  els.goalStats.textContent = `${completed}/${goals.length}`;
+  if (!goals.length) return renderEmpty(els.goalList, "写下一个只为自己认真完成的目标。");
+  els.goalList.replaceChildren(...goals.map((goal) => {
+    const node = document.createElement("article");
+    node.className = `goal-item${goal.completed ? " is-done" : ""}`;
+    const meta = goal.completed && goal.completedAt
+      ? `<small>${formatDate(parseDate(goal.completedAt))}完成</small>`
+      : `<small>${formatDate(parseDate(goal.createdAt))}加入</small>`;
+    node.innerHTML = `<label class="goal-toggle"><input data-goal-id="${goal.id}" type="checkbox" ${goal.completed ? "checked" : ""}><span class="goal-check" aria-hidden="true">✓</span><span><strong>${escapeHTML(goal.text)}</strong>${meta}</span></label><button class="delete-button" data-delete-goal="${goal.id}" type="button" aria-label="删除个人目标">×</button>`;
+    return node;
+  }));
+  els.goalList.querySelectorAll("[data-goal-id]").forEach((input) => input.addEventListener("change", () => {
+    const goal = privateSpace().goals.find((item) => item.id === input.dataset.goalId);
+    if (!goal) return;
+    goal.completed = input.checked;
+    goal.completedAt = input.checked ? todayString() : "";
+    persistAndRender();
+  }));
+  els.goalList.querySelectorAll("[data-delete-goal]").forEach((button) => button.addEventListener("click", () => {
+    if (!window.confirm("确定删除这个个人目标吗？")) return;
+    const currentSpace = privateSpace();
+    currentSpace.goals = currentSpace.goals.filter((item) => item.id !== button.dataset.deleteGoal);
+    persistAndRender();
+  }));
 }
 
 function renderDiaries(diaries) {
@@ -938,16 +1221,23 @@ function openMoodDialog() {
   selectedMood = current.feeling;
   els.moodDialogTitle.textContent = `${people[person].name}想说`;
   els.moodNote.value = current.note || "";
-  els.moodPicker.replaceChildren(...moods.map((mood) => {
-    const button = document.createElement("button");
-    button.className = `mood-option${mood === selectedMood ? " is-selected" : ""}`;
-    button.type = "button";
-    button.textContent = mood;
-    button.addEventListener("click", () => {
-      selectedMood = mood;
-      els.moodPicker.querySelectorAll("button").forEach((item) => item.classList.toggle("is-selected", item.textContent === mood));
-    });
-    return button;
+  els.moodPicker.replaceChildren(...moodGroups.map((group) => {
+    const section = document.createElement("section");
+    section.className = "mood-group";
+    section.innerHTML = `<h3>${group.label}</h3><div class="mood-group-options"></div>`;
+    const root = section.querySelector(".mood-group-options");
+    root.replaceChildren(...group.items.map((mood) => {
+      const button = document.createElement("button");
+      button.className = `mood-option${mood === selectedMood ? " is-selected" : ""}`;
+      button.type = "button";
+      button.textContent = mood;
+      button.addEventListener("click", () => {
+        selectedMood = mood;
+        els.moodPicker.querySelectorAll("button").forEach((item) => item.classList.toggle("is-selected", item.textContent === mood));
+      });
+      return button;
+    }));
+    return section;
   }));
   els.moodDialog.showModal();
 }
@@ -956,8 +1246,10 @@ function setNewQuestion(category) {
   const categories = Object.keys(questionBank);
   const chosenCategory = category === "all" ? pickRandom(categories) : category;
   const pool = questionBank[chosenCategory] || questionBank.daily;
-  let text = pickRandom(pool);
-  for (let attempt = 0; attempt < 8 && text === state.dailyQuestion.text; attempt += 1) text = pickRandom(pool);
+  const recent = new Set([state.dailyQuestion.text, ...(state.questionHistory || []).slice(0, 30)]);
+  const available = pool.filter((text) => !recent.has(text));
+  const text = pickRandom(available.length ? available : pool);
+  state.questionHistory = [state.dailyQuestion.text, ...(state.questionHistory || [])].filter(Boolean).slice(0, 30);
   state.dailyQuestion = { id: uid(), category: chosenCategory, text, date: todayString(), answers: { liu: "", fu: "" } };
   persistAndRender();
 }
@@ -1003,6 +1295,7 @@ function mergeDefaults(saved) {
       ...(saved.dailyQuestion || {}),
       answers: { ...base.dailyQuestion.answers, ...(saved.dailyQuestion?.answers || {}) }
     },
+    questionHistory: Array.isArray(saved.questionHistory) ? saved.questionHistory.slice(0, 30) : [],
     loveNotes: Array.isArray(saved.loveNotes) ? saved.loveNotes : [],
     studyLogs: Array.isArray(saved.studyLogs) ? saved.studyLogs : [],
     gameRecords: Array.isArray(saved.gameRecords) ? saved.gameRecords : [],
@@ -1022,6 +1315,8 @@ function mergePrivateSpace(savedSpace, person) {
   return {
     ...base,
     ...(savedSpace || {}),
+    goals: Array.isArray(savedSpace?.goals) ? savedSpace.goals : [],
+    traits: Array.isArray(savedSpace?.traits) ? savedSpace.traits : base.traits,
     diaries: Array.isArray(savedSpace?.diaries) ? savedSpace.diaries : [],
     health: { ...base.health, ...(savedSpace?.health || {}) }
   };
@@ -1033,11 +1328,31 @@ function parseDate(value) { if (!value) return null; const [year, month, date] =
 function startOfDay(date) { return new Date(date.getFullYear(), date.getMonth(), date.getDate()); }
 function daysBetween(a, b) { return Math.round((startOfDay(b) - startOfDay(a)) / 86400000); }
 function formatDate(date) { return date ? `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日` : ""; }
+function formatDateTime(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return "刚刚";
+  const time = `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  return `${date.getMonth() + 1}月${date.getDate()}日 ${time}`;
+}
+function formatDuration(seconds) {
+  const value = Math.max(0, Math.round(Number(seconds) || 0));
+  return `${String(Math.floor(value / 60)).padStart(2, "0")}:${String(value % 60).padStart(2, "0")}`;
+}
 function todayString() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`; }
 function uid() { return window.crypto?.randomUUID?.() || `id-${Date.now()}-${Math.random().toString(16).slice(2)}`; }
 function pickRandom(items) { return items[Math.floor(Math.random() * items.length)] || ""; }
 function sortByDateDesc(items, key = "date") { return [...items].sort((a, b) => (b[key] || "").localeCompare(a[key] || "")); }
 function escapeHTML(value) { return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
+function syncFeatureError(error, feature) {
+  const detail = [error?.message, error?.details, error?.hint].filter(Boolean).join(" ");
+  if (/PGRST202|42883|does not exist|schema cache|love_voice_messages|love_miss/i.test(detail)) {
+    return `${feature}尚未完成数据库升级，请在 Supabase SQL Editor 执行 supabase-upgrade-2026-08.sql。`;
+  }
+  if (/bucket not found|love-voices|storage/i.test(detail)) {
+    return `${feature}的私有存储尚未生效，请重新执行本次数据库升级脚本。`;
+  }
+  if (/JWT|unauthorized|sign in|not connected/i.test(detail)) return `登录状态已失效，请重新登录后使用${feature}。`;
+  return detail ? `${feature}暂时没有成功：${detail}` : `${feature}暂时没有成功，请稍后重试。`;
+}
 function showPhotoPreview(file) {
   clearPhotoPreview();
   if (!file) return;

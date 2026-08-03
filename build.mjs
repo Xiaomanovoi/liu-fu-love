@@ -4,7 +4,7 @@ mkdirSync("dist/assets", { recursive: true });
 mkdirSync("dist/server", { recursive: true });
 mkdirSync("dist/.openai", { recursive: true });
 
-for (const name of ["index.html", "styles.css", "app.js"]) {
+for (const name of ["index.html", "styles.css", "app.js", "sync.js", "questions-extra.js", "supabase-config.js"]) {
   cpSync(name, `dist/${name}`);
 }
 
@@ -17,7 +17,10 @@ const files = {
   "/index.html": { type: "text/html; charset=utf-8", body: ${JSON.stringify(readText("index.html"))} },
   "/styles.css": { type: "text/css; charset=utf-8", body: ${JSON.stringify(readText("styles.css"))} },
   "/app.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("app.js"))} },
-  "/assets/hero-bg.png": { type: "image/png", base64: "${readBase64("assets/hero-bg.png")}" }
+  "/sync.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("sync.js"))} },
+  "/questions-extra.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("questions-extra.js"))} },
+  "/supabase-config.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("supabase-config.js"))} },
+  "/assets/hero-bg.jpg": { type: "image/jpeg", base64: "${readBase64("assets/hero-bg.jpg")}" }
 };
 
 function responseFor(pathname) {

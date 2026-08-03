@@ -65,6 +65,31 @@
 
         <div class="two-up" id="moodCards"></div>
 
+        <article class="miss-panel" aria-labelledby="missTitle">
+          <div class="miss-copy">
+            <p class="section-kicker">A little signal for you</p>
+            <h2 id="missTitle">想你信号</h2>
+            <p id="missHint">轻轻点一下，让想念抵达对方。</p>
+          </div>
+          <button class="miss-heart-button" id="sendMiss" type="button" aria-label="向对方发送一次想你信号" title="想你了">
+            <i data-lucide="heart" aria-hidden="true"></i>
+            <span>想你了</span>
+          </button>
+          <div class="miss-stats" aria-live="polite">
+            <div>
+              <span id="missSentLabel">我想对方</span>
+              <strong id="missSentTotal">0</strong>
+              <small>累计 · 今日 <b id="missSentToday">0</b></small>
+            </div>
+            <span class="miss-divider" aria-hidden="true">♥</span>
+            <div>
+              <span id="missReceivedLabel">对方想我</span>
+              <strong id="missReceivedTotal">0</strong>
+              <small>累计 · 今日 <b id="missReceivedToday">0</b></small>
+            </div>
+          </div>
+        </article>
+
         <article class="feature-panel meeting-countdown">
           <div>
             <p class="section-kicker">下次见面</p>
@@ -112,7 +137,7 @@
             </select>
             <button class="soft-button" id="newQuestion" type="button">纯随机换题</button>
           </div>
-          <p class="consent-note">私密与情趣问题都可以跳过，舒服和坦诚永远优先。</p>
+          <p class="consent-note">遇到当下不想回答的问题，直接随机换题就好。</p>
           <form id="questionAnswerForm" class="question-answer-form">
             <label><span>以 <strong id="questionWriterName">刘向强</strong> 的身份回答</span>
               <textarea id="questionAnswer" rows="2" maxlength="300" placeholder="写下你的答案，双方回答后解锁..."></textarea>
@@ -120,6 +145,34 @@
             <button class="primary-button" type="submit">保存我的回答</button>
           </form>
           <div class="answer-status" id="questionAnswers"></div>
+        </article>
+
+        <article class="panel voice-panel" aria-labelledby="voiceMailboxTitle">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">Keep your voice close</p>
+              <h2 id="voiceMailboxTitle">心声信箱</h2>
+            </div>
+            <span class="mini-stat" id="voiceCount">0 封</span>
+          </div>
+          <div class="voice-recorder">
+            <button class="voice-record-button" id="recordVoice" type="button" aria-label="开始录音" title="开始录音">
+              <i data-lucide="mic" aria-hidden="true"></i>
+            </button>
+            <div class="voice-recorder-copy">
+              <strong id="voiceRecordStatus">按下麦克风，留一段声音</strong>
+              <span id="voiceRecordTimer">最长 01:30</span>
+            </div>
+          </div>
+          <div class="voice-draft" id="voiceDraft" hidden>
+            <audio id="voicePreview" controls preload="metadata"></audio>
+            <div class="voice-draft-actions">
+              <button class="soft-button" id="discardVoice" type="button">重新录制</button>
+              <button class="primary-button" id="sendVoice" type="button">存入信箱</button>
+            </div>
+          </div>
+          <p class="voice-notice" id="voiceNotice" aria-live="polite"></p>
+          <div class="voice-list" id="voiceList"></div>
         </article>
       </section>
 
@@ -371,6 +424,21 @@
           <p class="invite-result" id="inviteResult" aria-live="polite"></p>
         </article>
 
+        <article class="panel goal-panel">
+          <div class="section-heading">
+            <div>
+              <p class="section-kicker">A promise to myself</p>
+              <h2>个人目标</h2>
+            </div>
+            <span class="private-chip" id="goalStats">0/0</span>
+          </div>
+          <form id="goalForm" class="inline-form goal-form">
+            <input id="goalText" maxlength="100" autocomplete="off" placeholder="写下想认真完成的一件事">
+            <button class="icon-button" type="submit" aria-label="添加个人目标" title="添加目标">＋</button>
+          </form>
+          <div class="goal-list" id="goalList"></div>
+        </article>
+
         <article class="panel profile-panel">
           <div class="section-heading">
             <div>
@@ -514,6 +582,7 @@
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
     <script src="supabase-config.js"></script>
     <script src="sync.js"></script>
+    <script src="questions-extra.js"></script>
     <script src="app.js"></script>
   </body>
 </html>

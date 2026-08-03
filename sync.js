@@ -1,7 +1,7 @@
 (function () {
   const config = window.LOVE_SYNC_CONFIG || {};
   const hasConfig = Boolean(config.url && config.publishableKey);
-  const sync = { client: null, user: null, coupleId: null, role: null, channel: null, timer: null };
+  const sync = { client: null, user: null, coupleId: null, role: null, channel: null, timer: null, voiceRefreshTimer: null };
 
   function emit(name, detail) {
     window.dispatchEvent(new CustomEvent(name, { detail }));
@@ -166,10 +166,12 @@
 
   function resetConnection() {
     if (sync.channel) sync.client.removeChannel(sync.channel);
+    clearInterval(sync.voiceRefreshTimer);
     sync.user = null;
     sync.coupleId = null;
     sync.role = null;
     sync.channel = null;
+    sync.voiceRefreshTimer = null;
     q("#connectedInvite").hidden = true;
   }
 
@@ -213,6 +215,9 @@
     emit("love-sync-status", { connected: true, authenticated: true, needsPairing: false, role: sync.role });
     await loadRemoteState();
     subscribe();
+    await Promise.all([refreshMissStats(), refreshVoiceMessages()]);
+    clearInterval(sync.voiceRefreshTimer);
+    sync.voiceRefreshTimer = setInterval(refreshVoiceMessages, 45 * 60 * 1000);
   }
 
   async function loadRemoteState() {
@@ -239,7 +244,108 @@
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "love_private_state", filter: `user_id=eq.${sync.user.id}` }, (payload) => {
         emit("love-sync-remote", { shared: null, privateData: payload.new.data || {}, role: sync.role });
       })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "love_miss_events", filter: `couple_id=eq.${sync.coupleId}` }, () => {
+        refreshMissStats();
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "love_voice_messages", filter: `couple_id=eq.${sync.coupleId}` }, () => {
+        refreshVoiceMessages();
+      })
       .subscribe();
+  }
+
+  function featureError(feature, error) {
+    const detail = [error?.message, error?.details, error?.hint].filter(Boolean).join(" ");
+    const missing = /PGRST202|42883|does not exist|schema cache|love_voice_messages|love_miss/i.test(detail);
+    const message = missing
+      ? `${feature === "voice" ? "心声信箱" : "想你信号"}尚未完成数据库升级，请执行 supabase-upgrade-2026-08.sql。`
+      : (detail || `${feature === "voice" ? "心声信箱" : "想你信号"}暂时无法同步。`);
+    emit("love-sync-feature-error", { feature, message });
+  }
+
+  async function refreshMissStats() {
+    if (!sync.client || !sync.coupleId) return null;
+    const { data, error } = await sync.client.rpc("get_love_miss_stats");
+    if (error) {
+      featureError("miss", error);
+      return null;
+    }
+    emit("love-miss-stats", data || {});
+    return data;
+  }
+
+  async function sendMiss() {
+    if (!sync.client || !sync.coupleId) throw new Error("not connected");
+    const { data, error } = await sync.client.rpc("send_love_miss");
+    if (error) throw error;
+    emit("love-miss-stats", data || {});
+    return data;
+  }
+
+  async function refreshVoiceMessages() {
+    if (!sync.client || !sync.coupleId) return [];
+    const { data, error } = await sync.client
+      .from("love_voice_messages")
+      .select("id, user_id, role, storage_path, duration_seconds, mime_type, created_at")
+      .eq("couple_id", sync.coupleId)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    if (error) {
+      featureError("voice", error);
+      return [];
+    }
+    const messages = await Promise.all((data || []).map(async (message) => {
+      const { data: signed } = await sync.client.storage.from("love-voices").createSignedUrl(message.storage_path, 3600);
+      return { ...message, signedUrl: signed?.signedUrl || "" };
+    }));
+    emit("love-voice-messages", messages);
+    return messages;
+  }
+
+  function audioExtension(mimeType) {
+    if (/mp4|m4a/i.test(mimeType)) return "m4a";
+    if (/ogg/i.test(mimeType)) return "ogg";
+    return "webm";
+  }
+
+  async function uploadVoice(blob, duration, mimeType) {
+    if (!sync.client || !sync.coupleId || !sync.user) throw new Error("not connected");
+    if (!(blob instanceof Blob) || !blob.size) throw new Error("empty voice recording");
+    if (blob.size > 12 * 1024 * 1024) throw new Error("voice recording is too large");
+    const id = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    const path = `${sync.coupleId}/${sync.user.id}/${id}.${audioExtension(mimeType)}`;
+    const upload = await sync.client.storage.from("love-voices").upload(path, blob, {
+      contentType: mimeType || blob.type || "audio/webm",
+      cacheControl: "3600",
+      upsert: false
+    });
+    if (upload.error) throw upload.error;
+    const insert = await sync.client.from("love_voice_messages").insert({
+      id,
+      couple_id: sync.coupleId,
+      user_id: sync.user.id,
+      role: sync.role,
+      storage_path: path,
+      duration_seconds: Math.max(1, Math.min(90, Math.round(duration))),
+      mime_type: mimeType || blob.type || "audio/webm"
+    });
+    if (insert.error) {
+      await sync.client.storage.from("love-voices").remove([path]);
+      throw insert.error;
+    }
+    await refreshVoiceMessages();
+  }
+
+  async function deleteVoice(id, path) {
+    if (!sync.client || !sync.coupleId || !sync.user) throw new Error("not connected");
+    const storageResult = await sync.client.storage.from("love-voices").remove([path]);
+    if (storageResult.error) throw storageResult.error;
+    const { error } = await sync.client
+      .from("love_voice_messages")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", sync.user.id);
+    if (error) throw error;
+    await refreshVoiceMessages();
   }
 
   function splitState(state) {
@@ -274,6 +380,11 @@
       await refreshSession();
     },
     scheduleSave,
+    sendMiss,
+    refreshMissStats,
+    uploadVoice,
+    deleteVoice,
+    refreshVoiceMessages,
     isConnected: () => Boolean(sync.coupleId),
     getRole: () => sync.role
   };

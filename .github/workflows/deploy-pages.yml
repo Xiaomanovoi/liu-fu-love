@@ -25,7 +25,7 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir -p _site/assets
-          cp index.html styles.css app.js sync.js supabase-config.js _site/
+          cp index.html styles.css app.js sync.js questions-extra.js supabase-config.js _site/
           cp assets/hero-bg.jpg _site/assets/
           touch _site/.nojekyll
       - name: Upload Pages artifact
