@@ -440,6 +440,21 @@
     await refreshVoiceMessages();
   }
 
+  async function deleteSharedRecord(field, id) {
+    if (!sync.client || !sync.coupleId || !sync.user || !field || !id) return null;
+    const { data, error } = await sync.client.rpc("delete_love_shared_record", {
+      p_field: field,
+      p_record_id: id
+    });
+    if (error) {
+      const detail = [error.message, error.details, error.hint].filter(Boolean).join(" ");
+      if (/PGRST202|42883|does not exist|schema cache/i.test(detail)) return null;
+      throw error;
+    }
+    if (data && typeof data === "object") emit("love-sync-remote", { shared: data, privateData: null, role: sync.role });
+    return data || null;
+  }
+
   function splitState(state) {
     const { private: privateSpaces, writer, privatePerson, ...shared } = state;
     return { shared, privateData: privateSpaces[sync.role] || {} };
@@ -532,6 +547,7 @@
     refreshMissStats,
     uploadVoice,
     deleteVoice,
+    deleteSharedRecord,
     refreshVoiceMessages,
     refreshVisibleData,
     isConnected: () => Boolean(sync.coupleId),

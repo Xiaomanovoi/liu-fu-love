@@ -387,15 +387,8 @@
             <small>今日回忆</small>
           </button>
           <div class="garden-gate-sign" id="gardenGateSign"><i data-lucide="lock-keyhole" aria-hidden="true"></i><span>花房尚未解锁</span></div>
-          <div class="garden-plant" id="gardenPlant" aria-hidden="true">
-            <span class="garden-stem stem-left"><i class="leaf leaf-a"></i><i class="leaf leaf-b"></i><i class="leaf leaf-c"></i><b class="garden-flower flower-left"><i></i><i></i><i></i><i></i><i></i><i></i><em></em></b></span>
-            <span class="garden-stem stem-right"><i class="leaf leaf-a"></i><i class="leaf leaf-b"></i><i class="leaf leaf-c"></i><b class="garden-flower flower-right"><i></i><i></i><i></i><i></i><i></i><i></i><em></em></b></span>
-            <span class="garden-pot-sprouts"><i></i><i></i><i></i></span>
-            <span class="garden-heart-vine"></span>
-            <span class="garden-ground-blooms"><i></i><i></i><i></i><i></i><i></i></span>
-            <span class="garden-pot"><b>LIU ♥ FU</b></span>
-          </div>
-          <div class="garden-companion-scene" id="gardenCompanionScene" aria-hidden="true"><i></i><b></b><span></span></div>
+          <div class="garden-plant" id="gardenPlant" aria-hidden="true"></div>
+          <div class="garden-companion-scene" id="gardenCompanionScene" aria-hidden="true"></div>
           <div class="garden-memory-reveal" id="gardenMemoryReveal" hidden>
             <button id="closeGardenMemory" type="button" aria-label="关闭今日回忆">×</button>
             <small>蝴蝶带回一段往日</small>
@@ -456,7 +449,7 @@
                 <span class="garden-feature-icon"><i data-lucide="leaf" aria-hidden="true"></i></span>
                 <div><small>OUR LITTLE PLANT</small><h4>双人共育植物</h4><p>每天各照顾一次，它才会长得更茂盛。</p></div>
               </div>
-              <div class="companion-plant-display" id="gardenCompanionDisplay" data-species="rose" data-level="0" aria-hidden="true"><span class="companion-soil"></span><i></i><i></i><b></b></div>
+              <div class="companion-plant-display" id="gardenCompanionDisplay" data-species="rose" data-level="0" aria-hidden="true"></div>
               <div class="companion-plant-copy" id="gardenCompanionStatus">
                 <strong id="gardenCompanionPlantName">还没有取名字</strong>
                 <small id="gardenCompanionMeta">一起选择第一株共同照顾的植物</small>
@@ -478,6 +471,23 @@
                 <b id="gardenQuestProgress">0/3</b>
               </div>
               <div class="garden-quest-list" id="gardenQuestList"></div>
+            </article>
+
+            <article class="garden-feature garden-postcard-card">
+              <div class="garden-feature-heading">
+                <span class="garden-feature-icon postcard"><i data-lucide="send" aria-hidden="true"></i></span>
+                <div><small>OUR WEEK IN BLOOM</small><h4>每周花园明信片</h4><p>把这一周共同留下的心意，收进一张可以保存的明信片。</p></div>
+              </div>
+              <div class="garden-postcard-preview" id="gardenPostcardPreview">
+                <div class="garden-postcard-topline"><span id="gardenPostcardWeek">本周花园</span><b id="gardenPostcardStage">心意种子</b></div>
+                <div class="garden-postcard-botanical" id="gardenPostcardBotanical" aria-hidden="true"></div>
+                <strong id="gardenPostcardTitle">这一周，我们也在一起生长</strong>
+                <p id="gardenPostcardCopy">本周的共同回忆正在整理中。</p>
+                <div class="garden-postcard-stats" id="gardenPostcardStats"></div>
+                <small>LIU ♥ FU · GROWING TOGETHER</small>
+              </div>
+              <button class="garden-postcard-save" id="saveGardenPostcard" type="button"><i data-lucide="download" aria-hidden="true"></i><span>保存本周明信片</span></button>
+              <p class="garden-postcard-notice" id="gardenPostcardNotice" aria-live="polite"></p>
             </article>
 
             <article class="garden-feature garden-letter-card">
@@ -563,24 +573,31 @@
               </div>
               <div class="garden-roadmap" id="gardenRoadmap" aria-label="花园成长地图"></div>
             </section>
-            <div class="garden-panel-heading garden-points-heading">
-              <div><p class="section-kicker">Where every heart point came from</p><h3>心意值账本</h3></div>
-            </div>
-            <details class="garden-point-rules">
-              <summary>查看心意值规则与每日上限</summary>
-              <div>
-                <span>共同浇水 <b>最多 +6/日</b></span><span>每日问答 <b>最多 +8/题</b></span>
-                <span>共同留言 <b>+1，最多 4 条/日</b></span><span>声音信箱 <b>+5，每人最多 2 条/日</b></span>
-                <span>公共照片 <b>+8，最多 3 张/日</b></span><span>双人任务 <b>+10，最多 3 项/日</b></span>
-                <span>游戏记录 <b>+12，最多 2 条/日</b></span><span>心意种子开放 <b>+15，最多 2 颗/日</b></span>
-                <span>双生花 <b>+20，最多 1 朵/日</b></span><span>情侣成就 <b>+20，最多 3 项/日</b></span>
-                <span>见面记录 <b>+30</b></span><span>共同愿望 <b>+35，最多 1 项/日</b></span>
-                <span>共育植物 <b>共同照顾最多 +8/日</b></span><span>花园任务 <b>共同完成 +12/项</b></span>
-                <span>花期信件 <b>开放 +10，最多 2 封/日</b></span>
+            <details class="garden-ledger-details">
+              <summary>
+                <span class="garden-ledger-summary-icon"><i data-lucide="notebook-tabs" aria-hidden="true"></i></span>
+                <span><small>Where every heart point came from</small><strong>心意值账本</strong></span>
+                <b id="gardenLedgerSummary">点击展开</b>
+                <i data-lucide="chevron-down" aria-hidden="true"></i>
+              </summary>
+              <div class="garden-ledger-content">
+                <details class="garden-point-rules">
+                  <summary>查看心意值规则与每日上限</summary>
+                  <div>
+                    <span>共同浇水 <b>最多 +6/日</b></span><span>每日问答 <b>最多 +8/题</b></span>
+                    <span>学习打卡 <b>每人首次 +3，双人再 +2/日</b></span><span>共同留言 <b>+1，最多 4 条/日</b></span>
+                    <span>声音信箱 <b>+5，每人最多 2 条/日</b></span><span>公共照片 <b>+8，最多 3 张/日</b></span>
+                    <span>双人任务 <b>+10，最多 3 项/日</b></span><span>游戏记录 <b>+12，最多 2 条/日</b></span>
+                    <span>心意种子开放 <b>+15，最多 2 颗/日</b></span><span>双生花 <b>+20，最多 1 朵/日</b></span>
+                    <span>情侣成就 <b>+20，最多 3 项/日</b></span><span>见面记录 <b>+30</b></span>
+                    <span>共同愿望 <b>+35，最多 1 项/日</b></span><span>共育植物 <b>共同照顾最多 +8/日</b></span>
+                    <span>花园任务 <b>共同完成 +12/项</b></span><span>花期信件 <b>开放 +10，最多 2 封/日</b></span>
+                  </div>
+                </details>
+                <div class="garden-point-breakdown" id="gardenPointBreakdown"></div>
+                <div class="garden-point-ledger" id="gardenPointLedger"></div>
               </div>
             </details>
-            <div class="garden-point-breakdown" id="gardenPointBreakdown"></div>
-            <div class="garden-point-ledger" id="gardenPointLedger"></div>
             <div class="garden-panel-heading garden-decoration-heading">
               <div><p class="section-kicker">A little corner of our own</p><h3>布置我们的花园</h3></div>
             </div>

@@ -791,3 +791,74 @@ dialog::backdrop { background: rgba(63,49,47,.38); backdrop-filter: blur(4px); }
   .garden-cloud,.garden-festival-scene i { animation: none; }
   .companion-progress i,.garden-fence,.garden-sprout-grove,.garden-flower-border { transition: none; }
 }
+
+/* Secret Garden botanical artwork */
+.garden-plant { bottom: 17px; z-index: 3; width: min(300px,78vw); height: 310px; pointer-events: none; transform: translateX(-50%); transform-origin: 50% 100%; }
+.garden-plant-svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 8px 8px rgba(42,67,50,.1)); }
+.garden-svg-stems { transform-box: fill-box; transform-origin: 50% 100%; animation: botanical-breathe 5.6s ease-in-out infinite; }
+.garden-svg-flower { transform-box: fill-box; transform-origin: center; }
+.garden-stage.is-watering .garden-plant { animation: plant-thank-you .8s ease; }
+.garden-stage[data-stage="seed"] .garden-plant { width: min(265px,72vw); }
+.garden-stage[data-stage="sprout"] .garden-plant { width: min(278px,74vw); }
+.garden-stage[data-stage="path"] .garden-plant,.garden-stage[data-stage="courtyard"] .garden-plant,.garden-stage[data-stage="sanctuary"] .garden-plant { width: min(325px,84vw); }
+
+.garden-companion-scene { right: 3%; bottom: 35px; z-index: 4; width: 84px; height: 100px; }
+.garden-companion-scene::after { content: none; }
+.garden-companion-scene .companion-plant-svg { width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 5px 4px rgba(40,62,47,.14)); }
+.companion-plant-display { width: min(270px,92%); height: 220px; margin: 4px auto 0; background: radial-gradient(ellipse at 50% 78%,rgba(113,151,124,.12),transparent 58%); }
+.companion-plant-display::after { content: none; }
+.companion-plant-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.companion-plant-svg:not(.is-compact) { filter: drop-shadow(0 9px 7px rgba(66,82,69,.1)); }
+
+.hybrid-bloom { grid-template-columns: 72px minmax(0,1fr); min-height: 94px; padding: 9px 12px; background: linear-gradient(135deg,rgba(255,255,255,.88),rgba(244,248,241,.72)); }
+.hybrid-flower { display: block; width: 68px; height: 78px; border-radius: 0; background: none; box-shadow: none; transform: none; }
+.hybrid-flower::after { content: none; }
+.hybrid-flower-svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 5px 4px rgba(76,86,70,.12)); }
+
+.garden-postcard-card { overflow: hidden; background: linear-gradient(145deg,#fffaf6 0%,#f0f6ef 58%,#f5f0f8 100%); }
+.garden-feature-icon.postcard { color: #9c6272; background: #f8e7e8; }
+.garden-postcard-preview { position: relative; overflow: hidden; min-height: 330px; margin-top: 14px; padding: 17px 16px 15px; border: 1px solid rgba(100,131,108,.17); border-radius: 8px; background: rgba(255,255,255,.72); box-shadow: inset 0 0 0 5px rgba(255,255,255,.28),0 10px 22px rgba(66,81,67,.07); }
+.garden-postcard-preview::before { position: absolute; top: -22px; right: -26px; width: 110px; height: 110px; border: 1px solid rgba(216,132,147,.16); border-radius: 50%; box-shadow: 0 0 0 12px rgba(216,132,147,.05),0 0 0 25px rgba(216,132,147,.035); content: ""; }
+.garden-postcard-topline { position: relative; z-index: 2; display: flex; align-items: center; gap: 8px; color: #78857b; font-size: .58rem; font-weight: 800; }
+.garden-postcard-topline b { margin-left: auto; padding: 4px 7px; border-radius: 6px; color: #9d5d6b; background: #f8e7e7; }
+.garden-postcard-botanical { position: relative; width: 150px; height: 160px; margin: 2px auto 5px; }
+.garden-postcard-botanical .garden-plant-svg { width: 150px; height: 160px; transform: scale(.72); transform-origin: 50% 100%; }
+.garden-postcard-preview > strong { position: relative; z-index: 2; display: block; font-family: Georgia,"Noto Serif SC",serif; font-size: .9rem; line-height: 1.45; text-align: center; }
+.garden-postcard-preview > p { position: relative; z-index: 2; margin: 7px auto 12px; color: #716c69; font-size: .65rem; line-height: 1.58; text-align: center; }
+.garden-postcard-stats { position: relative; z-index: 2; display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; }
+.garden-postcard-stats span { display: grid; min-width: 0; gap: 2px; padding: 7px 3px; border-radius: 7px; color: #7c7773; font-size: .52rem; text-align: center; background: rgba(245,245,240,.82); }
+.garden-postcard-stats b { color: #587762; font-family: Georgia,serif; font-size: .78rem; }
+.garden-postcard-preview > small { display: block; margin-top: 12px; color: #aa6574; font-family: Georgia,serif; font-size: .51rem; font-weight: 800; letter-spacing: .08em; text-align: center; }
+.garden-postcard-save { display: flex; width: 100%; min-height: 43px; margin-top: 10px; align-items: center; justify-content: center; gap: 7px; border: 1px solid rgba(158,92,107,.15); border-radius: 7px; color: #94596a; font-size: .68rem; font-weight: 850; background: #fff0ef; }
+.garden-postcard-save svg { width: 16px; height: 16px; }
+.garden-postcard-notice { min-height: 1.4em; margin: 7px 2px 0; color: #747b75; font-size: .58rem; line-height: 1.45; }
+
+.garden-ledger-details { margin-top: 22px; border: 1px solid rgba(86,131,109,.14); border-radius: 8px; background: rgba(255,255,255,.64); box-shadow: 0 8px 20px rgba(65,82,68,.05); }
+.garden-ledger-details > summary { display: grid; grid-template-columns: 38px minmax(0,1fr) auto 18px; gap: 9px; min-height: 66px; align-items: center; padding: 10px 12px; cursor: pointer; list-style: none; }
+.garden-ledger-details > summary::-webkit-details-marker { display: none; }
+.garden-ledger-summary-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 9px; color: #607e69; background: #e6efe8; }
+.garden-ledger-summary-icon svg { width: 18px; height: 18px; }
+.garden-ledger-details > summary span:nth-child(2) { min-width: 0; }
+.garden-ledger-details > summary small,.garden-ledger-details > summary strong { display: block; }
+.garden-ledger-details > summary small { overflow: hidden; color: #987084; font-size: .5rem; font-weight: 800; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.garden-ledger-details > summary strong { margin-top: 3px; font-family: Georgia,"Noto Serif SC",serif; font-size: .84rem; }
+.garden-ledger-details > summary b { color: #6d786f; font-size: .59rem; white-space: nowrap; }
+.garden-ledger-details > summary > svg { width: 17px; height: 17px; color: #7b847d; transition: transform .2s ease; }
+.garden-ledger-details[open] > summary > svg { transform: rotate(180deg); }
+.garden-ledger-content { padding: 0 11px 12px; border-top: 1px solid rgba(86,131,109,.08); }
+.garden-ledger-content .garden-point-rules { margin: 11px 0; }
+.garden-ledger-content .garden-point-ledger { max-height: 470px; padding-right: 2px; overflow-y: auto; overscroll-behavior: contain; }
+.garden-point-ledger article[data-category="study"] .garden-ledger-icon { color: #47755c; background: #dfeee4; }
+
+@keyframes botanical-breathe { 0%,100% { transform: rotate(-.35deg); } 50% { transform: rotate(.45deg); } }
+
+@media (max-width: 380px) {
+  .garden-plant { width: min(285px,82vw); transform: translateX(-50%) scale(.94); }
+  .garden-companion-scene { right: 1%; width: 72px; }
+  .garden-postcard-stats { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .garden-ledger-details > summary { grid-template-columns: 36px minmax(0,1fr) auto 16px; padding-inline: 9px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .garden-svg-stems { animation: none; }
+}

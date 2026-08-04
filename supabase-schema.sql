@@ -335,4 +335,150 @@ begin
 end;
 $$;
 
+-- Protect shared deletions from stale whole-state writes on another device.
+create or replace function public.protect_love_shared_deletions()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+declare
+  v_deleted jsonb;
+  v_items jsonb;
+  v_achievements jsonb;
+  v_field text;
+  v_id text;
+begin
+  v_deleted :=
+    case when jsonb_typeof(old.data -> 'deletedRecords') = 'object' then old.data -> 'deletedRecords' else '{}'::jsonb end
+    ||
+    case when jsonb_typeof(new.data -> 'deletedRecords') = 'object' then new.data -> 'deletedRecords' else '{}'::jsonb end;
+
+  new.data := jsonb_set(coalesce(new.data, '{}'::jsonb), '{deletedRecords}', v_deleted, true);
+
+  foreach v_field in array array['messages', 'tasks', 'loveNotes', 'studyLogs', 'gameRecords', 'meetings', 'photos']
+  loop
+    v_items := case when jsonb_typeof(new.data -> v_field) = 'array' then new.data -> v_field else '[]'::jsonb end;
+    new.data := jsonb_set(
+      new.data,
+      array[v_field],
+      coalesce((
+        select jsonb_agg(item)
+        from jsonb_array_elements(v_items) as item
+        where not (v_deleted ? coalesce(item ->> 'id', ''))
+      ), '[]'::jsonb),
+      true
+    );
+  end loop;
+
+  v_achievements := case when jsonb_typeof(new.data -> 'achievements') = 'object' then new.data -> 'achievements' else '{}'::jsonb end;
+  v_items := case when jsonb_typeof(v_achievements -> 'custom') = 'array' then v_achievements -> 'custom' else '[]'::jsonb end;
+  v_achievements := jsonb_set(
+    v_achievements,
+    '{custom}',
+    coalesce((
+      select jsonb_agg(item)
+      from jsonb_array_elements(v_items) as item
+      where not (v_deleted ? coalesce(item ->> 'id', ''))
+    ), '[]'::jsonb),
+    true
+  );
+
+  for v_id in
+    select key from jsonb_each(v_deleted)
+    where value ->> 'field' = 'achievementCustom'
+  loop
+    v_achievements := jsonb_set(
+      v_achievements,
+      '{completed}',
+      (case when jsonb_typeof(v_achievements -> 'completed') = 'object' then v_achievements -> 'completed' else '{}'::jsonb end) - v_id,
+      true
+    );
+    v_achievements := jsonb_set(
+      v_achievements,
+      '{edits}',
+      (case when jsonb_typeof(v_achievements -> 'edits') = 'object' then v_achievements -> 'edits' else '{}'::jsonb end) - v_id,
+      true
+    );
+  end loop;
+  new.data := jsonb_set(new.data, '{achievements}', v_achievements, true);
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_love_shared_deletions on public.love_shared_state;
+create trigger protect_love_shared_deletions
+before update on public.love_shared_state
+for each row execute function public.protect_love_shared_deletions();
+
+create or replace function public.delete_love_shared_record(p_field text, p_record_id text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_couple_id uuid;
+  v_data jsonb;
+  v_items jsonb;
+  v_deleted jsonb;
+  v_achievements jsonb;
+begin
+  if auth.uid() is null then raise exception 'Please sign in first'; end if;
+  if not (p_field = any(array['messages', 'tasks', 'loveNotes', 'studyLogs', 'gameRecords', 'meetings', 'photos', 'achievementCustom']::text[])) then
+    raise exception 'Unsupported shared record field';
+  end if;
+
+  select couple_id into v_couple_id
+  from public.love_members
+  where user_id = auth.uid()
+  limit 1;
+  if v_couple_id is null then raise exception 'Please join a love space first'; end if;
+
+  select data into v_data
+  from public.love_shared_state
+  where couple_id = v_couple_id
+  for update;
+  v_data := coalesce(v_data, '{}'::jsonb);
+  v_deleted :=
+    case when jsonb_typeof(v_data -> 'deletedRecords') = 'object' then v_data -> 'deletedRecords' else '{}'::jsonb end
+    || jsonb_build_object(
+      p_record_id,
+      jsonb_build_object('field', p_field, 'deletedAt', now()::text, 'deletedBy', auth.uid()::text)
+    );
+  v_data := jsonb_set(v_data, '{deletedRecords}', v_deleted, true);
+
+  if p_field = 'achievementCustom' then
+    v_achievements := case when jsonb_typeof(v_data -> 'achievements') = 'object' then v_data -> 'achievements' else '{}'::jsonb end;
+    v_items := case when jsonb_typeof(v_achievements -> 'custom') = 'array' then v_achievements -> 'custom' else '[]'::jsonb end;
+    v_achievements := jsonb_set(
+      v_achievements,
+      '{custom}',
+      coalesce((select jsonb_agg(item) from jsonb_array_elements(v_items) as item where item ->> 'id' <> p_record_id), '[]'::jsonb),
+      true
+    );
+    v_achievements := jsonb_set(v_achievements, '{completed}', (case when jsonb_typeof(v_achievements -> 'completed') = 'object' then v_achievements -> 'completed' else '{}'::jsonb end) - p_record_id, true);
+    v_achievements := jsonb_set(v_achievements, '{edits}', (case when jsonb_typeof(v_achievements -> 'edits') = 'object' then v_achievements -> 'edits' else '{}'::jsonb end) - p_record_id, true);
+    v_data := jsonb_set(v_data, '{achievements}', v_achievements, true);
+  else
+    v_items := case when jsonb_typeof(v_data -> p_field) = 'array' then v_data -> p_field else '[]'::jsonb end;
+    v_data := jsonb_set(
+      v_data,
+      array[p_field],
+      coalesce((select jsonb_agg(item) from jsonb_array_elements(v_items) as item where item ->> 'id' <> p_record_id), '[]'::jsonb),
+      true
+    );
+  end if;
+
+  update public.love_shared_state
+  set data = v_data, updated_by = auth.uid()
+  where couple_id = v_couple_id
+  returning data into v_data;
+  return v_data;
+end;
+$$;
+
+revoke all on function public.delete_love_shared_record(text, text) from public;
+grant execute on function public.delete_love_shared_record(text, text) to authenticated;
+
+
 notify pgrst, 'reload schema';

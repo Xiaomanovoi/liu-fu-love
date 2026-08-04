@@ -247,6 +247,7 @@ const gardenDecorations = [
 const gardenPointCategories = {
   baseline: { name: "历史成长", icon: "heart" }, watering: { name: "共同浇水", icon: "droplets" },
   question: { name: "每日问答", icon: "messages-square" }, message: { name: "共同留言", icon: "message-circle-heart" },
+  study: { name: "学习打卡", icon: "book-open-check" },
   voice: { name: "声音信箱", icon: "mic-2" }, photo: { name: "公共相册", icon: "image" },
   task: { name: "双人任务", icon: "list-checks" }, game: { name: "游戏记录", icon: "gamepad-2" },
   seed: { name: "心意种子", icon: "sprout" }, bloom: { name: "双生花", icon: "flower-2" },
@@ -254,6 +255,7 @@ const gardenPointCategories = {
   wish: { name: "共同愿望", icon: "sparkles" }, coPlant: { name: "共育植物", icon: "leaf" },
   gardenQuest: { name: "花园任务", icon: "calendar-heart" }, flowerLetter: { name: "花期信箱", icon: "mail-heart" }
 };
+const sharedRecordFields = ["messages", "tasks", "loveNotes", "studyLogs", "gameRecords", "meetings", "photos"];
 const gardenQuestPool = [
   "交换一张今天随手拍的照片", "认真听对方分享一件小事", "一起通话至少二十分钟", "互相说一个最近发现的优点",
   "约好一起看一集剧或一部电影", "各自分享一首最近喜欢的歌", "一起决定下一次见面想吃什么", "互相说一句具体的鼓励",
@@ -290,6 +292,7 @@ const defaults = {
     { id: uid(), title: "下一次见面", date: "", place: "", note: "把想见面的日子先约下来。", planned: true }
   ],
   photos: [],
+  deletedRecords: {},
   garden: {
     version: 3,
     points: 0,
@@ -344,6 +347,7 @@ let gardenNeedsResync = false;
 let gardenSeedPhotoOptionsKey = "";
 let gardenSeedVoiceOptionsKey = "";
 let gardenSeedOptionsPending = false;
+let sharedNeedsResync = false;
 
 const els = {
   daysTogether: q("#daysTogether"), editStartDate: q("#editStartDate"), settingsDialog: q("#settingsDialog"), startDateInput: q("#startDateInput"), saveStartDate: q("#saveStartDate"),
@@ -354,9 +358,9 @@ const els = {
   recordVoice: q("#recordVoice"), voiceRecordStatus: q("#voiceRecordStatus"), voiceRecordTimer: q("#voiceRecordTimer"), voiceDraft: q("#voiceDraft"), voicePreview: q("#voicePreview"), discardVoice: q("#discardVoice"), sendVoice: q("#sendVoice"), voiceNotice: q("#voiceNotice"), voiceList: q("#voiceList"), voiceCount: q("#voiceCount"),
   openGardenHome: q("#openGardenHome"), openGardenTogether: q("#openGardenTogether"), closeGarden: q("#closeGarden"), gardenPreviewStatus: q("#gardenPreviewStatus"), gardenShortcutStage: q("#gardenShortcutStage"), gardenShortcutWater: q("#gardenShortcutWater"), gardenWeatherChip: q("#gardenWeatherChip"), gardenStage: q("#gardenStage"), gardenPlant: q("#gardenPlant"), gardenGateSign: q("#gardenGateSign"), gardenStageName: q("#gardenStageName"), gardenPoints: q("#gardenPoints"), gardenProgressBar: q("#gardenProgressBar"), gardenNextStage: q("#gardenNextStage"), gardenWateringStatus: q("#gardenWateringStatus"), waterGarden: q("#waterGarden"), gardenNotice: q("#gardenNotice"), gardenTools: q(".garden-tools"), gardenPanels: qa("[data-garden-content]"), gardenButterfly: q("#gardenButterfly"), gardenMemoryReveal: q("#gardenMemoryReveal"), closeGardenMemory: q("#closeGardenMemory"), gardenMemoryTitle: q("#gardenMemoryTitle"), gardenMemoryText: q("#gardenMemoryText"), gardenFestivalScene: q("#gardenFestivalScene"), gardenCompanionScene: q("#gardenCompanionScene"),
   gardenSeedForm: q("#gardenSeedForm"), gardenSeedText: q("#gardenSeedText"), gardenSeedUnlockDate: q("#gardenSeedUnlockDate"), gardenSeedPhoto: q("#gardenSeedPhoto"), gardenSeedVoice: q("#gardenSeedVoice"), gardenSeedCount: q("#gardenSeedCount"), gardenSeedList: q("#gardenSeedList"), gardenWishForm: q("#gardenWishForm"), gardenWishText: q("#gardenWishText"), gardenWishDate: q("#gardenWishDate"), gardenWishCount: q("#gardenWishCount"), gardenWishList: q("#gardenWishList"),
-  gardenHybridForm: q("#gardenHybridForm"), gardenHybridColor: q("#gardenHybridColor"), gardenHybridShape: q("#gardenHybridShape"), gardenHybridStatus: q("#gardenHybridStatus"), gardenBloomCount: q("#gardenBloomCount"), gardenBloomGallery: q("#gardenBloomGallery"), gardenMemoryFlowers: q("#gardenMemoryFlowers"), gardenSnapshotCount: q("#gardenSnapshotCount"), gardenStageProgressText: q("#gardenStageProgressText"), gardenStageRemaining: q("#gardenStageRemaining"), gardenRoadmap: q("#gardenRoadmap"), gardenPointBreakdown: q("#gardenPointBreakdown"), gardenPointLedger: q("#gardenPointLedger"), gardenAreaProgress: q("#gardenAreaProgress"), gardenTimeline: q("#gardenTimeline"),
+  gardenHybridForm: q("#gardenHybridForm"), gardenHybridColor: q("#gardenHybridColor"), gardenHybridShape: q("#gardenHybridShape"), gardenHybridStatus: q("#gardenHybridStatus"), gardenBloomCount: q("#gardenBloomCount"), gardenBloomGallery: q("#gardenBloomGallery"), gardenMemoryFlowers: q("#gardenMemoryFlowers"), gardenSnapshotCount: q("#gardenSnapshotCount"), gardenStageProgressText: q("#gardenStageProgressText"), gardenStageRemaining: q("#gardenStageRemaining"), gardenRoadmap: q("#gardenRoadmap"), gardenLedgerSummary: q("#gardenLedgerSummary"), gardenPointBreakdown: q("#gardenPointBreakdown"), gardenPointLedger: q("#gardenPointLedger"), gardenAreaProgress: q("#gardenAreaProgress"), gardenTimeline: q("#gardenTimeline"),
   gardenSceneDecoration: q("#gardenSceneDecoration"), gardenDecorationList: q("#gardenDecorationList"),
-  gardenTogetherSeason: q("#gardenTogetherSeason"), gardenCompanionDisplay: q("#gardenCompanionDisplay"), gardenCompanionForm: q("#gardenCompanionForm"), gardenCompanionName: q("#gardenCompanionName"), gardenCompanionSpecies: q("#gardenCompanionSpecies"), gardenCompanionStatus: q("#gardenCompanionStatus"), gardenCompanionPlantName: q("#gardenCompanionPlantName"), gardenCompanionMeta: q("#gardenCompanionMeta"), gardenCompanionProgress: q("#gardenCompanionProgress"), gardenCompanionCareStatus: q("#gardenCompanionCareStatus"), gardenCompanionCare: q("#gardenCompanionCare"), gardenQuestWeek: q("#gardenQuestWeek"), gardenQuestProgress: q("#gardenQuestProgress"), gardenQuestList: q("#gardenQuestList"), gardenLetterForm: q("#gardenLetterForm"), gardenLetterText: q("#gardenLetterText"), gardenLetterDate: q("#gardenLetterDate"), gardenLetterCount: q("#gardenLetterCount"), gardenLetterList: q("#gardenLetterList"), gardenAnniversaryForm: q("#gardenAnniversaryForm"), gardenAnniversaryTitle: q("#gardenAnniversaryTitle"), gardenAnniversaryDate: q("#gardenAnniversaryDate"), gardenAnniversaryStyle: q("#gardenAnniversaryStyle"), gardenAnniversaryList: q("#gardenAnniversaryList"),
+  gardenTogetherSeason: q("#gardenTogetherSeason"), gardenCompanionDisplay: q("#gardenCompanionDisplay"), gardenCompanionForm: q("#gardenCompanionForm"), gardenCompanionName: q("#gardenCompanionName"), gardenCompanionSpecies: q("#gardenCompanionSpecies"), gardenCompanionStatus: q("#gardenCompanionStatus"), gardenCompanionPlantName: q("#gardenCompanionPlantName"), gardenCompanionMeta: q("#gardenCompanionMeta"), gardenCompanionProgress: q("#gardenCompanionProgress"), gardenCompanionCareStatus: q("#gardenCompanionCareStatus"), gardenCompanionCare: q("#gardenCompanionCare"), gardenQuestWeek: q("#gardenQuestWeek"), gardenQuestProgress: q("#gardenQuestProgress"), gardenQuestList: q("#gardenQuestList"), gardenPostcardWeek: q("#gardenPostcardWeek"), gardenPostcardStage: q("#gardenPostcardStage"), gardenPostcardBotanical: q("#gardenPostcardBotanical"), gardenPostcardTitle: q("#gardenPostcardTitle"), gardenPostcardCopy: q("#gardenPostcardCopy"), gardenPostcardStats: q("#gardenPostcardStats"), saveGardenPostcard: q("#saveGardenPostcard"), gardenPostcardNotice: q("#gardenPostcardNotice"), gardenLetterForm: q("#gardenLetterForm"), gardenLetterText: q("#gardenLetterText"), gardenLetterDate: q("#gardenLetterDate"), gardenLetterCount: q("#gardenLetterCount"), gardenLetterList: q("#gardenLetterList"), gardenAnniversaryForm: q("#gardenAnniversaryForm"), gardenAnniversaryTitle: q("#gardenAnniversaryTitle"), gardenAnniversaryDate: q("#gardenAnniversaryDate"), gardenAnniversaryStyle: q("#gardenAnniversaryStyle"), gardenAnniversaryList: q("#gardenAnniversaryList"),
   gardenMemoryDialog: q("#gardenMemoryDialog"), closeGardenMemoryDialog: q("#closeGardenMemoryDialog"), gardenMemoryImage: q("#gardenMemoryImage"), gardenMemoryType: q("#gardenMemoryType"), gardenMemoryDialogTitle: q("#gardenMemoryDialogTitle"), gardenMemoryMeta: q("#gardenMemoryMeta"), gardenMemoryDialogText: q("#gardenMemoryDialogText"),
   taskForm: q("#taskForm"), taskText: q("#taskText"), taskList: q("#taskList"), taskStats: q("#taskStats"),
   achievementStats: q("#achievementStats"), achievementPercent: q("#achievementPercent"), achievementProgressBar: q("#achievementProgressBar"), achievementFilter: q("#achievementFilter"), achievementVisibleCount: q("#achievementVisibleCount"), achievementList: q("#achievementList"), achievementMore: q("#achievementMore"), achievementForm: q("#achievementForm"), achievementText: q("#achievementText"), achievementEditDialog: q("#achievementEditDialog"), achievementEditId: q("#achievementEditId"), achievementEditText: q("#achievementEditText"), saveAchievementEdit: q("#saveAchievementEdit"),
@@ -764,6 +768,7 @@ function bindGardenActions() {
     quest.updatedAt = quest.doneState[person].updatedAt;
     persistAndRender(doneBy.size === 2 ? "共同完成本周花园任务" : "更新本周花园任务");
   });
+  els.saveGardenPostcard.addEventListener("click", saveWeeklyGardenPostcard);
   els.gardenSeedForm.addEventListener("submit", (event) => {
     event.preventDefault();
     const text = els.gardenSeedText.value.trim();
@@ -918,7 +923,7 @@ function bindSyncEvents() {
     if (shared) backupSharedState(state, "接收云端数据前");
     const recoveryNeeded = Boolean(shared && !initializeEmptySpace && shouldRecoverSharedState(state, shared));
     const safeShared = recoveryNeeded ? mergeRecoverySharedState(state, shared) : shared;
-    const mergedShared = safeShared ? { ...safeShared, garden: mergeGardenConcurrent(state.garden, safeShared.garden) } : safeShared;
+    const mergedShared = safeShared ? mergeSharedConcurrent(state, safeShared) : safeShared;
     const next = {
       ...state,
       ...(mergedShared || {}),
@@ -933,8 +938,9 @@ function bindSyncEvents() {
       state.garden.migrationComplete = false;
     }
     saveLocalAndRender();
-    if (initializeEmptySpace || recoveryNeeded || (shared && !shared.garden) || Number(shared?.garden?.version || 1) < 2 || gardenNeedsResync) {
+    if (initializeEmptySpace || recoveryNeeded || (shared && !shared.garden) || Number(shared?.garden?.version || 1) < 2 || gardenNeedsResync || sharedNeedsResync) {
       gardenNeedsResync = false;
+      sharedNeedsResync = false;
       window.LoveSync?.scheduleSave(state);
     }
     if (recoveryNeeded) {
@@ -1208,6 +1214,17 @@ function gardenPointCandidates() {
   answered.forEach((person) => add(`question-${question.id}-${person}`, "question", 3, `${people[person].short}回答每日问题`, question.date || todayString()));
   if (question.id && answered.length === 2) add(`question-${question.id}-pair`, "question", 2, "两个人完成同一道每日问题", question.date || todayString());
 
+  const studyPeopleByDate = new Map();
+  (state.studyLogs || []).forEach((item) => {
+    const person = people[item.person] ? item.person : "shared";
+    const date = item.date || todayString();
+    add(`study-${item.id}`, "study", 3, `${people[item.person]?.short || "我们"}完成学习打卡`, date, { dailyCap: 1, capScope: person });
+    if (people[item.person]) studyPeopleByDate.set(date, new Set([...(studyPeopleByDate.get(date) || []), item.person]));
+  });
+  studyPeopleByDate.forEach((persons, date) => {
+    if (persons.size === 2) add(`study-pair-${date}`, "study", 2, "两个人都完成了今日学习", date);
+  });
+
   (state.messages || []).forEach((item) => add(`message-${item.id}`, "message", 1, `${people[item.person]?.short || "我们"}留下一句共同留言`, item.date || todayString(), { dailyCap: 4, capScope: "shared" }));
   (voiceMessages || []).forEach((item) => {
     const date = localDateString(item.created_at);
@@ -1390,6 +1407,137 @@ function gardenWeather() {
   return { id: "morning", label: "晴朗晨光" };
 }
 
+function gardenLeafSvg(x, y, rotation, scale = 1, color = "#75a77e") {
+  return `<g transform="translate(${x} ${y}) rotate(${rotation}) scale(${scale})"><path d="M0 0C11-20 32-20 43-3C29 12 10 13 0 0Z" fill="${color}"/><path d="M5 1C17-1 28-4 38-8" fill="none" stroke="rgba(255,255,255,.38)" stroke-width="2" stroke-linecap="round"/></g>`;
+}
+
+function gardenFlowerSvg(x, y, scale, color, accent = "#f4d68d", petals = 8) {
+  const petalMarkup = Array.from({ length: petals }, (_, index) => `<ellipse cx="0" cy="-17" rx="8.5" ry="17" fill="${index % 2 ? color : lightenGardenColor(color)}" transform="rotate(${index * (360 / petals)})"/>`).join("");
+  return `<g transform="translate(${x} ${y}) scale(${scale})" class="garden-svg-flower">${petalMarkup}<circle r="10" fill="${accent}"/><circle r="4" fill="#9b6e42" opacity=".5"/></g>`;
+}
+
+function lightenGardenColor(color) {
+  const variants = { "#dd8496": "#efa6b2", "#9c91c7": "#bbb2dc", "#e1a85d": "#efc47f", "#78a889": "#9bc3a7" };
+  return variants[color] || color;
+}
+
+function gardenBudSvg(x, y, scale, color) {
+  return `<g transform="translate(${x} ${y}) scale(${scale})"><path d="M0 7C-16-2-15-23 0-31C15-23 16-2 0 7Z" fill="${color}"/><path d="M-15 5Q0 19 15 5Q8 1 0-4Q-8 1-15 5Z" fill="#598866"/><path d="M0 8V20" stroke="#497759" stroke-width="4" stroke-linecap="round"/></g>`;
+}
+
+function mainGardenPlantSvg(stageIndex, growthStep = 0) {
+  const stage = Math.max(0, Math.min(gardenStages.length - 1, stageIndex));
+  const leftColor = "#dd8496";
+  const rightColor = "#9c91c7";
+  const foliage = [];
+  const flowers = [];
+  const stems = [];
+  const details = [];
+  const bonus = Math.min(10, Math.max(0, growthStep) * 3);
+
+  if (stage === 0) {
+    details.push(`<ellipse cx="150" cy="232" rx="30" ry="9" fill="#6b4d3d" opacity=".7"/><path d="M150 228C138 218 139 202 150 196C161 202 162 218 150 228Z" fill="#8b5d49"/><path d="M150 207C146 203 144 199 145 194" fill="none" stroke="#f1d3c2" stroke-width="2" stroke-linecap="round"/>`);
+  } else if (stage === 1) {
+    stems.push(`<path d="M150 239C151 211 148 185 151 ${165 - bonus}"/>`);
+    foliage.push(gardenLeafSvg(149, 197, 202, .78), gardenLeafSvg(151, 184, -21, .72, "#8bb894"));
+    details.push(`<path d="M151 ${165 - bonus}C147 157 145 151 146 146C154 148 158 155 151 ${165 - bonus}Z" fill="#a4c9a8"/>`);
+  } else {
+    const top = [0, 0, 124, 87, 65, 52, 43, 36, 29][stage] - bonus;
+    stems.push(`<path d="M145 242C142 202 129 161 108 ${top + 20}"/>`, `<path d="M155 242C158 202 171 161 192 ${top + 20}"/>`);
+    if (stage >= 4) stems.push(`<path d="M150 220C149 164 150 115 150 ${top + 25}"/>`);
+    foliage.push(
+      gardenLeafSvg(131, 190, 196, .74), gardenLeafSvg(169, 188, -15, .75, "#8db58f"),
+      gardenLeafSvg(119, 153, 210, .7, "#6f9c76"), gardenLeafSvg(181, 151, -30, .7, "#80aa82")
+    );
+    if (stage >= 3) foliage.push(gardenLeafSvg(111, 119, 205, .63), gardenLeafSvg(189, 116, -25, .63, "#97bd96"));
+    if (stage >= 5) foliage.push(gardenLeafSvg(145, 137, 205, .66), gardenLeafSvg(155, 112, -25, .66, "#70a176"));
+    if (stage === 2) details.push(`<path d="M108 ${top + 20}C101 ${top + 8} 104 ${top} 114 ${top - 5}" fill="none" stroke="#82ad83" stroke-width="4" stroke-linecap="round"/><path d="M192 ${top + 20}C199 ${top + 8} 196 ${top} 186 ${top - 5}" fill="none" stroke="#82ad83" stroke-width="4" stroke-linecap="round"/>`);
+    if (stage === 3) {
+      flowers.push(gardenBudSvg(106, top + 18, .72, leftColor), gardenBudSvg(194, top + 18, .72, rightColor));
+    }
+    if (stage >= 4) {
+      const bloomScale = stage === 4 ? .72 : (stage === 5 ? .9 : 1);
+      flowers.push(gardenFlowerSvg(105, top + 18, bloomScale, leftColor), gardenFlowerSvg(195, top + 18, bloomScale, rightColor));
+      flowers.push(stage === 4 ? gardenBudSvg(150, top + 26, .64, "#e1a85d") : gardenFlowerSvg(150, top + 27, stage >= 7 ? .82 : .67, "#e1a85d", "#f7dd97", 7));
+    }
+    if (stage >= 5) {
+      stems.push(`<path d="M119 168C98 153 82 135 77 114"/><path d="M181 168C202 153 218 135 223 114"/>`);
+      foliage.push(gardenLeafSvg(90, 137, 205, .55), gardenLeafSvg(210, 135, -25, .55, "#8cb592"));
+      flowers.push(gardenFlowerSvg(76, 108, .47, rightColor, "#f2d58a", 7), gardenFlowerSvg(224, 108, .47, leftColor, "#f2d58a", 7));
+    }
+    if (stage >= 6) {
+      details.push(`<path d="M62 229C55 177 70 121 111 83C130 65 142 56 150 49C158 56 170 65 189 83C230 121 245 177 238 229" fill="none" stroke="#5b8965" stroke-width="5" stroke-linecap="round" opacity=".72"/>`);
+      [67, 91, 116, 184, 209, 233].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 218 - (index % 2) * 8, .32, index % 2 ? leftColor : rightColor, "#f5da93", 6)));
+    }
+    if (stage >= 7) {
+      details.push(`<path d="M80 225C62 154 72 74 150 39C228 74 238 154 220 225" fill="none" stroke="#719a73" stroke-width="7" stroke-linecap="round" opacity=".65"/>`);
+      [86, 107, 129, 171, 193, 214].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 83 + Math.abs(150 - x) * .5, .34, index % 2 ? rightColor : leftColor, "#f5d98c", 7)));
+    }
+    if (stage >= 8) {
+      [57, 83, 112, 150, 188, 217, 243].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 212 - (index % 3) * 18, .38 + (index % 2) * .08, [leftColor, rightColor, "#e1a85d", "#78a889"][index % 4], "#f6dc96", 8)));
+      details.push(`<g fill="#ffe9a9" opacity=".9"><circle cx="57" cy="77" r="2.5"/><circle cx="243" cy="72" r="3"/><circle cx="45" cy="132" r="2"/><circle cx="258" cy="139" r="2.3"/></g>`);
+    }
+  }
+
+  return `<svg class="garden-plant-svg" viewBox="0 0 300 310" role="presentation"><defs><linearGradient id="main-pot-${stage}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d8967f"/><stop offset="1" stop-color="#9f6559"/></linearGradient><linearGradient id="main-soil-${stage}" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#67483a"/><stop offset="1" stop-color="#4b342d"/></linearGradient><filter id="main-shadow-${stage}" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#31483a" flood-opacity=".22"/></filter></defs><g class="garden-svg-stems" fill="none" stroke="#4f805d" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">${stems.join("")}</g>${details.join("")}${foliage.join("")}${flowers.join("")}<g filter="url(#main-shadow-${stage})"><ellipse cx="150" cy="244" rx="70" ry="16" fill="url(#main-soil-${stage})"/><path d="M78 246H222L209 296Q205 305 195 305H105Q95 305 91 296Z" fill="url(#main-pot-${stage})"/><path d="M72 242Q72 232 83 232H217Q228 232 228 242V253H72Z" fill="#c98270"/><path d="M91 266Q150 278 209 266" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="4" stroke-linecap="round"/><text x="150" y="288" text-anchor="middle" fill="#fff8ef" font-family="Georgia,serif" font-size="13" font-weight="700" letter-spacing="1">LIU ♥ FU</text></g></svg>`;
+}
+
+function companionBlossomSvg(species, x, y, scale = 1) {
+  if (species === "sunflower") return `<g transform="translate(${x} ${y}) scale(${scale})">${Array.from({ length: 12 }, (_, index) => `<ellipse cx="0" cy="-15" rx="6" ry="15" fill="${index % 2 ? "#efbd4f" : "#f7cd64"}" transform="rotate(${index * 30})"/>`).join("")}<circle r="10" fill="#76513a"/><circle r="5" fill="#9a7248"/></g>`;
+  if (species === "daisy") return gardenFlowerSvg(x, y, scale, "#fffaf0", "#e9b94f", 10);
+  if (species === "lavender") return `<g transform="translate(${x} ${y}) scale(${scale})" fill="#9d8bc8">${[0, 8, 16, 24, 32].map((offset, index) => `<ellipse cx="${index % 2 ? 5 : -5}" cy="${-offset}" rx="7" ry="10" transform="rotate(${index % 2 ? 28 : -28})"/>`).join("")}</g>`;
+  return `<g transform="translate(${x} ${y}) scale(${scale})">${Array.from({ length: 7 }, (_, index) => `<ellipse cx="0" cy="-10" rx="9" ry="17" fill="${index % 2 ? "#e98fa1" : "#cf6f85"}" transform="rotate(${index * 51.4})"/>`).join("")}<circle r="10" fill="#e78396"/><path d="M-7 1C-4-8 8-8 8 0C8 7-3 9-5 3C-6-1 1-4 4-1" fill="none" stroke="#f8bec6" stroke-width="3" stroke-linecap="round"/></g>`;
+}
+
+function companionPlantSvg(species = "rose", level = 0, compact = false) {
+  const currentLevel = Math.max(0, Math.min(6, Number(level) || 0));
+  const height = [0, 32, 58, 82, 105, 123, 142][currentLevel];
+  const top = 151 - height;
+  const leaves = [];
+  const stems = [];
+  const flowers = [];
+  if (currentLevel === 0) {
+    flowers.push(`<path d="M130 150C119 142 120 128 130 122C140 128 141 142 130 150Z" fill="#8a624d"/><path d="M130 136C126 132 125 128 127 124" fill="none" stroke="#f0d0bc" stroke-width="2"/>`);
+  } else {
+    stems.push(`<path d="M130 158C130 131 129 101 130 ${top}"/>`);
+    leaves.push(gardenLeafSvg(129, 132, 205, .58), gardenLeafSvg(131, 116, -25, .56, "#8fba92"));
+    if (currentLevel >= 2) leaves.push(gardenLeafSvg(128, 98, 203, .54), gardenLeafSvg(132, 82, -23, .52, "#6fa179"));
+    if (currentLevel >= 3) {
+      stems.push(`<path d="M129 122C111 108 101 92 96 ${top + 20}"/><path d="M131 119C149 106 159 90 164 ${top + 18}"/>`);
+      leaves.push(gardenLeafSvg(108, 108, 205, .47), gardenLeafSvg(152, 105, -25, .47, "#94bd98"));
+    }
+    if (currentLevel === 4) flowers.push(gardenBudSvg(130, top + 4, .62, species === "lavender" ? "#9886c4" : "#d87e91"));
+    if (currentLevel >= 5) flowers.push(companionBlossomSvg(species, 130, top + 4, species === "lavender" ? .72 : .75));
+    if (currentLevel >= 6) flowers.push(companionBlossomSvg(species, 95, top + 24, species === "lavender" ? .58 : .55), companionBlossomSvg(species, 165, top + 22, species === "lavender" ? .58 : .55));
+  }
+  return `<svg class="companion-plant-svg${compact ? " is-compact" : ""}" viewBox="0 0 260 210" role="presentation"><defs><linearGradient id="companion-pot-${species}-${compact ? "c" : "f"}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d7a287"/><stop offset="1" stop-color="#a96f64"/></linearGradient></defs><g fill="none" stroke="#4f805d" stroke-width="6" stroke-linecap="round">${stems.join("")}</g>${leaves.join("")}${flowers.join("")}<ellipse cx="130" cy="160" rx="58" ry="13" fill="#5b4134"/><path d="M72 160H188L178 200Q175 207 167 207H93Q85 207 82 200Z" fill="url(#companion-pot-${species}-${compact ? "c" : "f"})"/><path d="M68 157Q68 149 77 149H183Q192 149 192 157V166H68Z" fill="#c98573"/><path d="M94 180Q130 189 166 180" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="3" stroke-linecap="round"/></svg>`;
+}
+
+function hybridPetalPath(shape) {
+  if (shape === "heart") return "M50 49C42 39 31 31 33 19C35 8 47 8 50 18C53 8 65 8 67 19C69 31 58 39 50 49Z";
+  if (shape === "star") return "M50 49L39 31L44 8L50 20L56 8L61 31Z";
+  if (shape === "soft") return "M50 49C35 41 35 19 50 7C65 19 65 41 50 49Z";
+  return "M50 49C37 43 36 18 50 7C64 18 63 43 50 49Z";
+}
+
+function hybridFlowerSvg(bloom) {
+  const left = gardenColorHex[bloom.left.color] || gardenColorHex.coral;
+  const right = gardenColorHex[bloom.right.color] || gardenColorHex.lavender;
+  const offset = (Number(bloom.round || 1) * 7) % 45;
+  const petals = Array.from({ length: 8 }, (_, index) => {
+    const side = index % 2 ? bloom.right : bloom.left;
+    const color = index % 2 ? right : left;
+    return `<path d="${hybridPetalPath(side.shape)}" fill="${color}" transform="rotate(${offset + index * 45} 50 50)"/>`;
+  }).join("");
+  return `<svg class="hybrid-flower-svg" viewBox="0 0 100 112" role="presentation"><g>${petals}<circle cx="50" cy="50" r="13" fill="#f3d58a"/><circle cx="50" cy="50" r="6" fill="#9d744b" opacity=".58"/></g><path d="M50 63C50 79 49 91 47 108" fill="none" stroke="#5b8967" stroke-width="5" stroke-linecap="round"/><path d="M49 82C36 70 24 74 19 84C32 93 43 91 49 82Z" fill="#7daa85"/><path d="M48 94C62 83 74 87 78 98C65 105 54 103 48 94Z" fill="#94bb99"/></svg>`;
+}
+
+function setGardenArtwork(element, key, markup) {
+  if (!element || element.dataset.artKey === key) return;
+  element.dataset.artKey = key;
+  element.innerHTML = markup;
+}
+
 function renderGarden() {
   const garden = gardenState();
   const points = Math.max(Number(garden.points || 0), calculateGardenPoints());
@@ -1423,6 +1571,7 @@ function renderGarden() {
   els.gardenTogetherSeason.textContent = `${season.seasonName} · ${season.timeName}`;
   els.gardenPlant.dataset.stage = stage.scene;
   els.gardenPlant.dataset.step = growthStep;
+  setGardenArtwork(els.gardenPlant, `main-${stageIndex}-${growthStep}`, mainGardenPlantSvg(stageIndex, growthStep));
   els.gardenGateSign.classList.toggle("is-unlocked", garden.unlockedAreas.includes("glasshouse"));
   const gateMode = garden.unlockedAreas.includes("glasshouse") ? "open" : "locked";
   if (els.gardenGateSign.dataset.mode !== gateMode) {
@@ -1503,6 +1652,8 @@ function renderGardenTogether() {
   els.gardenCompanionScene.dataset.species = plant.species || "rose";
   els.gardenCompanionScene.dataset.level = String(level);
   els.gardenCompanionScene.hidden = !plant.name;
+  setGardenArtwork(els.gardenCompanionDisplay, `companion-${plant.species || "rose"}-${level}`, companionPlantSvg(plant.species || "rose", level));
+  setGardenArtwork(els.gardenCompanionScene, `companion-scene-${plant.species || "rose"}-${level}`, companionPlantSvg(plant.species || "rose", level, true));
   els.gardenCompanionPlantName.textContent = plant.name || "还没有取名字";
   els.gardenCompanionMeta.textContent = plant.name
     ? `${levelNames[level]} · 已收到 ${careCount} 份照顾${nextMinimum ? ` · 再 ${nextMinimum - careCount} 份进入下一阶段` : ""}`
@@ -1528,6 +1679,7 @@ function renderGardenTogether() {
     node.innerHTML = `<span class="quest-number">${doneBy.size === 2 ? "✓" : index + 1}</span><div><strong>${escapeHTML(item.text)}</strong><small>${Object.keys(people).map((person) => `<i class="${doneBy.has(person) ? "is-done" : ""}">${people[person].short}</i>`).join("")}</small></div><button data-garden-quest="${item.id}" type="button">${doneBy.has(currentPerson()) ? "取消" : "我完成了"}</button>`;
     return node;
   }));
+  renderWeeklyGardenPostcard(week, completed);
 
   const letters = garden.flowerLetters || [];
   const openedCount = letters.filter((item) => item.unlockDate <= todayString()).length;
@@ -1561,6 +1713,203 @@ function renderGardenTogether() {
     }));
   }
   window.lucide?.createIcons();
+}
+
+function weeklyPostcardData() {
+  const weekKey = gardenWeekKey();
+  const weekEndDate = parseDate(weekKey);
+  weekEndDate.setDate(weekEndDate.getDate() + 6);
+  const weekEnd = localDateString(weekEndDate);
+  const events = effectiveGardenPointEvents().filter((event) => event.date >= weekKey && event.date <= weekEnd);
+  const studyCount = (state.studyLogs || []).filter((item) => item.date >= weekKey && item.date <= weekEnd).length;
+  const memoryCount = [state.messages, state.photos, state.gameRecords, state.meetings]
+    .flatMap((items) => items || [])
+    .filter((item) => (item.date || item.createdAt || "") >= weekKey && (item.date || item.createdAt || "") <= weekEnd).length;
+  const points = events.reduce((sum, event) => sum + Number(event.points || 0), 0);
+  const stageIndex = gardenStageIndex(Math.max(Number(gardenState().points || 0), calculateGardenPoints()));
+  const quest = gardenState().weeklyQuests?.[weekKey];
+  const questsCompleted = (quest?.items || []).filter((item) => gardenQuestDonePeople(item).length === 2).length;
+  const title = questsCompleted === 3
+    ? "这一周，我们让花房亮了起来"
+    : (studyCount >= 2 ? "认真生活，也认真陪彼此长大" : "这一周，我们也在一起生长");
+  const copy = points > 0
+    ? `你们共同收下了 ${points} 点心意。那些认真回应、努力学习和分享生活的时刻，都已经变成花园里新的枝叶。`
+    : "有些成长安静得看不见，但每一次惦记和认真生活，都在替下一次盛开积蓄力量。";
+  return { weekKey, weekEnd, events, studyCount, memoryCount, points, stageIndex, questsCompleted, title, copy };
+}
+
+function renderWeeklyGardenPostcard() {
+  const data = weeklyPostcardData();
+  els.gardenPostcardWeek.textContent = `${formatDate(parseDate(data.weekKey))} - ${formatDate(parseDate(data.weekEnd))}`;
+  els.gardenPostcardStage.textContent = gardenStages[data.stageIndex].name;
+  els.gardenPostcardTitle.textContent = data.title;
+  els.gardenPostcardCopy.textContent = data.copy;
+  els.gardenPostcardStats.innerHTML = `<span><b>${data.points}</b>本周心意</span><span><b>${data.studyCount}</b>学习打卡</span><span><b>${data.questsCompleted}/3</b>花园任务</span><span><b>${data.memoryCount}</b>共同记录</span>`;
+  setGardenArtwork(els.gardenPostcardBotanical, `postcard-${data.stageIndex}`, mainGardenPlantSvg(data.stageIndex, 3));
+}
+
+function drawPostcardPlant(context, stageIndex) {
+  const growth = Math.max(1, Math.min(8, stageIndex));
+  const baseX = 540;
+  const baseY = 920;
+  context.save();
+  context.lineCap = "round";
+  context.lineJoin = "round";
+  context.strokeStyle = "#547d61";
+  context.lineWidth = 18;
+  if (stageIndex === 0) {
+    context.fillStyle = "#805944";
+    context.beginPath();
+    context.ellipse(baseX, baseY - 35, 32, 45, 0, 0, Math.PI * 2);
+    context.fill();
+  } else {
+    const height = 140 + growth * 35;
+    context.beginPath();
+    context.moveTo(baseX - 12, baseY);
+    context.bezierCurveTo(baseX - 24, baseY - height * .42, baseX - 95, baseY - height * .72, baseX - 145, baseY - height);
+    context.moveTo(baseX + 12, baseY);
+    context.bezierCurveTo(baseX + 24, baseY - height * .42, baseX + 95, baseY - height * .72, baseX + 145, baseY - height);
+    context.stroke();
+    const leafPositions = [[-55,-145,-.5], [58,-155,.5], [-92,-230,-.65], [95,-238,.65], [-120,-310,-.7], [123,-318,.7]];
+    leafPositions.slice(0, Math.min(leafPositions.length, 2 + growth)).forEach(([x, y, angle], index) => {
+      context.save();
+      context.translate(baseX + x, baseY + y);
+      context.rotate(angle);
+      context.fillStyle = index % 2 ? "#8cb292" : "#6f9c7b";
+      context.beginPath();
+      context.ellipse(0, 0, 42, 19, 0, 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+    });
+    if (stageIndex >= 3) {
+      [[baseX - 145, baseY - height, "#df8497"], [baseX + 145, baseY - height, "#9f94c9"]].forEach(([x, y, color]) => {
+        if (stageIndex === 3) {
+          context.fillStyle = color;
+          context.beginPath();
+          context.ellipse(x, y, 27, 39, 0, 0, Math.PI * 2);
+          context.fill();
+          return;
+        }
+        for (let petal = 0; petal < 8; petal += 1) {
+          context.save();
+          context.translate(x, y);
+          context.rotate((petal * Math.PI) / 4);
+          context.fillStyle = color;
+          context.beginPath();
+          context.ellipse(0, -32, 19, 36, 0, 0, Math.PI * 2);
+          context.fill();
+          context.restore();
+        }
+        context.fillStyle = "#f0cf79";
+        context.beginPath();
+        context.arc(x, y, 23, 0, Math.PI * 2);
+        context.fill();
+      });
+    }
+  }
+  const potGradient = context.createLinearGradient(400, 900, 680, 1100);
+  potGradient.addColorStop(0, "#d6957f");
+  potGradient.addColorStop(1, "#9d6358");
+  context.fillStyle = "#5a4034";
+  context.beginPath();
+  context.ellipse(baseX, baseY, 185, 38, 0, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = potGradient;
+  context.beginPath();
+  context.moveTo(365, baseY + 5);
+  context.lineTo(715, baseY + 5);
+  context.lineTo(680, 1110);
+  context.quadraticCurveTo(670, 1150, 625, 1150);
+  context.lineTo(455, 1150);
+  context.quadraticCurveTo(410, 1150, 400, 1110);
+  context.closePath();
+  context.fill();
+  context.fillStyle = "#c57f6d";
+  roundCanvasRect(context, 345, baseY - 18, 390, 58, 24);
+  context.fill();
+  context.fillStyle = "#fff8ef";
+  context.font = "700 36px Georgia, serif";
+  context.textAlign = "center";
+  context.fillText("LIU ♥ FU", baseX, 1085);
+  context.restore();
+}
+
+function roundCanvasRect(context, x, y, width, height, radius) {
+  const r = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + r, y);
+  context.arcTo(x + width, y, x + width, y + height, r);
+  context.arcTo(x + width, y + height, x, y + height, r);
+  context.arcTo(x, y + height, x, y, r);
+  context.arcTo(x, y, x + width, y, r);
+  context.closePath();
+}
+
+function canvasWrappedText(context, text, x, y, maxWidth, lineHeight, maxLines = 3) {
+  const characters = [...text];
+  const lines = [];
+  let line = "";
+  characters.forEach((character) => {
+    const next = line + character;
+    if (context.measureText(next).width > maxWidth && line) {
+      lines.push(line);
+      line = character;
+    } else line = next;
+  });
+  if (line) lines.push(line);
+  lines.slice(0, maxLines).forEach((item, index) => context.fillText(item, x, y + index * lineHeight));
+}
+
+function saveWeeklyGardenPostcard() {
+  const data = weeklyPostcardData();
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080;
+  canvas.height = 1440;
+  const context = canvas.getContext("2d");
+  if (!context) return;
+  const background = context.createLinearGradient(0, 0, 1080, 1440);
+  background.addColorStop(0, "#f8eee8");
+  background.addColorStop(.5, "#edf5ee");
+  background.addColorStop(1, "#f3edf6");
+  context.fillStyle = background;
+  context.fillRect(0, 0, 1080, 1440);
+  context.fillStyle = "rgba(255,255,255,.72)";
+  roundCanvasRect(context, 62, 58, 956, 1324, 38);
+  context.fill();
+  context.strokeStyle = "rgba(85,120,94,.18)";
+  context.lineWidth = 3;
+  context.stroke();
+  context.fillStyle = "#a45d6d";
+  context.font = "700 28px system-ui, sans-serif";
+  context.textAlign = "left";
+  context.fillText("OUR WEEK IN BLOOM", 118, 132);
+  context.fillStyle = "#647b6b";
+  context.font = "600 25px system-ui, sans-serif";
+  context.textAlign = "right";
+  context.fillText(`${data.weekKey} - ${data.weekEnd}`, 962, 132);
+  context.textAlign = "center";
+  context.fillStyle = "#342f2d";
+  context.font = "700 58px 'Noto Serif SC','Microsoft YaHei',serif";
+  canvasWrappedText(context, data.title, 540, 226, 790, 76, 2);
+  drawPostcardPlant(context, data.stageIndex);
+  context.fillStyle = "#597564";
+  context.font = "700 32px 'Microsoft YaHei',sans-serif";
+  context.fillText(gardenStages[data.stageIndex].name, 540, 1225);
+  context.fillStyle = "#706966";
+  context.font = "400 27px 'Microsoft YaHei',sans-serif";
+  canvasWrappedText(context, data.copy, 540, 1278, 780, 42, 2);
+  context.fillStyle = "#a45d6d";
+  context.font = "700 24px Georgia,serif";
+  context.fillText(`+${data.points} HEART POINTS  ·  ${data.studyCount} STUDY  ·  ${data.questsCompleted}/3 QUESTS`, 540, 1370);
+  const url = canvas.toDataURL("image/png", .94);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `刘向强-付嘉颖-花园明信片-${data.weekKey}.png`;
+  link.target = "_blank";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  els.gardenPostcardNotice.textContent = "明信片已经生成；手机若没有自动保存，可在打开的图片上长按保存。";
 }
 
 function renderGardenSeeds() {
@@ -1643,9 +1992,7 @@ function renderGardenFlowers() {
     els.gardenBloomGallery.replaceChildren(...garden.hybrid.blooms.slice(0, 12).map((bloom) => {
       const node = document.createElement("article");
       node.className = "hybrid-bloom";
-      node.style.setProperty("--bloom-left", gardenColorHex[bloom.left.color] || gardenColorHex.coral);
-      node.style.setProperty("--bloom-right", gardenColorHex[bloom.right.color] || gardenColorHex.lavender);
-      node.innerHTML = `<span class="hybrid-flower" aria-hidden="true"><i></i><i></i></span><div><strong>${escapeHTML(bloom.name)}</strong><small>${gardenShapeNames[bloom.left.shape]} × ${gardenShapeNames[bloom.right.shape]} · ${formatDate(parseDate(bloom.date))}</small></div>`;
+      node.innerHTML = `<span class="hybrid-flower" aria-hidden="true">${hybridFlowerSvg(bloom)}</span><div><strong>${escapeHTML(bloom.name)}</strong><small>${gardenShapeNames[bloom.left.shape]} × ${gardenShapeNames[bloom.right.shape]} · ${formatDate(parseDate(bloom.date))}</small></div>`;
       return node;
     }));
   }
@@ -1733,6 +2080,7 @@ function renderGardenGrowth() {
   }
 
   const recentEvents = [...events].sort((a, b) => `${b.createdAt || b.date}-${b.id}`.localeCompare(`${a.createdAt || a.date}-${a.id}`)).slice(0, 24);
+  els.gardenLedgerSummary.textContent = `${events.length} 笔 · ${points} 心意值`;
   if (!recentEvents.length) {
     els.gardenPointLedger.innerHTML = Number(garden.baselinePoints || 0) > 0
       ? `<article data-category="baseline"><span class="garden-ledger-icon"><i data-lucide="heart" aria-hidden="true"></i></span><div><strong>旧版花园成长值</strong><small>升级时完整保留</small></div><b>+${garden.baselinePoints}</b></article>`
@@ -1851,8 +2199,8 @@ function renderMessages() {
     return node;
   }));
   els.messageList.querySelectorAll("[data-delete-message]").forEach((button) => button.addEventListener("click", () => {
-    state.messages = state.messages.filter((item) => item.id !== button.dataset.deleteMessage);
-    persistAndRender();
+    const id = button.dataset.deleteMessage;
+    commitSharedRecordDeletion("messages", id, () => { state.messages = state.messages.filter((item) => item.id !== id); }, "删除共同留言");
   }));
 }
 
@@ -1896,8 +2244,8 @@ function renderTasks() {
     persistAndRender();
   }));
   els.taskList.querySelectorAll("[data-delete-task]").forEach((button) => button.addEventListener("click", () => {
-    state.tasks = state.tasks.filter((item) => item.id !== button.dataset.deleteTask);
-    persistAndRender();
+    const id = button.dataset.deleteTask;
+    commitSharedRecordDeletion("tasks", id, () => { state.tasks = state.tasks.filter((item) => item.id !== id); }, "删除双人任务");
   }));
 }
 
@@ -1955,10 +2303,11 @@ function renderAchievements() {
   }));
   els.achievementList.querySelectorAll("[data-delete-achievement]").forEach((button) => button.addEventListener("click", () => {
     const id = button.dataset.deleteAchievement;
-    state.achievements.custom = state.achievements.custom.filter((item) => item.id !== id);
-    delete state.achievements.completed[id];
-    delete state.achievements.edits[id];
-    persistAndRender();
+    commitSharedRecordDeletion("achievementCustom", id, () => {
+      state.achievements.custom = state.achievements.custom.filter((item) => item.id !== id);
+      delete state.achievements.completed[id];
+      delete state.achievements.edits[id];
+    }, "删除自定义成就");
   }));
 }
 
@@ -1988,8 +2337,8 @@ function renderLoveNotes() {
     persistAndRender();
   }));
   els.noteList.querySelectorAll("[data-delete-note]").forEach((button) => button.addEventListener("click", () => {
-    state.loveNotes = state.loveNotes.filter((item) => item.id !== button.dataset.deleteNote || item.from !== currentPerson());
-    persistAndRender();
+    const id = button.dataset.deleteNote;
+    commitSharedRecordDeletion("loveNotes", id, () => { state.loveNotes = state.loveNotes.filter((item) => item.id !== id || item.from !== currentPerson()); }, "删除情侣纸条");
   }));
 }
 
@@ -2005,8 +2354,8 @@ function renderStudyLogs() {
     return node;
   }));
   els.studyList.querySelectorAll("[data-delete-study]").forEach((button) => button.addEventListener("click", () => {
-    state.studyLogs = state.studyLogs.filter((item) => item.id !== button.dataset.deleteStudy || item.person !== currentPerson());
-    persistAndRender();
+    const id = button.dataset.deleteStudy;
+    commitSharedRecordDeletion("studyLogs", id, () => { state.studyLogs = state.studyLogs.filter((item) => item.id !== id || item.person !== currentPerson()); }, "删除学习打卡");
   }));
 }
 
@@ -2023,8 +2372,8 @@ function renderGameRecords() {
   }));
   els.gameList.querySelectorAll("[data-delete-game]").forEach((button) => button.addEventListener("click", () => {
     if (!window.confirm("确定删除这条游戏记录吗？")) return;
-    state.gameRecords = state.gameRecords.filter((item) => item.id !== button.dataset.deleteGame);
-    persistAndRender();
+    const id = button.dataset.deleteGame;
+    commitSharedRecordDeletion("gameRecords", id, () => { state.gameRecords = state.gameRecords.filter((item) => item.id !== id); }, "删除游戏记录");
   }));
 }
 
@@ -2039,8 +2388,8 @@ function renderMeetings() {
   }));
   els.meetingList.querySelectorAll("[data-delete-meeting]").forEach((button) => button.addEventListener("click", () => {
     if (!window.confirm("确定删除这条见面记录吗？")) return;
-    state.meetings = state.meetings.filter((item) => item.id !== button.dataset.deleteMeeting);
-    persistAndRender();
+    const id = button.dataset.deleteMeeting;
+    commitSharedRecordDeletion("meetings", id, () => { state.meetings = state.meetings.filter((item) => item.id !== id); }, "删除见面记录");
   }));
 }
 
@@ -2053,8 +2402,8 @@ function renderAlbum() {
     return node;
   }));
   els.albumGrid.querySelectorAll("[data-delete-photo]").forEach((button) => button.addEventListener("click", () => {
-    state.photos = state.photos.filter((item) => item.id !== button.dataset.deletePhoto);
-    persistAndRender();
+    const id = button.dataset.deletePhoto;
+    commitSharedRecordDeletion("photos", id, () => { state.photos = state.photos.filter((item) => item.id !== id); }, "删除公共照片");
   }));
 }
 
@@ -2274,6 +2623,64 @@ function resetDiaryForm() {
 }
 
 function privateSpace() { return state.private[state.privatePerson]; }
+
+function normalizeDeletedRecords(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return Object.fromEntries(Object.entries(value).filter(([id]) => Boolean(id)).map(([id, record]) => [id, {
+    field: record?.field || "shared",
+    deletedAt: record?.deletedAt || "",
+    deletedBy: record?.deletedBy || ""
+  }]));
+}
+
+function mergeDeletedRecords(left, right) {
+  const merged = { ...normalizeDeletedRecords(left), ...normalizeDeletedRecords(right) };
+  Object.keys(merged).forEach((id) => {
+    const leftRecord = left?.[id];
+    const rightRecord = right?.[id];
+    if (leftRecord && rightRecord && (leftRecord.deletedAt || "") > (rightRecord.deletedAt || "")) merged[id] = leftRecord;
+  });
+  return merged;
+}
+
+function applySharedDeletionTombstones(value) {
+  const deletedRecords = normalizeDeletedRecords(value?.deletedRecords);
+  const deleted = new Set(Object.keys(deletedRecords));
+  const next = { ...value, deletedRecords };
+  sharedRecordFields.forEach((field) => {
+    next[field] = (Array.isArray(value?.[field]) ? value[field] : []).filter((item) => item?.id && !deleted.has(item.id));
+  });
+  next.achievements = {
+    ...(value?.achievements || {}),
+    completed: { ...(value?.achievements?.completed || {}) },
+    edits: { ...(value?.achievements?.edits || {}) },
+    custom: (value?.achievements?.custom || []).filter((item) => item?.id && !deleted.has(item.id))
+  };
+  Object.entries(deletedRecords).forEach(([id, record]) => {
+    if (record.field !== "achievementCustom") return;
+    delete next.achievements.completed[id];
+    delete next.achievements.edits[id];
+  });
+  return next;
+}
+
+function markSharedRecordDeleted(field, id) {
+  if (!id) return;
+  state.deletedRecords = mergeDeletedRecords(state.deletedRecords, {
+    [id]: { field, deletedAt: new Date().toISOString(), deletedBy: currentPerson() }
+  });
+}
+
+function commitSharedRecordDeletion(field, id, removeRecord, reason = "删除共同记录") {
+  if (!id) return;
+  markSharedRecordDeleted(field, id);
+  removeRecord();
+  persistAndRender(reason);
+  window.LoveSync?.deleteSharedRecord?.(field, id).catch(() => {
+    // The regular state save already contains the tombstone; the RPC adds server-side hardening after SQL upgrade.
+  });
+}
+
 function persistAndRender(gardenReason = "共同生活") {
   refreshGardenProgress(gardenReason);
   backupSharedState(state, "本机记录更新");
@@ -2314,7 +2721,16 @@ function backupSharedState(value, reason) {
   const score = sharedStateScore(data);
   if (score < 7) return;
   const existing = readSharedBackup();
-  if (existing && sharedStateScore(existing) > score) return;
+  if (existing && sharedStateScore(existing) > score) {
+    const protectedBackup = applySharedDeletionTombstones({
+      ...existing,
+      deletedRecords: mergeDeletedRecords(existing.deletedRecords, data.deletedRecords)
+    });
+    try {
+      localStorage.setItem(recoveryBackupKey, JSON.stringify({ savedAt: new Date().toISOString(), reason: `${reason} · 保留删除记录`, score: sharedStateScore(protectedBackup), data: protectedBackup }));
+    } catch { /* Keep the earlier backup when browser storage is full. */ }
+    return;
+  }
   try {
     localStorage.setItem(recoveryBackupKey, JSON.stringify({ savedAt: new Date().toISOString(), reason, score, data }));
   } catch { /* The active state remains available even when browser backup storage is full. */ }
@@ -2334,15 +2750,17 @@ function shouldRecoverSharedState(localState, remoteShared) {
 
 function mergeRecoverySharedState(localState, remoteShared) {
   const localShared = bestRecoverySharedState(localState);
+  const deletedRecords = mergeDeletedRecords(remoteShared?.deletedRecords, localShared.deletedRecords);
+  const deleted = new Set(Object.keys(deletedRecords));
   const mergeRecords = (remoteItems, localItems) => {
     const records = new Map();
     [...(remoteItems || []), ...(localItems || [])].forEach((item) => {
-      if (!item?.id) return;
+      if (!item?.id || deleted.has(item.id)) return;
       records.set(item.id, item);
     });
     return [...records.values()];
   };
-  const merged = { ...remoteShared, ...localShared };
+  const merged = { ...remoteShared, ...localShared, deletedRecords };
   ["messages", "tasks", "loveNotes", "studyLogs", "gameRecords", "meetings", "photos"].forEach((field) => {
     merged[field] = mergeRecords(remoteShared?.[field], localShared?.[field]);
   });
@@ -2354,7 +2772,7 @@ function mergeRecoverySharedState(localState, remoteShared) {
     custom: mergeRecords(remoteShared?.achievements?.custom, localShared.achievements?.custom)
   };
   merged.garden = mergeGardenConcurrent(localShared.garden, remoteShared?.garden);
-  return merged;
+  return applySharedDeletionTombstones(merged);
 }
 
 function loadState() {
@@ -2372,8 +2790,9 @@ function loadState() {
 }
 function mergeDefaults(saved) {
   const base = structuredClone(defaults);
-  return {
+  const merged = {
     ...base, ...saved,
+    deletedRecords: normalizeDeletedRecords(saved.deletedRecords),
     moods: { ...base.moods, ...(saved.moods || {}) },
     dailyQuestion: {
       ...base.dailyQuestion,
@@ -2395,6 +2814,7 @@ function mergeDefaults(saved) {
       fu: mergePrivateSpace(saved.private?.fu, "fu")
     }
   };
+  return applySharedDeletionTombstones(merged);
 }
 function mergeGarden(savedGarden) {
   const base = structuredClone(defaults).garden;
@@ -2445,6 +2865,40 @@ function mergeGarden(savedGarden) {
     anniversaries: Array.isArray(savedGarden?.anniversaries) ? savedGarden.anniversaries : []
   };
 }
+
+function mergeSharedConcurrent(localState, remoteShared) {
+  const remote = remoteShared || {};
+  const deletedRecords = mergeDeletedRecords(localState?.deletedRecords, remote.deletedRecords);
+  const deleted = new Set(Object.keys(deletedRecords));
+  const mergeRecords = (localItems, remoteItems) => {
+    const records = new Map();
+    [...(localItems || []), ...(remoteItems || [])].forEach((item) => {
+      if (!item?.id || deleted.has(item.id)) return;
+      const previous = records.get(item.id);
+      const previousTime = previous?.updatedAt || previous?.createdAt || previous?.date || "";
+      const nextTime = item.updatedAt || item.createdAt || item.date || "";
+      if (!previous || nextTime >= previousTime) records.set(item.id, item);
+    });
+    return [...records.values()];
+  };
+  const merged = { ...remote, deletedRecords };
+  sharedRecordFields.forEach((field) => {
+    merged[field] = mergeRecords(localState?.[field], remote[field]);
+    if (merged[field].length > (remote[field] || []).filter((item) => item?.id && !deleted.has(item.id)).length) sharedNeedsResync = true;
+  });
+  const custom = mergeRecords(localState?.achievements?.custom, remote.achievements?.custom);
+  merged.achievements = {
+    ...(localState?.achievements || {}),
+    ...(remote.achievements || {}),
+    completed: { ...(localState?.achievements?.completed || {}), ...(remote.achievements?.completed || {}) },
+    edits: { ...(localState?.achievements?.edits || {}), ...(remote.achievements?.edits || {}) },
+    custom
+  };
+  if (Object.keys(deletedRecords).length > Object.keys(normalizeDeletedRecords(remote.deletedRecords)).length || custom.length > (remote.achievements?.custom || []).filter((item) => !deleted.has(item?.id)).length) sharedNeedsResync = true;
+  merged.garden = mergeGardenConcurrent(localState?.garden, remote.garden);
+  return applySharedDeletionTombstones(merged);
+}
+
 function mergeGardenConcurrent(localGarden, remoteGarden) {
   const local = mergeGarden(localGarden);
   const remote = mergeGarden(remoteGarden);
