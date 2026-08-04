@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f5eeeb">
+    <title>两人空间 · 合并恢复</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #332d2d;
+        --muted: #766b69;
+        --paper: #fffdfb;
+        --line: #e8dbd6;
+        --rose: #b84f68;
+        --rose-soft: #f8e3e6;
+        --mint: #dfeee7;
+        --mint-ink: #315f50;
+        --shadow: 0 14px 34px rgba(101, 75, 71, 0.1);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #f7f0ed;
+        color: var(--ink);
+        font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+        letter-spacing: 0;
+      }
+      main { width: min(100%, 760px); margin: 0 auto; padding: 30px 18px 48px; }
+      header { padding: 8px 4px 20px; }
+      .eyebrow { margin: 0 0 8px; color: var(--rose); font-size: 13px; font-weight: 800; text-transform: uppercase; }
+      h1 { margin: 0; font: 700 32px/1.25 Georgia, "Songti SC", serif; }
+      header p { margin: 12px 0 0; color: var(--muted); line-height: 1.7; }
+      section, .notice {
+        margin-top: 16px;
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        box-shadow: var(--shadow);
+      }
+      .notice { display: flex; gap: 12px; background: #fff8f7; border-color: #e9ced3; box-shadow: none; }
+      .notice-mark {
+        display: grid;
+        flex: 0 0 30px;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--rose-soft);
+        color: var(--rose);
+        font-weight: 900;
+      }
+      .notice strong { display: block; }
+      .notice p { margin: 5px 0 0; color: var(--muted); font-size: 14px; line-height: 1.6; }
+      .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      h2 { margin: 0; font-size: 20px; }
+      .badge { padding: 6px 10px; border-radius: 999px; background: #eee9e7; color: var(--muted); font-size: 13px; font-weight: 800; }
+      .badge.ready { background: var(--mint); color: var(--mint-ink); }
+      .hint { margin: 10px 0 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
+      .file-picker {
+        display: grid;
+        min-height: 84px;
+        margin-top: 16px;
+        padding: 16px;
+        place-items: center;
+        border: 1px dashed #d7c2bc;
+        border-radius: 8px;
+        background: #fcf8f6;
+        color: var(--rose);
+        font-weight: 800;
+        text-align: center;
+        cursor: pointer;
+      }
+      .file-picker input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+      .preview-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
+      .preview-column { min-width: 0; padding: 13px 10px; border: 1px solid #eee3df; border-radius: 8px; background: #fcf9f7; }
+      .preview-column h3 { margin: 0 0 10px; color: var(--muted); font-size: 13px; }
+      .preview-column strong { display: block; color: var(--rose); font-size: 24px; }
+      .preview-column span { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; }
+      .detail-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 18px; margin-top: 16px; }
+      .detail-row { display: flex; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid #f1e8e4; font-size: 14px; }
+      .detail-row span { color: var(--muted); }
+      .confirm-row { display: flex; gap: 10px; align-items: flex-start; margin-top: 18px; color: var(--muted); font-size: 14px; line-height: 1.6; }
+      .confirm-row input { width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--rose); }
+      .actions { display: grid; grid-template-columns: 1fr 1.6fr; gap: 10px; margin-top: 16px; }
+      button {
+        min-height: 50px;
+        border: 0;
+        border-radius: 8px;
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      button:disabled { cursor: not-allowed; opacity: 0.45; }
+      .secondary { border: 1px solid #ddcdc7; background: white; color: var(--ink); }
+      .primary { background: var(--rose); color: white; box-shadow: 0 10px 22px rgba(184, 79, 104, 0.2); }
+      #resultMessage { min-height: 24px; margin: 14px 0 0; color: var(--mint-ink); font-size: 14px; font-weight: 800; line-height: 1.6; }
+      #resultMessage.error { color: #a13f4e; }
+      details { margin-top: 16px; border-top: 1px solid #f0e7e3; padding-top: 12px; }
+      summary { color: var(--muted); cursor: pointer; font-size: 14px; }
+      pre { max-height: 220px; overflow: auto; padding: 12px; border-radius: 8px; background: #f7f3f1; color: #5f5552; font: 12px/1.55 ui-monospace, Consolas, monospace; white-space: pre-wrap; word-break: break-all; }
+      [hidden] { display: none !important; }
+      @media (max-width: 520px) {
+        main { padding-inline: 14px; }
+        h1 { font-size: 29px; }
+        section { padding: 17px; }
+        .preview-grid { grid-template-columns: 1fr; }
+        .detail-list { grid-template-columns: 1fr; }
+        .actions { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">Protected merge · 一次性恢复</p>
+        <h1>共同数据合并恢复</h1>
+        <p>读取恢复文件并与当前云端状态合并，保留较新的花园及独立的私人、想你和语音数据。</p>
+      </header>
+
+      <div class="notice">
+        <span class="notice-mark">!</span>
+        <div>
+          <strong>恢复前请关闭其他设备上的原应用页面</strong>
+          <p>本页只更新共同状态表。执行前会把当前云端公共数据保存到本机并生成备份下载。</p>
+        </div>
+      </div>
+
+      <section>
+        <div class="section-head">
+          <h2>1. 登录状态</h2>
+          <span class="badge" id="authBadge">检查中</span>
+        </div>
+        <p class="hint" id="authText">正在读取当前浏览器的 Supabase 登录会话。</p>
+        <button class="secondary" id="refreshAuth" type="button">重新检查登录</button>
+      </section>
+
+      <section>
+        <div class="section-head">
+          <h2>2. 选择恢复文件</h2>
+          <span class="badge" id="fileBadge">未选择</span>
+        </div>
+        <label class="file-picker">
+          <span id="filePickerText">选择 liu-fu-love-recovery JSON 文件</span>
+          <input id="recoveryFile" type="file" accept="application/json,.json">
+        </label>
+        <p class="hint">文件只在当前浏览器内解析，不会上传到其他服务。</p>
+      </section>
+
+      <section id="previewSection" hidden>
+        <div class="section-head">
+          <h2>3. 核对合并结果</h2>
+          <span class="badge ready">可以恢复</span>
+        </div>
+        <div class="preview-grid">
+          <div class="preview-column"><h3>恢复文件</h3><strong id="recoveredTotal">0</strong><span>项共同记录</span></div>
+          <div class="preview-column"><h3>当前云端</h3><strong id="currentTotal">0</strong><span>项共同记录</span></div>
+          <div class="preview-column"><h3>合并以后</h3><strong id="mergedTotal">0</strong><span>项共同记录</span></div>
+        </div>
+        <div class="detail-list" id="detailList"></div>
+
+        <label class="confirm-row">
+          <input id="restoreConfirm" type="checkbox">
+          <span>我已关闭微信、QQ 邮箱和其他浏览器中的原应用页面，并确认使用上方恢复文件。</span>
+        </label>
+        <div class="actions">
+          <button class="secondary" id="downloadPreview" type="button">下载合并预览</button>
+          <button class="primary" id="restoreButton" type="button" disabled>执行合并恢复</button>
+        </div>
+        <p id="resultMessage" aria-live="polite"></p>
+        <details>
+          <summary>查看恢复校验详情</summary>
+          <pre id="diagnostics"></pre>
+        </details>
+      </section>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
+    <script>
+      (() => {
+        "use strict";
+
+        const config = window.LOVE_SYNC_CONFIG || {};
+        const recordFields = ["messages", "tasks", "loveNotes", "studyLogs", "gameRecords", "meetings", "photos"];
+        const labels = {
+          messages: "共同留言", photos: "照片", tasks: "任务", loveNotes: "情侣纸条",
+          studyLogs: "学习记录", gameRecords: "游戏记录", meetings: "见面记录",
+          questionHistory: "问题历史", achievements: "情侣成就", garden: "花园记录"
+        };
+        const state = { client: null, user: null, member: null, recovered: null, current: null, merged: null, fileName: "" };
+        const byId = (id) => document.getElementById(id);
+
+        function count(value) { return Array.isArray(value) ? value.length : 0; }
+
+        function summary(value) {
+          const achievements = value?.achievements || {};
+          const garden = value?.garden || {};
+          return {
+            messages: count(value?.messages), photos: count(value?.photos), tasks: count(value?.tasks),
+            loveNotes: count(value?.loveNotes), studyLogs: count(value?.studyLogs), gameRecords: count(value?.gameRecords),
+            meetings: count(value?.meetings), questionHistory: count(value?.questionHistory),
+            achievements: count(achievements.custom) + Object.keys(achievements.completed || {}).length,
+            garden: count(garden.seeds) + count(garden.wishes) + count(garden.pointEvents) + count(garden.flowerLetters) + count(garden.anniversaries)
+          };
+        }
+
+        function total(value) { return Object.values(summary(value)).reduce((sum, number) => sum + number, 0); }
+
+        function mergeRecords(recovered = [], current = []) {
+          const records = new Map();
+          [...recovered, ...current].forEach((item) => {
+            const key = item?.id ? `id:${item.id}` : `value:${JSON.stringify(item)}`;
+            records.set(key, item);
+          });
+          return [...records.values()];
+        }
+
+        function answerCount(question) {
+          return Object.values(question?.answers || {}).filter((answer) => String(answer || "").trim()).length;
+        }
+
+        function mergeShared(recovered, current) {
+          const merged = { ...recovered, ...current };
+          recordFields.forEach((field) => { merged[field] = mergeRecords(recovered?.[field], current?.[field]); });
+          merged.questionHistory = [...new Set([...(current?.questionHistory || []), ...(recovered?.questionHistory || [])])];
+          const recoveredQuestion = recovered?.dailyQuestion;
+          const currentQuestion = current?.dailyQuestion;
+          merged.dailyQuestion = answerCount(recoveredQuestion) > answerCount(currentQuestion) ? recoveredQuestion : (currentQuestion || recoveredQuestion);
+          if (recoveredQuestion?.text && recoveredQuestion.text !== merged.dailyQuestion?.text) {
+            merged.questionHistory = [...new Set([recoveredQuestion.text, ...merged.questionHistory])];
+          }
+          merged.moods = { ...(recovered?.moods || {}), ...(current?.moods || {}) };
+          merged.achievements = {
+            ...(recovered?.achievements || {}), ...(current?.achievements || {}),
+            completed: { ...(recovered?.achievements?.completed || {}), ...(current?.achievements?.completed || {}) },
+            edits: { ...(recovered?.achievements?.edits || {}), ...(current?.achievements?.edits || {}) },
+            custom: mergeRecords(recovered?.achievements?.custom, current?.achievements?.custom)
+          };
+          if (recovered?.startDate) merged.startDate = recovered.startDate;
+          merged.garden = current?.garden || recovered?.garden;
+          return merged;
+        }
+
+        function setMessage(message, isError = false) {
+          byId("resultMessage").textContent = message;
+          byId("resultMessage").classList.toggle("error", isError);
+        }
+
+        function downloadJson(name, value) {
+          const blob = new Blob([JSON.stringify(value, null, 2)], { type: "application/json;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = name;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        function validateRecovery(value) {
+          if (value?.format !== "liu-fu-love-shared-recovery" || value?.version !== 1) throw new Error("这不是有效的两人空间恢复文件。");
+          if (!value.shared || typeof value.shared !== "object" || Array.isArray(value.shared)) throw new Error("恢复文件缺少共同数据。");
+          if (["private", "writer", "privatePerson"].some((key) => key in value.shared)) throw new Error("恢复文件包含不应出现的私人字段，已停止。");
+          if (total(value.shared) === 0) throw new Error("恢复文件没有检测到可恢复记录。");
+          recordFields.forEach((field) => {
+            const ids = (value.shared[field] || []).map((item) => item?.id).filter(Boolean);
+            if (ids.length !== new Set(ids).size) throw new Error(`${labels[field]}存在重复 ID，已停止。`);
+          });
+          return value.shared;
+        }
+
+        async function loadSession() {
+          byId("authBadge").textContent = "检查中";
+          byId("authBadge").classList.remove("ready");
+          try {
+            if (!window.supabase || !config.url || !config.publishableKey) throw new Error("Supabase 配置未加载。");
+            state.client ||= window.supabase.createClient(config.url, config.publishableKey, {
+              auth: { persistSession: true, detectSessionInUrl: false, autoRefreshToken: true }
+            });
+            const { data: { session }, error: sessionError } = await state.client.auth.getSession();
+            if (sessionError) throw sessionError;
+            if (!session) {
+              state.user = null;
+              state.member = null;
+              byId("authBadge").textContent = "未登录";
+              byId("authText").textContent = "请在原应用已经保持登录的同一个浏览器中打开本页。";
+              await refreshPreview();
+              return;
+            }
+            state.user = session.user;
+            const { data: member, error: memberError } = await state.client.from("love_members").select("couple_id, role").eq("user_id", state.user.id).maybeSingle();
+            if (memberError) throw memberError;
+            if (!member) throw new Error("当前账号还没有加入两人空间。");
+            state.member = member;
+            byId("authBadge").textContent = "已登录";
+            byId("authBadge").classList.add("ready");
+            byId("authText").textContent = `已识别为${member.role === "liu" ? "刘向强" : "付嘉颖"}，可以读取当前两人空间。`;
+            await refreshPreview();
+          } catch (error) {
+            state.user = null;
+            state.member = null;
+            byId("authBadge").textContent = "检查失败";
+            byId("authText").textContent = error.message || "无法读取登录状态。";
+          }
+        }
+
+        async function fetchCurrent() {
+          if (!state.member) return null;
+          const { data, error } = await state.client.from("love_shared_state").select("data, updated_at").eq("couple_id", state.member.couple_id).maybeSingle();
+          if (error) throw error;
+          return { shared: data?.data || {}, updatedAt: data?.updated_at || null };
+        }
+
+        async function refreshPreview() {
+          byId("previewSection").hidden = true;
+          state.current = null;
+          state.merged = null;
+          if (!state.member || !state.recovered) return;
+          try {
+            const cloud = await fetchCurrent();
+            state.current = cloud.shared;
+            state.merged = mergeShared(state.recovered, state.current);
+            const recoveredSummary = summary(state.recovered);
+            const currentSummary = summary(state.current);
+            const mergedSummary = summary(state.merged);
+            byId("recoveredTotal").textContent = total(state.recovered);
+            byId("currentTotal").textContent = total(state.current);
+            byId("mergedTotal").textContent = total(state.merged);
+            byId("detailList").innerHTML = Object.keys(labels).map((field) => (
+              `<div class="detail-row"><span>${labels[field]}</span><strong>${recoveredSummary[field]} + ${currentSummary[field]} → ${mergedSummary[field]}</strong></div>`
+            )).join("");
+            byId("diagnostics").textContent = JSON.stringify({
+              file: state.fileName,
+              role: state.member.role,
+              currentUpdatedAt: cloud.updatedAt,
+              recovered: recoveredSummary,
+              current: currentSummary,
+              merged: mergedSummary,
+              tablesToUpdate: ["love_shared_state"],
+              tablesNotTouched: ["love_private_state", "love_miss_events", "love_voice_messages", "storage.objects"]
+            }, null, 2);
+            byId("previewSection").hidden = false;
+            updateRestoreButton();
+          } catch (error) {
+            setMessage(`读取当前云端数据失败：${error.message}`, true);
+          }
+        }
+
+        function updateRestoreButton() {
+          byId("restoreButton").disabled = !(state.user && state.member && state.recovered && state.merged && byId("restoreConfirm").checked);
+        }
+
+        async function restore() {
+          if (byId("restoreButton").disabled) return;
+          byId("restoreButton").disabled = true;
+          byId("restoreButton").textContent = "正在备份并恢复";
+          setMessage("正在重新读取云端并创建恢复前备份…");
+          try {
+            const latest = await fetchCurrent();
+            const merged = mergeShared(state.recovered, latest.shared);
+            const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+            const backup = {
+              format: "liu-fu-love-cloud-before-restore",
+              version: 1,
+              savedAt: new Date().toISOString(),
+              coupleId: state.member.couple_id,
+              updatedAt: latest.updatedAt,
+              shared: latest.shared
+            };
+            try { localStorage.setItem("love-tool-liu-fu-cloud-before-restore-v1", JSON.stringify(backup)); } catch { /* Download remains available. */ }
+            downloadJson(`liu-fu-love-cloud-before-restore-${timestamp}.json`, backup);
+
+            setMessage("当前云端备份已生成，正在写入合并后的共同数据…");
+            const { error } = await state.client.from("love_shared_state")
+              .update({ data: merged, updated_by: state.user.id })
+              .eq("couple_id", state.member.couple_id);
+            if (error) throw error;
+
+            const verified = await fetchCurrent();
+            const missing = recordFields.flatMap((field) => {
+              const savedIds = new Set((verified.shared[field] || []).map((item) => item?.id).filter(Boolean));
+              return (state.recovered[field] || []).filter((item) => item?.id && !savedIds.has(item.id)).map((item) => `${field}:${item.id}`);
+            });
+            if (missing.length) throw new Error(`云端校验发现 ${missing.length} 条记录缺失，已停止后续操作。`);
+            state.current = verified.shared;
+            state.merged = verified.shared;
+            byId("restoreConfirm").checked = false;
+            byId("restoreButton").textContent = "恢复完成";
+            setMessage(`恢复成功并通过校验：云端现在包含 ${total(verified.shared)} 项共同记录。可以关闭本页。`);
+            await refreshPreview();
+          } catch (error) {
+            byId("restoreButton").textContent = "重新执行合并恢复";
+            setMessage(`恢复未完成：${error.message}`, true);
+            updateRestoreButton();
+          }
+        }
+
+        byId("recoveryFile").addEventListener("change", async (event) => {
+          const file = event.target.files?.[0];
+          state.recovered = null;
+          state.fileName = "";
+          byId("fileBadge").textContent = "检查中";
+          byId("fileBadge").classList.remove("ready");
+          try {
+            if (!file) throw new Error("没有选择文件。");
+            if (file.size > 8 * 1024 * 1024) throw new Error("文件超过 8 MB，已停止读取。");
+            const parsed = JSON.parse(await file.text());
+            state.recovered = validateRecovery(parsed);
+            state.fileName = file.name;
+            byId("fileBadge").textContent = "校验通过";
+            byId("fileBadge").classList.add("ready");
+            byId("filePickerText").textContent = `${file.name} · ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+            setMessage("");
+            await refreshPreview();
+          } catch (error) {
+            byId("fileBadge").textContent = "文件无效";
+            byId("filePickerText").textContent = error.message;
+            setMessage(error.message, true);
+          }
+        });
+        byId("restoreConfirm").addEventListener("change", updateRestoreButton);
+        byId("refreshAuth").addEventListener("click", loadSession);
+        byId("downloadPreview").addEventListener("click", () => {
+          if (!state.merged) return;
+          downloadJson("liu-fu-love-merged-preview.json", { format: "liu-fu-love-merged-preview", version: 1, createdAt: new Date().toISOString(), shared: state.merged });
+        });
+        byId("restoreButton").addEventListener("click", restore);
+        loadSession();
+      })();
+    </script>
+  </body>
+</html>
