@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="theme-color" content="#f7ece9">
+    <title>两人空间 · 本地数据抢救</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --ink: #342d2d;
+        --muted: #786d6d;
+        --rose: #b74f67;
+        --rose-soft: #f7dfe3;
+        --mint: #dcece5;
+        --mint-ink: #346553;
+        --paper: #fffdfb;
+        --line: #eadeda;
+        --shadow: 0 14px 36px rgba(105, 74, 71, 0.11);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #f8f1ee;
+        color: var(--ink);
+        font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+        letter-spacing: 0;
+      }
+
+      main {
+        width: min(100%, 680px);
+        margin: 0 auto;
+        padding: max(28px, env(safe-area-inset-top)) 18px max(40px, env(safe-area-inset-bottom));
+      }
+
+      header { padding: 10px 4px 24px; }
+      .eyebrow {
+        margin: 0 0 8px;
+        color: var(--rose);
+        font-size: 13px;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      h1 { margin: 0; font-family: Georgia, "Songti SC", serif; font-size: 32px; font-weight: 700; }
+      header p { margin: 12px 0 0; color: var(--muted); line-height: 1.75; }
+
+      .notice {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        margin-bottom: 16px;
+        padding: 16px;
+        border: 1px solid #e9cdd3;
+        border-radius: 8px;
+        background: #fff7f7;
+      }
+
+      .notice-mark {
+        display: grid;
+        flex: 0 0 30px;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--rose-soft);
+        color: var(--rose);
+        font-weight: 900;
+      }
+
+      .notice strong, .notice p { display: block; }
+      .notice p { margin: 5px 0 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
+
+      section {
+        margin-top: 16px;
+        padding: 20px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--paper);
+        box-shadow: var(--shadow);
+      }
+
+      .status-head { display: flex; gap: 14px; align-items: center; }
+      .status-icon {
+        display: grid;
+        flex: 0 0 48px;
+        width: 48px;
+        height: 48px;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--mint);
+        color: var(--mint-ink);
+        font-size: 24px;
+        font-weight: 800;
+      }
+
+      h2 { margin: 0; font-size: 21px; }
+      .status-copy { margin: 5px 0 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 18px;
+      }
+
+      .metric {
+        min-width: 0;
+        padding: 12px 8px;
+        border: 1px solid #eee3df;
+        border-radius: 8px;
+        background: #fcf8f6;
+        text-align: center;
+      }
+
+      .metric strong { display: block; font-size: 22px; color: var(--rose); }
+      .metric span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; white-space: nowrap; }
+
+      .source-list { display: grid; gap: 8px; margin-top: 16px; }
+      .source-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 0;
+        border-top: 1px solid #f0e7e3;
+        color: var(--muted);
+        font-size: 14px;
+      }
+      .source-row strong { color: var(--ink); }
+
+      .actions { display: grid; gap: 10px; margin-top: 18px; }
+      button {
+        min-height: 50px;
+        border: 0;
+        border-radius: 8px;
+        font: inherit;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      button:disabled { cursor: not-allowed; opacity: 0.45; }
+      .primary { background: var(--rose); color: white; box-shadow: 0 10px 22px rgba(183, 79, 103, 0.2); }
+      .secondary { border: 1px solid #dfcfca; background: white; color: var(--ink); }
+
+      .privacy { margin: 14px 0 0; color: var(--muted); font-size: 13px; line-height: 1.65; }
+      .empty .status-icon { background: #eee9e7; color: #8b817e; }
+      .empty .metric strong { color: #8b817e; }
+      #feedback { min-height: 22px; margin: 12px 2px 0; color: var(--mint-ink); font-size: 14px; font-weight: 700; }
+
+      details { margin-top: 16px; border-top: 1px solid #f0e7e3; padding-top: 12px; }
+      summary { color: var(--muted); cursor: pointer; font-size: 14px; }
+      pre {
+        max-height: 220px;
+        overflow: auto;
+        padding: 12px;
+        border-radius: 8px;
+        background: #f7f3f1;
+        color: #5f5552;
+        font: 12px/1.55 ui-monospace, Consolas, monospace;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+
+      @media (max-width: 390px) {
+        main { padding-inline: 14px; }
+        h1 { font-size: 29px; }
+        section { padding: 17px; }
+        .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <p class="eyebrow">Local recovery · 只读模式</p>
+        <h1>两人空间数据抢救</h1>
+        <p>这个页面只检查当前应用里的旧缓存，不登录、不连接 Supabase，也不会向云端写入任何内容。</p>
+      </header>
+
+      <div class="notice">
+        <span class="notice-mark">!</span>
+        <div>
+          <strong>请在以前打开过应用的同一个入口使用</strong>
+          <p>QQ 邮箱里打开过，就从 QQ 邮箱应用内打开本页。不要清理缓存、切换浏览器或使用无痕模式。</p>
+        </div>
+      </div>
+
+      <section id="resultPanel" aria-live="polite">
+        <div class="status-head">
+          <span class="status-icon" id="statusIcon">…</span>
+          <div>
+            <h2 id="statusTitle">正在检查本地数据</h2>
+            <p class="status-copy" id="statusCopy">检查过程只发生在这台设备上。</p>
+          </div>
+        </div>
+
+        <div class="metrics" id="metrics"></div>
+        <div class="source-list" id="sourceList"></div>
+
+        <div class="actions">
+          <button class="primary" id="downloadButton" type="button" disabled>下载恢复文件</button>
+          <button class="secondary" id="copyButton" type="button" disabled>复制恢复内容</button>
+        </div>
+        <p id="feedback"></p>
+        <p class="privacy">恢复文件仅包含共同空间数据，不包含 Supabase 登录令牌。文件可能含有你们的私密留言，请妥善保存。</p>
+
+        <details>
+          <summary>查看技术检测结果</summary>
+          <pre id="diagnostics"></pre>
+        </details>
+      </section>
+    </main>
+
+    <script>
+      (() => {
+        "use strict";
+
+        const stateKey = "love-tool-liu-fu-v2";
+        const backupKey = "love-tool-liu-fu-shared-backup-v1";
+        const privateFields = new Set(["private", "writer", "privatePerson"]);
+        const listFields = ["messages", "tasks", "questionHistory", "loveNotes", "studyLogs", "gameRecords", "meetings", "photos"];
+        let recoveryPackage = null;
+
+        const byId = (id) => document.getElementById(id);
+
+        function parseStored(key) {
+          const raw = localStorage.getItem(key);
+          if (!raw) return { exists: false, data: null, bytes: 0, error: null };
+          try {
+            return { exists: true, data: JSON.parse(raw), bytes: new Blob([raw]).size, error: null };
+          } catch (error) {
+            return { exists: true, data: null, bytes: new Blob([raw]).size, error: error.message };
+          }
+        }
+
+        function sharedOnly(value) {
+          if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+          return Object.fromEntries(Object.entries(value).filter(([key]) => !privateFields.has(key)));
+        }
+
+        function count(value) { return Array.isArray(value) ? value.length : 0; }
+
+        function summarize(value) {
+          const garden = value?.garden || {};
+          const achievements = value?.achievements || {};
+          const answers = Object.values(value?.dailyQuestion?.answers || {}).filter((answer) => String(answer || "").trim()).length;
+          return {
+            messages: count(value?.messages),
+            photos: count(value?.photos),
+            tasks: count(value?.tasks),
+            notes: count(value?.loveNotes),
+            study: count(value?.studyLogs),
+            games: count(value?.gameRecords),
+            meetings: count(value?.meetings),
+            questions: count(value?.questionHistory) + answers,
+            achievements: count(achievements.custom) + Object.keys(achievements.completed || {}).length,
+            garden: count(garden.seeds) + count(garden.wishes) + count(garden.pointEvents) + count(garden.flowerLetters) + count(garden.anniversaries)
+          };
+        }
+
+        function score(summary) {
+          return Object.values(summary).reduce((total, value) => total + Number(value || 0), 0);
+        }
+
+        function formatBytes(bytes) {
+          if (!bytes) return "0 KB";
+          if (bytes < 1024) return `${bytes} B`;
+          return `${(bytes / 1024).toFixed(1)} KB`;
+        }
+
+        function metric(label, value) {
+          return `<div class="metric"><strong>${value}</strong><span>${label}</span></div>`;
+        }
+
+        function inspect() {
+          const main = parseStored(stateKey);
+          const backup = parseStored(backupKey);
+          const mainShared = sharedOnly(main.data);
+          const backupShared = sharedOnly(backup.data?.data);
+          const candidates = [
+            { name: "主缓存", data: mainShared, summary: summarize(mainShared), bytes: main.bytes, valid: Boolean(mainShared) },
+            { name: "公共备份", data: backupShared, summary: summarize(backupShared), bytes: backup.bytes, valid: Boolean(backupShared) }
+          ];
+          candidates.forEach((candidate) => { candidate.score = score(candidate.summary); });
+          const best = candidates.filter((candidate) => candidate.valid).sort((a, b) => b.score - a.score)[0] || null;
+          const found = Boolean(best && best.score > 0);
+
+          recoveryPackage = found ? {
+            format: "liu-fu-love-shared-recovery",
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            source: best.name,
+            summary: best.summary,
+            shared: best.data
+          } : null;
+
+          byId("resultPanel").classList.toggle("empty", !found);
+          byId("statusIcon").textContent = found ? "✓" : "—";
+          byId("statusTitle").textContent = found ? "发现可恢复的旧数据" : "没有发现可用的共同数据";
+          byId("statusCopy").textContent = found
+            ? `已选择记录更完整的${best.name}，请先下载恢复文件。`
+            : "请确认是在原来的 QQ 邮箱应用内网页中打开，而不是跳到了其他浏览器。";
+          byId("metrics").innerHTML = found ? [
+            metric("共同留言", best.summary.messages),
+            metric("照片", best.summary.photos),
+            metric("任务", best.summary.tasks),
+            metric("情侣纸条", best.summary.notes),
+            metric("见面/游戏", best.summary.meetings + best.summary.games),
+            metric("花园记录", best.summary.garden)
+          ].join("") : metric("找到的记录", 0);
+          byId("sourceList").innerHTML = candidates.map((candidate) => (
+            `<div class="source-row"><span>${candidate.name}</span><strong>${candidate.valid ? `${candidate.score} 项 · ${formatBytes(candidate.bytes)}` : "未找到"}</strong></div>`
+          )).join("");
+          byId("downloadButton").disabled = !found;
+          byId("copyButton").disabled = !found;
+          byId("diagnostics").textContent = JSON.stringify({
+            page: location.href,
+            storageAvailable: true,
+            main: { exists: main.exists, bytes: main.bytes, parseError: main.error },
+            backup: { exists: backup.exists, bytes: backup.bytes, parseError: backup.error },
+            selected: best ? { source: best.name, score: best.score, summary: best.summary } : null
+          }, null, 2);
+        }
+
+        function packageText() {
+          return JSON.stringify({ ...recoveryPackage, exportedAt: new Date().toISOString() }, null, 2);
+        }
+
+        byId("downloadButton").addEventListener("click", () => {
+          if (!recoveryPackage) return;
+          const blob = new Blob([packageText()], { type: "application/json;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `liu-fu-love-recovery-${new Date().toISOString().slice(0, 10)}.json`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+          byId("feedback").textContent = "恢复文件已生成，请确认手机中能够找到该文件。";
+        });
+
+        byId("copyButton").addEventListener("click", async () => {
+          if (!recoveryPackage) return;
+          const text = packageText();
+          try {
+            await navigator.clipboard.writeText(text);
+            byId("feedback").textContent = "恢复内容已复制。";
+          } catch {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            textarea.remove();
+            byId("feedback").textContent = "恢复内容已复制。";
+          }
+        });
+
+        try {
+          inspect();
+        } catch (error) {
+          byId("resultPanel").classList.add("empty");
+          byId("statusIcon").textContent = "!";
+          byId("statusTitle").textContent = "当前入口无法读取本地缓存";
+          byId("statusCopy").textContent = "请回到以前使用的 QQ 邮箱应用内打开方式后重试。";
+          byId("diagnostics").textContent = String(error?.stack || error);
+        }
+      })();
+    </script>
+  </body>
+</html>
