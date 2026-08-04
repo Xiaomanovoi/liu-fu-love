@@ -149,6 +149,34 @@
       .empty .metric strong { color: #8b817e; }
       #feedback { min-height: 22px; margin: 12px 2px 0; color: var(--mint-ink); font-size: 14px; font-weight: 700; }
 
+      .chunk-panel {
+        margin-top: 14px;
+        padding: 14px;
+        border: 1px solid #dfcfca;
+        border-radius: 8px;
+        background: #faf6f4;
+      }
+      .chunk-panel[hidden] { display: none; }
+      .chunk-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+      .chunk-head strong { font-size: 15px; }
+      .chunk-head span { color: var(--rose); font-size: 14px; font-weight: 800; }
+      #chunkText {
+        width: 100%;
+        height: 112px;
+        margin-top: 10px;
+        padding: 10px;
+        resize: none;
+        border: 1px solid #e4d7d2;
+        border-radius: 8px;
+        background: white;
+        color: #5f5552;
+        font: 12px/1.5 ui-monospace, Consolas, monospace;
+        word-break: break-all;
+      }
+      .chunk-actions { display: grid; grid-template-columns: 44px 1fr 44px; gap: 8px; margin-top: 8px; }
+      .chunk-actions button { min-height: 44px; border: 1px solid #dfcfca; background: white; color: var(--ink); }
+      .chunk-actions .copy-chunk { border-color: var(--rose); background: var(--rose); color: white; }
+
       details { margin-top: 16px; border-top: 1px solid #f0e7e3; padding-top: 12px; }
       summary { color: var(--muted); cursor: pointer; font-size: 14px; }
       pre {
@@ -200,10 +228,24 @@
         <div class="source-list" id="sourceList"></div>
 
         <div class="actions">
+          <button class="primary" id="shareButton" type="button" disabled>分享恢复文件</button>
           <button class="primary" id="downloadButton" type="button" disabled>下载恢复文件</button>
+          <button class="secondary" id="chunksButton" type="button" disabled>生成压缩分段</button>
           <button class="secondary" id="copyButton" type="button" disabled>复制恢复内容</button>
         </div>
         <p id="feedback"></p>
+        <div class="chunk-panel" id="chunkPanel" hidden>
+          <div class="chunk-head">
+            <strong>压缩恢复码</strong>
+            <span id="chunkCounter">第 1 / 1 段</span>
+          </div>
+          <textarea id="chunkText" readonly aria-label="当前压缩恢复码分段"></textarea>
+          <div class="chunk-actions">
+            <button id="previousChunk" type="button" aria-label="上一段">‹</button>
+            <button class="copy-chunk" id="copyChunk" type="button">复制本段</button>
+            <button id="nextChunk" type="button" aria-label="下一段">›</button>
+          </div>
+        </div>
         <p class="privacy">恢复文件仅包含共同空间数据，不包含 Supabase 登录令牌。文件可能含有你们的私密留言，请妥善保存。</p>
 
         <details>
@@ -222,6 +264,8 @@
         const privateFields = new Set(["private", "writer", "privatePerson"]);
         const listFields = ["messages", "tasks", "questionHistory", "loveNotes", "studyLogs", "gameRecords", "meetings", "photos"];
         let recoveryPackage = null;
+        let recoveryChunks = [];
+        let activeChunk = 0;
 
         const byId = (id) => document.getElementById(id);
 
@@ -314,6 +358,8 @@
             `<div class="source-row"><span>${candidate.name}</span><strong>${candidate.valid ? `${candidate.score} 项 · ${formatBytes(candidate.bytes)}` : "未找到"}</strong></div>`
           )).join("");
           byId("downloadButton").disabled = !found;
+          byId("shareButton").disabled = !found;
+          byId("chunksButton").disabled = !found;
           byId("copyButton").disabled = !found;
           byId("diagnostics").textContent = JSON.stringify({
             page: location.href,
@@ -327,6 +373,76 @@
         function packageText() {
           return JSON.stringify({ ...recoveryPackage, exportedAt: new Date().toISOString() }, null, 2);
         }
+
+        function recoveryFile() {
+          return new File(
+            [packageText()],
+            `liu-fu-love-recovery-${new Date().toISOString().slice(0, 10)}.json`,
+            { type: "application/json;charset=utf-8" }
+          );
+        }
+
+        async function copyText(text) {
+          try {
+            await navigator.clipboard.writeText(text);
+          } catch {
+            const textarea = document.createElement("textarea");
+            textarea.value = text;
+            textarea.style.position = "fixed";
+            textarea.style.opacity = "0";
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand("copy");
+            textarea.remove();
+          }
+        }
+
+        function bytesToBase64(bytes) {
+          let binary = "";
+          const size = 0x8000;
+          for (let index = 0; index < bytes.length; index += size) {
+            binary += String.fromCharCode(...bytes.subarray(index, index + size));
+          }
+          return btoa(binary);
+        }
+
+        async function compressedCode(text) {
+          const bytes = new TextEncoder().encode(text);
+          if (typeof CompressionStream !== "function") {
+            return { format: "LFREC0", code: bytesToBase64(bytes) };
+          }
+          const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream("gzip"));
+          const compressed = new Uint8Array(await new Response(stream).arrayBuffer());
+          return { format: "LFREC1", code: bytesToBase64(compressed) };
+        }
+
+        async function shortHash(text) {
+          if (!crypto.subtle) return "nohash";
+          const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text)));
+          return [...digest].slice(0, 8).map((value) => value.toString(16).padStart(2, "0")).join("");
+        }
+
+        function showChunk(index) {
+          if (!recoveryChunks.length) return;
+          activeChunk = Math.max(0, Math.min(index, recoveryChunks.length - 1));
+          byId("chunkText").value = recoveryChunks[activeChunk];
+          byId("chunkCounter").textContent = `第 ${activeChunk + 1} / ${recoveryChunks.length} 段`;
+          byId("previousChunk").disabled = activeChunk === 0;
+          byId("nextChunk").disabled = activeChunk === recoveryChunks.length - 1;
+        }
+
+        byId("shareButton").addEventListener("click", async () => {
+          if (!recoveryPackage) return;
+          const file = recoveryFile();
+          try {
+            if (!navigator.share || (navigator.canShare && !navigator.canShare({ files: [file] }))) throw new Error("unsupported");
+            await navigator.share({ title: "两人空间恢复文件", text: "请妥善保存这份共同数据恢复文件。", files: [file] });
+            byId("feedback").textContent = "已调起系统分享，请发送到文件传输助手或另一台设备。";
+          } catch (error) {
+            if (error?.name === "AbortError") return;
+            byId("feedback").textContent = "当前 QQ 邮箱不支持文件分享，请使用“生成压缩分段”。";
+          }
+        });
 
         byId("downloadButton").addEventListener("click", () => {
           if (!recoveryPackage) return;
@@ -344,22 +460,31 @@
 
         byId("copyButton").addEventListener("click", async () => {
           if (!recoveryPackage) return;
-          const text = packageText();
-          try {
-            await navigator.clipboard.writeText(text);
-            byId("feedback").textContent = "恢复内容已复制。";
-          } catch {
-            const textarea = document.createElement("textarea");
-            textarea.value = text;
-            textarea.style.position = "fixed";
-            textarea.style.opacity = "0";
-            document.body.appendChild(textarea);
-            textarea.select();
-            document.execCommand("copy");
-            textarea.remove();
-            byId("feedback").textContent = "恢复内容已复制。";
-          }
+          await copyText(packageText());
+          byId("feedback").textContent = "完整恢复内容已复制。内容过长时请改用压缩分段。";
         });
+
+        byId("chunksButton").addEventListener("click", async () => {
+          if (!recoveryPackage) return;
+          byId("feedback").textContent = "正在压缩恢复数据…";
+          const text = packageText();
+          const [{ format, code }, hash] = await Promise.all([compressedCode(text), shortHash(text)]);
+          const chunkSize = 7000;
+          const payloads = [];
+          for (let index = 0; index < code.length; index += chunkSize) payloads.push(code.slice(index, index + chunkSize));
+          recoveryChunks = payloads.map((payload, index) => `${format}|${hash}|${index + 1}|${payloads.length}|${payload}`);
+          byId("chunkPanel").hidden = false;
+          showChunk(0);
+          byId("feedback").textContent = `已压缩成 ${recoveryChunks.length} 段。请按编号逐段复制发送，不要遗漏。`;
+          byId("chunkPanel").scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+
+        byId("copyChunk").addEventListener("click", async () => {
+          await copyText(recoveryChunks[activeChunk]);
+          byId("feedback").textContent = `第 ${activeChunk + 1} 段已复制。发送后再复制下一段。`;
+        });
+        byId("previousChunk").addEventListener("click", () => showChunk(activeChunk - 1));
+        byId("nextChunk").addEventListener("click", () => showChunk(activeChunk + 1));
 
         try {
           inspect();
