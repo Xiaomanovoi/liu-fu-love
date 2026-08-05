@@ -125,6 +125,7 @@
             <button class="primary-button" type="submit">发送</button>
           </form>
           <div class="message-list" id="messageList"></div>
+          <button class="history-toggle" data-history-toggle="messages" type="button" hidden></button>
         </article>
 
         <article class="panel question-panel">
@@ -185,6 +186,7 @@
           </div>
           <p class="voice-notice" id="voiceNotice" aria-live="polite"></p>
           <div class="voice-list" id="voiceList"></div>
+          <button class="history-toggle" data-history-toggle="voices" type="button" hidden></button>
         </article>
       </section>
 
@@ -207,6 +209,17 @@
           <i data-lucide="chevron-right" aria-hidden="true"></i>
         </button>
 
+        <button class="wheel-shortcut" id="openWheel" type="button">
+          <span class="wheel-shortcut-mark" aria-hidden="true"><i data-lucide="circle-gauge"></i></span>
+          <span class="wheel-shortcut-copy">
+            <small>今天让好运替我们决定</small>
+            <strong id="wheelShortcutName">今天吃什么</strong>
+            <span id="wheelShortcutMeta">20 个选择，转一下就知道</span>
+          </span>
+          <span class="wheel-shortcut-mini" aria-hidden="true"><i></i></span>
+          <i data-lucide="chevron-right" aria-hidden="true"></i>
+        </button>
+
         <article class="panel form-panel">
           <form id="taskForm" class="stack-form compact-form">
             <label>
@@ -216,6 +229,7 @@
             <button class="primary-button" type="submit">添加任务</button>
           </form>
           <div class="task-list" id="taskList"></div>
+          <button class="history-toggle" data-history-toggle="tasks" type="button" hidden></button>
         </article>
 
         <div class="section-heading page-heading feature-heading">
@@ -244,6 +258,7 @@
             <button class="primary-button" type="submit">折好这张纸条</button>
           </form>
           <div class="note-list" id="noteList"></div>
+          <button class="history-toggle" data-history-toggle="notes" type="button" hidden></button>
         </article>
 
         <div class="section-heading page-heading feature-heading">
@@ -268,6 +283,7 @@
             <button class="primary-button" type="submit">完成打卡</button>
           </form>
           <div class="study-list" id="studyList"></div>
+          <button class="history-toggle" data-history-toggle="study" type="button" hidden></button>
         </article>
 
         <div class="section-heading page-heading feature-heading">
@@ -298,6 +314,7 @@
             <button class="primary-button" type="submit">保存游戏记录</button>
           </form>
           <div class="game-list" id="gameList"></div>
+          <button class="history-toggle" data-history-toggle="games" type="button" hidden></button>
         </article>
 
         <div class="section-heading page-heading meeting-heading">
@@ -355,6 +372,55 @@
             <button class="soft-button" type="submit">添加</button>
           </form>
         </article>
+      </section>
+
+      <section class="screen wheel-screen" id="wheel" aria-label="幸运大转盘">
+        <header class="wheel-topbar">
+          <button class="wheel-back" id="closeWheel" type="button" aria-label="返回我们的页面" title="返回">
+            <i data-lucide="arrow-left" aria-hidden="true"></i>
+          </button>
+          <div><p class="section-kicker">A little luck for us</p><h2>幸运大转盘</h2></div>
+          <button class="wheel-create-icon" id="createWheel" type="button" aria-label="新建转盘" title="新建转盘"><i data-lucide="plus" aria-hidden="true"></i></button>
+        </header>
+
+        <section class="wheel-picker-band">
+          <label for="wheelSelect">当前转盘</label>
+          <select id="wheelSelect" aria-label="选择转盘"></select>
+        </section>
+
+        <section class="wheel-stage" aria-live="polite">
+          <div class="wheel-pointer" aria-hidden="true"></div>
+          <div class="wheel-canvas-shell">
+            <canvas id="wheelCanvas" width="720" height="720" aria-label="幸运大转盘"></canvas>
+            <button class="wheel-spin" id="spinWheel" type="button"><span>转一下</span><small>SPIN</small></button>
+          </div>
+          <div class="wheel-result" id="wheelResult" hidden>
+            <small>这一次转到了</small><strong id="wheelResultText">火锅</strong>
+          </div>
+        </section>
+
+        <details class="wheel-editor panel">
+          <summary><span><small>EDIT THIS WHEEL</small><strong id="wheelEditorName">编辑今天吃什么</strong></span><b id="wheelOptionCount">20 项</b><i data-lucide="chevron-down" aria-hidden="true"></i></summary>
+          <div class="wheel-editor-content">
+            <div class="wheel-name-actions">
+              <button class="icon-button" id="renameWheel" type="button" aria-label="修改转盘名称" title="修改名称"><i data-lucide="pencil" aria-hidden="true"></i></button>
+              <button class="icon-button" id="duplicateWheel" type="button" aria-label="复制当前转盘" title="复制转盘"><i data-lucide="copy" aria-hidden="true"></i></button>
+              <button class="icon-button" id="restoreWheel" type="button" aria-label="恢复默认食物选项" title="恢复默认" hidden><i data-lucide="rotate-ccw" aria-hidden="true"></i></button>
+              <button class="icon-button danger" id="deleteWheel" type="button" aria-label="删除当前转盘" title="删除转盘"><i data-lucide="trash-2" aria-hidden="true"></i></button>
+            </div>
+            <form class="wheel-option-form" id="wheelOptionForm">
+              <input id="wheelOptionText" maxlength="20" autocomplete="off" placeholder="添加一个新选项" aria-label="新选项">
+              <button class="soft-button" type="submit"><i data-lucide="plus" aria-hidden="true"></i><span>添加</span></button>
+            </form>
+            <div class="wheel-option-list" id="wheelOptionList"></div>
+          </div>
+        </details>
+
+        <details class="wheel-history panel">
+          <summary><span><small>RECENT SPINS</small><strong>最近转动</strong></span><b id="wheelHistoryCount">0 次</b><i data-lucide="chevron-down" aria-hidden="true"></i></summary>
+          <div class="wheel-history-list" id="wheelHistoryList"></div>
+          <button class="history-toggle" data-history-toggle="wheelHistory" type="button" hidden></button>
+        </details>
       </section>
 
       <section class="screen garden-screen" id="garden" aria-label="我们的秘密花园">
@@ -854,6 +920,18 @@
         <div class="dialog-actions">
           <button class="soft-button" value="cancel" type="submit">取消</button>
           <button class="primary-button" id="saveAchievementEdit" value="default" type="button">保存修改</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="wheelCreateDialog">
+      <form class="dialog-card" id="wheelCreateForm">
+        <p class="section-kicker">Create a new wheel</p>
+        <h2>新建一个转盘</h2>
+        <label>转盘名称<input id="wheelCreateName" maxlength="24" autocomplete="off" placeholder="例如：今晚玩什么"></label>
+        <label>初始选项<textarea id="wheelCreateOptions" rows="6" maxlength="500" placeholder="每行填写一个选项，至少两个"></textarea></label>
+        <div class="dialog-actions">
+          <button class="soft-button" value="cancel" formmethod="dialog" type="submit">取消</button>
+          <button class="primary-button" type="submit">创建转盘</button>
         </div>
       </form>
     </dialog>

@@ -255,7 +255,17 @@ const gardenPointCategories = {
   wish: { name: "共同愿望", icon: "sparkles" }, coPlant: { name: "共育植物", icon: "leaf" },
   gardenQuest: { name: "花园任务", icon: "calendar-heart" }, flowerLetter: { name: "花期信箱", icon: "mail-heart" }
 };
-const sharedRecordFields = ["messages", "tasks", "loveNotes", "studyLogs", "gameRecords", "meetings", "photos"];
+const sharedRecordFields = ["messages", "tasks", "loveNotes", "studyLogs", "gameRecords", "meetings", "photos", "wheels", "wheelOptions", "wheelHistory"];
+const defaultFoodChoices = [
+  "火锅", "烤肉", "烧烤", "川菜", "湘菜", "粤菜", "东北菜", "面馆", "米线", "螺蛳粉",
+  "麻辣烫", "冒菜", "炸鸡", "汉堡", "披萨", "寿司", "饺子", "炒饭", "小龙虾", "甜品"
+];
+const defaultWheel = { id: "wheel-food", name: "今天吃什么", isDefault: true, createdAt: "2026-08-05T00:00:00.000Z", updatedAt: "2026-08-05T00:00:00.000Z" };
+const defaultWheelOptions = defaultFoodChoices.map((text, index) => ({
+  id: `wheel-food-${index + 1}`, wheelId: defaultWheel.id, text, order: index,
+  createdAt: defaultWheel.createdAt, updatedAt: defaultWheel.updatedAt
+}));
+const historyLimits = { messages: 5, voices: 5, tasks: 5, notes: 5, study: 5, games: 5, wheelHistory: 5 };
 const gardenQuestPool = [
   "交换一张今天随手拍的照片", "认真听对方分享一件小事", "一起通话至少二十分钟", "互相说一个最近发现的优点",
   "约好一起看一集剧或一部电影", "各自分享一首最近喜欢的歌", "一起决定下一次见面想吃什么", "互相说一句具体的鼓励",
@@ -292,6 +302,9 @@ const defaults = {
     { id: uid(), title: "下一次见面", date: "", place: "", note: "把想见面的日子先约下来。", planned: true }
   ],
   photos: [],
+  wheels: [defaultWheel],
+  wheelOptions: defaultWheelOptions,
+  wheelHistory: [],
   deletedRecords: {},
   garden: {
     version: 3,
@@ -348,6 +361,11 @@ let gardenSeedPhotoOptionsKey = "";
 let gardenSeedVoiceOptionsKey = "";
 let gardenSeedOptionsPending = false;
 let sharedNeedsResync = false;
+const historyExpanded = { messages: false, voices: false, tasks: false, notes: false, study: false, games: false, wheelHistory: false };
+let activeWheelId = "wheel-food";
+let wheelRotation = 0;
+let wheelSpinning = false;
+let lastWheelResultId = "";
 
 const els = {
   daysTogether: q("#daysTogether"), editStartDate: q("#editStartDate"), settingsDialog: q("#settingsDialog"), startDateInput: q("#startDateInput"), saveStartDate: q("#saveStartDate"),
@@ -363,6 +381,7 @@ const els = {
   gardenTogetherSeason: q("#gardenTogetherSeason"), gardenCompanionDisplay: q("#gardenCompanionDisplay"), gardenCompanionForm: q("#gardenCompanionForm"), gardenCompanionName: q("#gardenCompanionName"), gardenCompanionSpecies: q("#gardenCompanionSpecies"), gardenCompanionStatus: q("#gardenCompanionStatus"), gardenCompanionPlantName: q("#gardenCompanionPlantName"), gardenCompanionMeta: q("#gardenCompanionMeta"), gardenCompanionProgress: q("#gardenCompanionProgress"), gardenCompanionCareStatus: q("#gardenCompanionCareStatus"), gardenCompanionCare: q("#gardenCompanionCare"), gardenQuestWeek: q("#gardenQuestWeek"), gardenQuestProgress: q("#gardenQuestProgress"), gardenQuestList: q("#gardenQuestList"), gardenPostcardWeek: q("#gardenPostcardWeek"), gardenPostcardStage: q("#gardenPostcardStage"), gardenPostcardBotanical: q("#gardenPostcardBotanical"), gardenPostcardTitle: q("#gardenPostcardTitle"), gardenPostcardCopy: q("#gardenPostcardCopy"), gardenPostcardStats: q("#gardenPostcardStats"), saveGardenPostcard: q("#saveGardenPostcard"), gardenPostcardNotice: q("#gardenPostcardNotice"), gardenLetterForm: q("#gardenLetterForm"), gardenLetterText: q("#gardenLetterText"), gardenLetterDate: q("#gardenLetterDate"), gardenLetterCount: q("#gardenLetterCount"), gardenLetterList: q("#gardenLetterList"), gardenAnniversaryForm: q("#gardenAnniversaryForm"), gardenAnniversaryTitle: q("#gardenAnniversaryTitle"), gardenAnniversaryDate: q("#gardenAnniversaryDate"), gardenAnniversaryStyle: q("#gardenAnniversaryStyle"), gardenAnniversaryList: q("#gardenAnniversaryList"),
   gardenMemoryDialog: q("#gardenMemoryDialog"), closeGardenMemoryDialog: q("#closeGardenMemoryDialog"), gardenMemoryImage: q("#gardenMemoryImage"), gardenMemoryType: q("#gardenMemoryType"), gardenMemoryDialogTitle: q("#gardenMemoryDialogTitle"), gardenMemoryMeta: q("#gardenMemoryMeta"), gardenMemoryDialogText: q("#gardenMemoryDialogText"),
   taskForm: q("#taskForm"), taskText: q("#taskText"), taskList: q("#taskList"), taskStats: q("#taskStats"),
+  openWheel: q("#openWheel"), closeWheel: q("#closeWheel"), wheelShortcutName: q("#wheelShortcutName"), wheelShortcutMeta: q("#wheelShortcutMeta"), wheelSelect: q("#wheelSelect"), wheelCanvas: q("#wheelCanvas"), spinWheel: q("#spinWheel"), wheelResult: q("#wheelResult"), wheelResultText: q("#wheelResultText"), wheelEditorName: q("#wheelEditorName"), wheelOptionCount: q("#wheelOptionCount"), wheelOptionList: q("#wheelOptionList"), wheelOptionForm: q("#wheelOptionForm"), wheelOptionText: q("#wheelOptionText"), renameWheel: q("#renameWheel"), duplicateWheel: q("#duplicateWheel"), deleteWheel: q("#deleteWheel"), restoreWheel: q("#restoreWheel"), createWheel: q("#createWheel"), wheelHistoryList: q("#wheelHistoryList"), wheelHistoryCount: q("#wheelHistoryCount"), wheelCreateDialog: q("#wheelCreateDialog"), wheelCreateForm: q("#wheelCreateForm"), wheelCreateName: q("#wheelCreateName"), wheelCreateOptions: q("#wheelCreateOptions"),
   achievementStats: q("#achievementStats"), achievementPercent: q("#achievementPercent"), achievementProgressBar: q("#achievementProgressBar"), achievementFilter: q("#achievementFilter"), achievementVisibleCount: q("#achievementVisibleCount"), achievementList: q("#achievementList"), achievementMore: q("#achievementMore"), achievementForm: q("#achievementForm"), achievementText: q("#achievementText"), achievementEditDialog: q("#achievementEditDialog"), achievementEditId: q("#achievementEditId"), achievementEditText: q("#achievementEditText"), saveAchievementEdit: q("#saveAchievementEdit"),
   noteForm: q("#noteForm"), noteReceiver: q("#noteReceiver"), noteUnlockDate: q("#noteUnlockDate"), noteText: q("#noteText"), noteList: q("#noteList"), noteStats: q("#noteStats"),
   studyForm: q("#studyForm"), studyContent: q("#studyContent"), studyDate: q("#studyDate"), studyMinutes: q("#studyMinutes"), studyNote: q("#studyNote"), studyList: q("#studyList"), studyStats: q("#studyStats"),
@@ -397,8 +416,8 @@ function bindNavigation() {
 }
 
 function activateTab(target, scrollTarget) {
-  const navigationTarget = target === "garden" ? "together" : target;
-  document.body.classList.toggle("garden-mode", target === "garden");
+  const navigationTarget = target === "garden" || target === "wheel" ? "together" : target;
+  document.body.classList.toggle("garden-mode", target === "garden" || target === "wheel");
   els.tabs.forEach((item) => item.classList.toggle("is-active", item.dataset.tab === navigationTarget));
   els.screens.forEach((screen) => screen.classList.toggle("is-active", screen.id === target));
   if (scrollTarget) {
@@ -432,6 +451,16 @@ function bindActions() {
     persistAndRender();
   });
   els.openMood.addEventListener("click", openMoodDialog);
+  els.openWheel.addEventListener("click", () => {
+    activateTab("wheel");
+    renderWheel();
+  });
+  els.closeWheel.addEventListener("click", () => activateTab("together", els.openWheel));
+  qa("[data-history-toggle]").forEach((button) => button.addEventListener("click", () => {
+    const key = button.dataset.historyToggle;
+    historyExpanded[key] = !historyExpanded[key];
+    renderHistorySection(key);
+  }));
   els.saveMood.addEventListener("click", () => {
     const person = state.writer;
     state.moods[person] = { feeling: selectedMood, note: els.moodNote.value.trim() || "今天也在想你" };
@@ -479,7 +508,9 @@ function bindActions() {
     event.preventDefault();
     const answer = els.questionAnswer.value.trim();
     if (!answer) return;
-    state.dailyQuestion.answers[currentPerson()] = answer;
+    const person = currentPerson();
+    state.dailyQuestion.answers[person] = answer;
+    state.dailyQuestion.answerUpdatedAt = { ...(state.dailyQuestion.answerUpdatedAt || {}), [person]: new Date().toISOString() };
     els.questionAnswer.value = "";
     persistAndRender();
   });
@@ -677,6 +708,7 @@ function bindActions() {
     els.cycleLength.value = "28";
     persistAndRender();
   });
+  bindWheelActions();
 }
 
 function bindGardenActions() {
@@ -964,6 +996,7 @@ function render() {
   renderQuestion();
   renderVoiceMessages();
   renderTasks();
+  renderWheel();
   renderLoveNotes();
   renderStudyLogs();
   renderGameRecords();
@@ -1037,8 +1070,9 @@ function renderMissStats() {
 
 function renderVoiceMessages() {
   els.voiceCount.textContent = `${voiceMessages.length} 封`;
+  const visibleMessages = visibleHistoryItems("voices", voiceMessages);
   if (!voiceMessages.length) return renderEmpty(els.voiceList, "第一封心声，等一句熟悉的声音。");
-  els.voiceList.replaceChildren(...voiceMessages.map((message) => {
+  els.voiceList.replaceChildren(...visibleMessages.map((message) => {
     const node = document.createElement("article");
     node.className = `voice-message ${message.role === "fu" ? "fu" : "liu"}`;
     const own = message.role === currentPerson();
@@ -2190,9 +2224,301 @@ function gardenDecorationMarkup(id) {
   return markup[id] || "";
 }
 
+function visibleHistoryItems(key, items) {
+  const values = Array.isArray(items) ? items : [];
+  const limit = historyLimits[key] || 5;
+  const button = q(`[data-history-toggle="${key}"]`);
+  const hasMore = values.length > limit;
+  if (!hasMore) historyExpanded[key] = false;
+  if (button) {
+    button.hidden = !hasMore;
+    button.setAttribute("aria-expanded", String(Boolean(historyExpanded[key])));
+    button.textContent = historyExpanded[key] ? `收起到最近 ${limit} 条` : `展开全部（共 ${values.length} 条）`;
+  }
+  return historyExpanded[key] ? values : values.slice(0, limit);
+}
+
+function renderHistorySection(key) {
+  const renderers = {
+    messages: renderMessages, voices: renderVoiceMessages, tasks: renderTasks,
+    notes: renderLoveNotes, study: renderStudyLogs, games: renderGameRecords,
+    wheelHistory: renderWheelHistory
+  };
+  renderers[key]?.();
+}
+
+function wheelOptionsFor(wheelId) {
+  return (state.wheelOptions || [])
+    .filter((item) => item.wheelId === wheelId)
+    .sort((a, b) => Number(a.order || 0) - Number(b.order || 0) || (a.createdAt || "").localeCompare(b.createdAt || ""));
+}
+
+function currentWheel() {
+  const wheels = state.wheels || [];
+  if (!wheels.some((item) => item.id === activeWheelId)) activeWheelId = wheels[0]?.id || defaultWheel.id;
+  return wheels.find((item) => item.id === activeWheelId) || wheels[0] || defaultWheel;
+}
+
+function bindWheelActions() {
+  els.wheelSelect.addEventListener("change", () => {
+    activeWheelId = els.wheelSelect.value;
+    resetWheelMotion();
+    renderWheel();
+  });
+  els.spinWheel.addEventListener("click", spinCurrentWheel);
+  els.wheelOptionForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const text = els.wheelOptionText.value.trim();
+    if (!text) return;
+    const wheel = currentWheel();
+    const options = wheelOptionsFor(wheel.id);
+    const now = new Date().toISOString();
+    state.wheelOptions.push({ id: uid(), wheelId: wheel.id, text, order: options.length, createdAt: now, updatedAt: now });
+    wheel.updatedAt = now;
+    els.wheelOptionForm.reset();
+    persistAndRender("添加转盘选项");
+  });
+  els.renameWheel.addEventListener("click", () => {
+    const wheel = currentWheel();
+    const name = window.prompt("给这个转盘换个名字", wheel.name)?.trim();
+    if (!name || name === wheel.name) return;
+    wheel.name = name.slice(0, 24);
+    wheel.updatedAt = new Date().toISOString();
+    persistAndRender("修改转盘名称");
+  });
+  els.duplicateWheel.addEventListener("click", () => {
+    const source = currentWheel();
+    const sourceOptions = wheelOptionsFor(source.id);
+    const now = new Date().toISOString();
+    const wheelId = uid();
+    state.wheels.unshift({ id: wheelId, name: `${source.name}副本`.slice(0, 24), isDefault: false, createdAt: now, updatedAt: now });
+    state.wheelOptions.push(...sourceOptions.map((item, index) => ({ id: uid(), wheelId, text: item.text, order: index, createdAt: now, updatedAt: now })));
+    activeWheelId = wheelId;
+    resetWheelMotion();
+    persistAndRender("复制幸运转盘");
+  });
+  els.deleteWheel.addEventListener("click", () => {
+    const wheel = currentWheel();
+    if (wheel.isDefault || !window.confirm(`确定删除“${wheel.name}”吗？`)) return;
+    const optionIds = wheelOptionsFor(wheel.id).map((item) => item.id);
+    const historyIds = (state.wheelHistory || []).filter((item) => item.wheelId === wheel.id).map((item) => item.id);
+    markSharedRecordDeleted("wheels", wheel.id);
+    [...optionIds, ...historyIds].forEach((id) => markSharedRecordDeleted(optionIds.includes(id) ? "wheelOptions" : "wheelHistory", id));
+    state.wheels = state.wheels.filter((item) => item.id !== wheel.id);
+    state.wheelOptions = state.wheelOptions.filter((item) => item.wheelId !== wheel.id);
+    state.wheelHistory = state.wheelHistory.filter((item) => item.wheelId !== wheel.id);
+    activeWheelId = state.wheels[0]?.id || defaultWheel.id;
+    resetWheelMotion();
+    persistAndRender("删除幸运转盘");
+  });
+  els.restoreWheel.addEventListener("click", () => {
+    const wheel = currentWheel();
+    if (!wheel.isDefault || !window.confirm("恢复默认食物列表？当前食物选项会被替换。")) return;
+    const oldOptions = wheelOptionsFor(wheel.id);
+    oldOptions.forEach((item) => markSharedRecordDeleted("wheelOptions", item.id));
+    state.wheelOptions = state.wheelOptions.filter((item) => item.wheelId !== wheel.id);
+    const now = new Date().toISOString();
+    state.wheelOptions.push(...defaultFoodChoices.map((text, index) => ({ id: uid(), wheelId: wheel.id, text, order: index, createdAt: now, updatedAt: now })));
+    wheel.updatedAt = now;
+    resetWheelMotion();
+    persistAndRender("恢复食物转盘");
+  });
+  els.createWheel.addEventListener("click", () => {
+    els.wheelCreateForm.reset();
+    els.wheelCreateOptions.value = "一起看电影\n一起打游戏\n视频聊天";
+    els.wheelCreateDialog.showModal();
+  });
+  els.wheelCreateForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    if (event.submitter?.value === "cancel") {
+      els.wheelCreateDialog.close();
+      return;
+    }
+    const name = els.wheelCreateName.value.trim();
+    const choices = [...new Set(els.wheelCreateOptions.value.split(/[\n,，]+/).map((item) => item.trim()).filter(Boolean))].slice(0, 40);
+    if (!name || choices.length < 2) {
+      window.alert("请填写转盘名称，并至少准备两个不同选项。");
+      return;
+    }
+    const now = new Date().toISOString();
+    const wheelId = uid();
+    state.wheels.unshift({ id: wheelId, name: name.slice(0, 24), isDefault: false, createdAt: now, updatedAt: now });
+    state.wheelOptions.push(...choices.map((text, index) => ({ id: uid(), wheelId, text: text.slice(0, 20), order: index, createdAt: now, updatedAt: now })));
+    activeWheelId = wheelId;
+    els.wheelCreateDialog.close();
+    resetWheelMotion();
+    persistAndRender("新建幸运转盘");
+  });
+}
+
+function resetWheelMotion() {
+  wheelRotation = 0;
+  wheelSpinning = false;
+  lastWheelResultId = "";
+  els.wheelCanvas.style.transition = "none";
+  els.wheelCanvas.style.transform = "rotate(0deg)";
+  els.wheelResult.hidden = true;
+  els.spinWheel.disabled = false;
+}
+
+function renderWheel() {
+  const wheel = currentWheel();
+  const wheels = state.wheels || [];
+  const options = wheelOptionsFor(wheel.id);
+  els.wheelSelect.replaceChildren(...wheels.map((item) => {
+    const option = document.createElement("option");
+    option.value = item.id;
+    option.textContent = item.name;
+    option.selected = item.id === wheel.id;
+    return option;
+  }));
+  els.wheelShortcutName.textContent = wheel.name;
+  els.wheelShortcutMeta.textContent = `${options.length} 个选择，转一下就知道`;
+  els.wheelEditorName.textContent = `编辑${wheel.name}`;
+  els.wheelOptionCount.textContent = `${options.length} 项`;
+  els.deleteWheel.hidden = Boolean(wheel.isDefault);
+  els.restoreWheel.hidden = !wheel.isDefault;
+  els.spinWheel.disabled = wheelSpinning || options.length < 2;
+  els.spinWheel.querySelector("span").textContent = options.length < 2 ? "先加选项" : (wheelSpinning ? "转动中" : "转一下");
+  els.wheelOptionList.replaceChildren(...options.map((item, index) => {
+    const row = document.createElement("div");
+    row.className = "wheel-option-row";
+    row.innerHTML = `<span style="--wheel-color:${wheelColor(index)}"></span><input data-wheel-option="${item.id}" maxlength="20" value="${escapeHTML(item.text)}" aria-label="修改选项"><button class="icon-button danger" data-delete-wheel-option="${item.id}" type="button" aria-label="删除${escapeHTML(item.text)}" title="删除选项" ${options.length <= 2 ? "disabled" : ""}><span aria-hidden="true">×</span></button>`;
+    return row;
+  }));
+  els.wheelOptionList.querySelectorAll("[data-wheel-option]").forEach((input) => input.addEventListener("change", () => {
+    const item = state.wheelOptions.find((entry) => entry.id === input.dataset.wheelOption);
+    const text = input.value.trim();
+    if (!item || !text || text === item.text) {
+      if (item) input.value = item.text;
+      return;
+    }
+    item.text = text.slice(0, 20);
+    item.updatedAt = new Date().toISOString();
+    wheel.updatedAt = item.updatedAt;
+    persistAndRender("修改转盘选项");
+  }));
+  els.wheelOptionList.querySelectorAll("[data-delete-wheel-option]").forEach((button) => button.addEventListener("click", () => {
+    if (options.length <= 2) return;
+    const id = button.dataset.deleteWheelOption;
+    markSharedRecordDeleted("wheelOptions", id);
+    state.wheelOptions = state.wheelOptions.filter((item) => item.id !== id);
+    wheel.updatedAt = new Date().toISOString();
+    resetWheelMotion();
+    persistAndRender("删除转盘选项");
+  }));
+  if (!wheelSpinning && q("#wheel").classList.contains("is-active")) drawWheel(options);
+  renderWheelHistory();
+}
+
+function wheelColor(index) {
+  const colors = ["#d96f7d", "#779d86", "#a394c8", "#e6b85f", "#dc8c72", "#6f9da8", "#c97b9e", "#8eaa6d", "#b9826f", "#7588ae"];
+  return colors[index % colors.length];
+}
+
+function drawWheel(options) {
+  const canvas = els.wheelCanvas;
+  const context = canvas.getContext("2d");
+  const size = canvas.width;
+  const center = size / 2;
+  const radius = center - 18;
+  context.clearRect(0, 0, size, size);
+  if (!options.length) return;
+  const arc = (Math.PI * 2) / options.length;
+  options.forEach((item, index) => {
+    const start = -Math.PI / 2 + index * arc;
+    const end = start + arc;
+    context.beginPath();
+    context.moveTo(center, center);
+    context.arc(center, center, radius, start, end);
+    context.closePath();
+    context.fillStyle = wheelColor(index);
+    context.fill();
+    context.strokeStyle = "rgba(255,255,255,.72)";
+    context.lineWidth = 4;
+    context.stroke();
+    const middle = start + arc / 2;
+    context.fillStyle = "#fff";
+    context.font = `800 ${options.length > 18 ? 22 : options.length > 12 ? 25 : 29}px system-ui, sans-serif`;
+    context.textBaseline = "middle";
+    context.shadowColor = "rgba(58,43,45,.2)";
+    context.shadowBlur = 3;
+    const label = item.text.length > 6 ? `${item.text.slice(0, 6)}…` : item.text;
+    if (options.length > 14) {
+      const normalized = (middle + Math.PI * 2) % (Math.PI * 2);
+      const turnUpright = normalized > Math.PI / 2 && normalized < Math.PI * 1.5;
+      context.save();
+      context.translate(center, center);
+      context.rotate(middle + (turnUpright ? Math.PI : 0));
+      context.textAlign = turnUpright ? "left" : "right";
+      context.fillText(label, (turnUpright ? -1 : 1) * radius * .88, 0, radius * .52);
+      context.restore();
+    } else {
+      const textRadius = radius * .66;
+      context.textAlign = "center";
+      context.fillText(label, center + Math.cos(middle) * textRadius, center + Math.sin(middle) * textRadius, Math.max(78, radius * arc * .72));
+    }
+    context.shadowBlur = 0;
+  });
+  context.beginPath();
+  context.arc(center, center, radius, 0, Math.PI * 2);
+  context.strokeStyle = "rgba(255,255,255,.92)";
+  context.lineWidth = 10;
+  context.stroke();
+}
+
+function spinCurrentWheel() {
+  const wheel = currentWheel();
+  const options = wheelOptionsFor(wheel.id);
+  if (wheelSpinning || options.length < 2) return;
+  const pool = options.filter((item) => item.id !== lastWheelResultId);
+  const chosen = pickRandom(pool.length ? pool : options);
+  const chosenIndex = options.findIndex((item) => item.id === chosen.id);
+  const sector = 360 / options.length;
+  const desired = ((-(chosenIndex + .5) * sector) % 360 + 360) % 360;
+  const current = ((wheelRotation % 360) + 360) % 360;
+  wheelRotation += 5 * 360 + ((desired - current + 360) % 360);
+  wheelSpinning = true;
+  els.wheelResult.hidden = true;
+  els.spinWheel.disabled = true;
+  els.spinWheel.querySelector("span").textContent = "转动中";
+  els.wheelCanvas.style.transition = "transform 4.2s cubic-bezier(.12,.68,.08,1)";
+  window.requestAnimationFrame(() => { els.wheelCanvas.style.transform = `rotate(${wheelRotation}deg)`; });
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    wheelSpinning = false;
+    lastWheelResultId = chosen.id;
+    const createdAt = new Date().toISOString();
+    state.wheelHistory.unshift({ id: uid(), wheelId: wheel.id, wheelName: wheel.name, optionId: chosen.id, result: chosen.text, person: currentPerson(), createdAt, updatedAt: createdAt });
+    state.wheelHistory = state.wheelHistory.slice(0, 100);
+    els.wheelResultText.textContent = chosen.text;
+    els.wheelResult.hidden = false;
+    navigator.vibrate?.([30, 45, 30]);
+    persistAndRender("转动幸运转盘");
+  };
+  els.wheelCanvas.addEventListener("transitionend", finish, { once: true });
+  window.setTimeout(finish, 4600);
+}
+
+function renderWheelHistory() {
+  const wheel = currentWheel();
+  const history = (state.wheelHistory || []).filter((item) => item.wheelId === wheel.id).sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""));
+  const visible = visibleHistoryItems("wheelHistory", history);
+  els.wheelHistoryCount.textContent = `${history.length} 次`;
+  if (!history.length) return renderEmpty(els.wheelHistoryList, "第一次选择，交给转盘来决定。");
+  els.wheelHistoryList.replaceChildren(...visible.map((item) => {
+    const row = document.createElement("article");
+    row.innerHTML = `<span><b aria-hidden="true">✦</b></span><div><strong>${escapeHTML(item.result)}</strong><small>${people[item.person]?.name || "我们"} · ${formatDateTime(new Date(item.createdAt))}</small></div>`;
+    return row;
+  }));
+}
+
 function renderMessages() {
+  const messages = visibleHistoryItems("messages", state.messages);
   if (!state.messages.length) return renderEmpty(els.messageList, "第一条留言，留给此刻最想说的话。");
-  els.messageList.replaceChildren(...state.messages.map((item) => {
+  els.messageList.replaceChildren(...messages.map((item) => {
     const node = document.createElement("article");
     node.className = `message-item ${people[item.person].color}`;
     node.innerHTML = `<div class="message-meta"><span>${people[item.person].name}</span><time>${formatDate(parseDate(item.date))}</time><button class="delete-button" data-delete-message="${item.id}" type="button" aria-label="删除留言">×</button></div><p>${escapeHTML(item.text)}</p>`;
@@ -2229,8 +2555,9 @@ function renderQuestion() {
 function renderTasks() {
   const done = state.tasks.filter((task) => task.doneBy.length === 2).length;
   els.taskStats.textContent = `${done}/${state.tasks.length}`;
+  const tasks = visibleHistoryItems("tasks", state.tasks);
   if (!state.tasks.length) return renderEmpty(els.taskList, "写下一件想一起完成的小事。");
-  els.taskList.replaceChildren(...state.tasks.map((task) => {
+  els.taskList.replaceChildren(...tasks.map((task) => {
     const node = document.createElement("article");
     node.className = "task-item";
     const buttons = Object.keys(people).map((person) => `<button class="task-person ${task.doneBy.includes(person) ? "done" : ""}" data-task-id="${task.id}" data-person="${person}" type="button">${people[person].short}${task.doneBy.includes(person) ? " 已打卡" : " 打卡"}</button>`).join("");
@@ -2313,11 +2640,12 @@ function renderAchievements() {
 
 function renderLoveNotes() {
   const notes = state.loveNotes || [];
+  const visibleNotes = visibleHistoryItems("notes", notes);
   const person = currentPerson();
   els.noteStats.textContent = `${notes.length} 张`;
   els.noteReceiver.value = person === "liu" ? "fu" : "liu";
   if (!notes.length) return renderEmpty(els.noteList, "折一张小纸条，留给对方在某天打开。");
-  els.noteList.replaceChildren(...notes.map((item) => {
+  els.noteList.replaceChildren(...visibleNotes.map((item) => {
     const available = item.unlockDate <= todayString();
     const canRead = item.from === person || (item.to === person && available && item.opened);
     const canOpen = item.to === person && available && !item.opened;
@@ -2344,10 +2672,11 @@ function renderLoveNotes() {
 
 function renderStudyLogs() {
   const logs = sortByDateDesc(state.studyLogs || []);
+  const visibleLogs = visibleHistoryItems("study", logs);
   const total = logs.reduce((sum, item) => sum + Number(item.minutes || 0), 0);
   els.studyStats.textContent = total >= 60 ? `${(total / 60).toFixed(total % 60 ? 1 : 0)} 小时` : `${total} 分钟`;
   if (!logs.length) return renderEmpty(els.studyList, "第一次学习打卡，从今天的一点进步开始。");
-  els.studyList.replaceChildren(...logs.map((item) => {
+  els.studyList.replaceChildren(...visibleLogs.map((item) => {
     const node = document.createElement("article");
     node.className = "study-record";
     node.innerHTML = `<header><span>${people[item.person].name}</span><time>${formatDate(parseDate(item.date))}</time></header><h3>${escapeHTML(item.content)}</h3><p><span class="study-minutes">${item.minutes} 分钟</span>${item.note ? ` · ${escapeHTML(item.note)}` : ""}</p>${item.person === currentPerson() ? `<button class="delete-button" data-delete-study="${item.id}" type="button" aria-label="删除学习记录">×</button>` : ""}`;
@@ -2361,9 +2690,10 @@ function renderStudyLogs() {
 
 function renderGameRecords() {
   const records = sortByDateDesc(state.gameRecords || []);
+  const visibleRecords = visibleHistoryItems("games", records);
   els.gameStats.textContent = `${records.length} 局`;
   if (!records.length) return renderEmpty(els.gameList, "把下一次并肩作战的高光时刻存下来。");
-  els.gameList.replaceChildren(...records.map((item) => {
+  els.gameList.replaceChildren(...visibleRecords.map((item) => {
     const node = document.createElement("article");
     node.className = "game-record";
     const image = item.image ? `<img src="${item.image}" alt="${escapeHTML(item.game)}的游戏截图">` : "";
@@ -2595,7 +2925,8 @@ function setNewQuestion(category) {
   const available = pool.filter((text) => !recent.has(text));
   const text = pickRandom(available.length ? available : pool);
   state.questionHistory = [state.dailyQuestion.text, ...(state.questionHistory || [])].filter(Boolean).slice(0, 30);
-  state.dailyQuestion = { id: uid(), category: chosenCategory, text, date: todayString(), answers: { liu: "", fu: "" } };
+  const changedAt = new Date().toISOString();
+  state.dailyQuestion = { id: uid(), category: chosenCategory, text, date: todayString(), changedAt, answers: { liu: "", fu: "" }, answerUpdatedAt: { liu: "", fu: "" } };
   persistAndRender();
 }
 
@@ -2641,6 +2972,33 @@ function mergeDeletedRecords(left, right) {
     if (leftRecord && rightRecord && (leftRecord.deletedAt || "") > (rightRecord.deletedAt || "")) merged[id] = leftRecord;
   });
   return merged;
+}
+
+function questionChangedTime(question) {
+  const exact = Date.parse(question?.changedAt || "");
+  if (Number.isFinite(exact)) return exact;
+  const day = Date.parse(`${question?.date || "1970-01-01"}T00:00:00`);
+  return Number.isFinite(day) ? day : 0;
+}
+
+function mergeDailyQuestion(localQuestion, remoteQuestion) {
+  if (!localQuestion) return remoteQuestion;
+  if (!remoteQuestion) return localQuestion;
+  const localNewer = questionChangedTime(localQuestion) > questionChangedTime(remoteQuestion);
+  if (localQuestion.id !== remoteQuestion.id) return localNewer ? localQuestion : remoteQuestion;
+  const base = localNewer ? localQuestion : remoteQuestion;
+  const answers = {};
+  const answerUpdatedAt = {};
+  Object.keys(people).forEach((person) => {
+    const localTime = localQuestion.answerUpdatedAt?.[person] || "";
+    const remoteTime = remoteQuestion.answerUpdatedAt?.[person] || "";
+    const useLocal = localTime && (!remoteTime || localTime > remoteTime);
+    answers[person] = useLocal
+      ? (localQuestion.answers?.[person] || "")
+      : (remoteQuestion.answers?.[person] || localQuestion.answers?.[person] || "");
+    answerUpdatedAt[person] = useLocal ? localTime : (remoteTime || localTime);
+  });
+  return { ...base, answers, answerUpdatedAt };
 }
 
 function applySharedDeletionTombstones(value) {
@@ -2697,6 +3055,8 @@ function sharedStateScore(value) {
   score += (value.meetings || []).filter((item) => item?.date || item?.place || (item?.title && item.title !== "下一次见面")).length;
   score += Object.values(value.dailyQuestion?.answers || {}).filter((answer) => String(answer || "").trim()).length;
   score += Object.keys(value.achievements?.completed || {}).length + (value.achievements?.custom || []).length;
+  const customWheelIds = new Set((value.wheels || []).filter((item) => !item?.isDefault).map((item) => item.id));
+  score += customWheelIds.size + (value.wheelOptions || []).filter((item) => customWheelIds.has(item?.wheelId)).length + (value.wheelHistory || []).length;
   const garden = value.garden || {};
   score += (garden.seeds || []).length + (garden.wishes || []).length + (garden.hybrid?.blooms || []).length;
   score += (garden.pointEvents || []).length + (garden.snapshots || []).length + Object.keys(garden.waterings || {}).length;
@@ -2761,9 +3121,10 @@ function mergeRecoverySharedState(localState, remoteShared) {
     return [...records.values()];
   };
   const merged = { ...remoteShared, ...localShared, deletedRecords };
-  ["messages", "tasks", "loveNotes", "studyLogs", "gameRecords", "meetings", "photos"].forEach((field) => {
+  sharedRecordFields.forEach((field) => {
     merged[field] = mergeRecords(remoteShared?.[field], localShared?.[field]);
   });
+  merged.dailyQuestion = mergeDailyQuestion(localShared.dailyQuestion, remoteShared?.dailyQuestion);
   merged.questionHistory = [...new Set([...(localShared.questionHistory || []), ...(remoteShared?.questionHistory || [])])].slice(0, 30);
   merged.achievements = {
     ...(remoteShared?.achievements || {}), ...(localShared.achievements || {}),
@@ -2797,12 +3158,16 @@ function mergeDefaults(saved) {
     dailyQuestion: {
       ...base.dailyQuestion,
       ...(saved.dailyQuestion || {}),
-      answers: { ...base.dailyQuestion.answers, ...(saved.dailyQuestion?.answers || {}) }
+      answers: { ...base.dailyQuestion.answers, ...(saved.dailyQuestion?.answers || {}) },
+      answerUpdatedAt: { liu: "", fu: "", ...(saved.dailyQuestion?.answerUpdatedAt || {}) }
     },
     questionHistory: Array.isArray(saved.questionHistory) ? saved.questionHistory.slice(0, 30) : [],
     loveNotes: Array.isArray(saved.loveNotes) ? saved.loveNotes : [],
     studyLogs: Array.isArray(saved.studyLogs) ? saved.studyLogs : [],
     gameRecords: Array.isArray(saved.gameRecords) ? saved.gameRecords : [],
+    wheels: Array.isArray(saved.wheels) && saved.wheels.length ? saved.wheels : base.wheels,
+    wheelOptions: Array.isArray(saved.wheelOptions) ? saved.wheelOptions : base.wheelOptions,
+    wheelHistory: Array.isArray(saved.wheelHistory) ? saved.wheelHistory : [],
     achievements: {
       completed: { ...base.achievements.completed, ...(saved.achievements?.completed || {}) },
       custom: Array.isArray(saved.achievements?.custom) ? saved.achievements.custom : [],
@@ -2814,6 +3179,8 @@ function mergeDefaults(saved) {
       fu: mergePrivateSpace(saved.private?.fu, "fu")
     }
   };
+  if (!merged.wheels.some((item) => item.id === defaultWheel.id)) merged.wheels.unshift(structuredClone(defaultWheel));
+  if (!merged.wheelOptions.some((item) => item.wheelId === defaultWheel.id) && !saved.wheelOptions) merged.wheelOptions.push(...structuredClone(defaultWheelOptions));
   return applySharedDeletionTombstones(merged);
 }
 function mergeGarden(savedGarden) {
@@ -2886,6 +3253,9 @@ function mergeSharedConcurrent(localState, remoteShared) {
     merged[field] = mergeRecords(localState?.[field], remote[field]);
     if (merged[field].length > (remote[field] || []).filter((item) => item?.id && !deleted.has(item.id)).length) sharedNeedsResync = true;
   });
+  merged.dailyQuestion = mergeDailyQuestion(localState?.dailyQuestion, remote.dailyQuestion);
+  merged.questionHistory = [...new Set([...(localState?.questionHistory || []), ...(remote.questionHistory || [])])].slice(0, 30);
+  if (JSON.stringify(merged.dailyQuestion) !== JSON.stringify(remote.dailyQuestion) || merged.questionHistory.length > (remote.questionHistory || []).length) sharedNeedsResync = true;
   const custom = mergeRecords(localState?.achievements?.custom, remote.achievements?.custom);
   merged.achievements = {
     ...(localState?.achievements || {}),
