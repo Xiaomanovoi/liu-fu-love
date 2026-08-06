@@ -7,8 +7,8 @@
     timer: null, voiceRefreshTimer: null, refreshPromise: null, forceRefreshQueued: false,
     remoteReloadTimer: null, remotePhotosQueued: false, photosPromise: null,
     pendingState: null, saveInFlight: false, lastForegroundRefresh: 0,
-    hydrated: false, photosHydrated: false, applyingRemote: false,
-    lastSharedState: null, lastPhotosState: null, lastPrivateState: null
+    hydrated: false, photosHydrated: false, mediaSplitSupported: false, applyingRemote: false,
+    lastSharedState: null, lastPhotosState: null, lastGameImagesState: null, lastPrivateState: null
   };
 
   function emit(name, detail) {
@@ -45,7 +45,16 @@
   function sharedCore(value) {
     if (!value || typeof value !== "object") return {};
     const { photos, ...core } = value;
+    if (sync.mediaSplitSupported && Array.isArray(core.gameRecords)) {
+      core.gameRecords = core.gameRecords.map(({ image, ...record }) => record);
+    }
     return core;
+  }
+
+  function sharedGameImages(value) {
+    return (value?.gameRecords || [])
+      .filter((record) => record?.id && record.image)
+      .map((record) => ({ id: record.id, image: record.image }));
   }
 
   function readFeatureCache() {
@@ -248,6 +257,7 @@
     sync.pendingState = null;
     sync.hydrated = false;
     sync.photosHydrated = false;
+    sync.mediaSplitSupported = false;
     sync.applyingRemote = false;
     sync.user = null;
     sync.coupleId = null;
@@ -256,6 +266,7 @@
     sync.voiceRefreshTimer = null;
     sync.lastSharedState = null;
     sync.lastPhotosState = null;
+    sync.lastGameImagesState = null;
     sync.lastPrivateState = null;
     q("#connectedInvite").hidden = true;
   }
@@ -342,14 +353,16 @@
     const rpcResult = await runQuery(sync.client.rpc("get_love_shared_core"), label);
     if (!rpcResult.error) {
       const payload = rpcResult.data || {};
+      sync.mediaSplitSupported = payload.media_split === true;
       return {
         exists: payload.exists !== false,
-        data: payload.data || {},
+        data: sharedCore(payload.data || {}),
         updated_at: payload.updated_at || null,
-        photos: null
+        media: null
       };
     }
     if (!isMissingRpcError(rpcResult.error)) throw rpcResult.error;
+    sync.mediaSplitSupported = false;
 
     const { data: row, error } = await runQuery(
       sync.client.from("love_shared_state").select("data, updated_at").eq("couple_id", sync.coupleId).maybeSingle(),
@@ -360,36 +373,51 @@
       exists: Boolean(row),
       data: sharedCore(row?.data || {}),
       updated_at: row?.updated_at || null,
-      photos: Array.isArray(row?.data?.photos) ? row.data.photos : []
+      media: {
+        photos: Array.isArray(row?.data?.photos) ? row.data.photos : [],
+        gameImages: sharedGameImages(row?.data || {})
+      }
     };
   }
 
-  function applyRemotePhotos(photos) {
-    const safePhotos = Array.isArray(photos) ? photos : [];
+  function applyRemoteMedia(media) {
+    const safePhotos = Array.isArray(media?.photos) ? media.photos : [];
+    const safeGameImages = Array.isArray(media?.gameImages) ? media.gameImages : [];
+    const imagesById = new Map(safeGameImages.map((record) => [record.id, record.image || ""]));
+    const gameRecords = (sync.lastSharedState?.gameRecords || []).map((record) => ({
+      ...record,
+      image: imagesById.get(record.id) || ""
+    }));
     sync.lastPhotosState = structuredClone(safePhotos);
+    sync.lastGameImagesState = structuredClone(safeGameImages);
     sync.photosHydrated = true;
     sync.applyingRemote = true;
     try {
-      emit("love-sync-remote", { shared: { photos: safePhotos }, privateData: null, role: sync.role, partialShared: true });
+      emit("love-sync-remote", { shared: { photos: safePhotos, gameRecords }, privateData: null, role: sync.role, partialShared: true });
     } finally {
       sync.applyingRemote = false;
     }
-    return safePhotos;
+    return { photos: safePhotos, gameImages: safeGameImages };
   }
 
   function loadRemotePhotos(force = false) {
-    if (sync.photosHydrated && !force) return Promise.resolve(sync.lastPhotosState || []);
+    if (sync.photosHydrated && !force) {
+      return Promise.resolve({ photos: sync.lastPhotosState || [], gameImages: sync.lastGameImagesState || [] });
+    }
     if (sync.photosPromise) return sync.photosPromise;
     sync.photosPromise = (async () => {
-      const rpcResult = await runPhotoQuery(sync.client.rpc("get_love_shared_photos"), "读取公共相册");
-      if (!rpcResult.error) return applyRemotePhotos(rpcResult.data);
+      const rpcResult = await runPhotoQuery(sync.client.rpc("get_love_shared_media"), "读取共同媒体");
+      if (!rpcResult.error) return applyRemoteMedia(rpcResult.data || {});
       if (!isMissingRpcError(rpcResult.error)) throw rpcResult.error;
       const { data: row, error } = await runPhotoQuery(
         sync.client.from("love_shared_state").select("data").eq("couple_id", sync.coupleId).maybeSingle(),
-        "读取公共相册"
+        "读取共同媒体"
       );
       if (error) throw error;
-      return applyRemotePhotos(row?.data?.photos || []);
+      return applyRemoteMedia({
+        photos: row?.data?.photos || [],
+        gameImages: sharedGameImages(row?.data || {})
+      });
     })().finally(() => {
       sync.photosPromise = null;
     });
@@ -426,7 +454,7 @@
       sync.lastPrivateState = structuredClone(privateRow?.data || {});
       emit("love-sync-remote", { shared: null, privateData: privateRow?.data || {}, role: sync.role });
     }).catch((error) => console.warn("Private state refresh failed", error));
-    if (shared.photos) applyRemotePhotos(shared.photos);
+    if (shared.media) applyRemoteMedia(shared.media);
     else loadRemotePhotos(refreshPhotos).catch((error) => console.warn("Photo refresh failed", error));
     if (sync.pendingState && !sync.timer) sync.timer = setTimeout(flushSave, 0);
   }
@@ -443,12 +471,12 @@
     }, 120);
   }
 
-  function broadcastSharedChange(photosChanged = false) {
+  function broadcastSharedChange(mediaChanged = false) {
     if (!sync.channel || !sync.user) return;
     sync.channel.send({
       type: "broadcast",
       event: "shared-changed",
-      payload: { updatedBy: sync.user.id, photosChanged }
+      payload: { updatedBy: sync.user.id, mediaChanged }
     }).catch((error) => console.warn("Shared change broadcast failed", error));
   }
 
@@ -458,8 +486,9 @@
       .channel(`love-space-${sync.coupleId}`)
       .on("broadcast", { event: "shared-changed" }, ({ payload }) => {
         if (!sync.hydrated || payload?.updatedBy === sync.user?.id) return;
-        if (payload?.photosChanged) sync.photosHydrated = false;
-        queueRemoteReload(Boolean(payload?.photosChanged));
+        const mediaChanged = Boolean(payload?.mediaChanged || payload?.photosChanged);
+        if (mediaChanged) sync.photosHydrated = false;
+        queueRemoteReload(mediaChanged);
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "love_private_state", filter: `user_id=eq.${sync.user.id}` }, (payload) => {
         if (!sync.hydrated) return;
@@ -596,11 +625,11 @@
       sync.lastSharedState = structuredClone(sharedCore(data));
       emit("love-sync-remote", { shared: sharedCore(data), privateData: null, role: sync.role, partialShared: true });
     }
-    if (field === "photos") {
+    if (field === "photos" || field === "gameRecords") {
       sync.photosHydrated = false;
       loadRemotePhotos(true).catch((refreshError) => console.warn("Photo refresh failed", refreshError));
     }
-    broadcastSharedChange(field === "photos");
+    broadcastSharedChange(field === "photos" || field === "gameRecords");
     return data || null;
   }
 
@@ -669,15 +698,22 @@
     return `${code}${detail ? `：${detail}` : ""}`.trim();
   }
 
-  async function saveSharedWithRetry(localState, changedPhotos = null) {
-    const photosChanged = Array.isArray(changedPhotos);
-    const runWrite = photosChanged ? runPhotoQuery : runQuery;
+  async function saveSharedWithRetry(localState, changedMedia = null) {
+    const photosChanged = Array.isArray(changedMedia?.photos);
+    const gamesChanged = Array.isArray(changedMedia?.gameRecords);
+    const mediaChanged = photosChanged || gamesChanged;
+    const runWrite = mediaChanged ? runPhotoQuery : runQuery;
+    const withChangedMedia = (merged) => ({
+      ...merged,
+      ...(photosChanged ? { photos: changedMedia.photos } : {}),
+      ...(gamesChanged ? { gameRecords: changedMedia.gameRecords } : {})
+    });
     for (let attempt = 0; attempt < 6; attempt += 1) {
       const current = await readSharedCore("读取最新共同记录");
       const serverState = current.data || {};
       const merged = mergeSharedForSave(localState, serverState);
-      const writeState = photosChanged ? { ...merged, photos: changedPhotos } : merged;
-      if (current.exists && sameState(merged, serverState) && !photosChanged) return serverState;
+      const writeState = withChangedMedia(merged);
+      if (current.exists && sameState(merged, serverState) && !mediaChanged) return serverState;
       if (!current.exists) {
         const { data: inserted, error: insertError } = await runWrite(sync.client
           .from("love_shared_state")
@@ -701,7 +737,7 @@
     }
     const latest = await readSharedCore("最终读取共同记录");
     const merged = mergeSharedForSave(localState, latest.data || {});
-    const writeState = photosChanged ? { ...merged, photos: changedPhotos } : merged;
+    const writeState = withChangedMedia(merged);
     const { data: updated, error: finalUpdateError } = await runWrite(sync.client
       .from("love_shared_state")
       .update({ data: writeState, updated_by: sync.user.id })
@@ -779,30 +815,42 @@
       const { shared, privateData } = splitState(snapshot);
       const core = sharedCore(shared);
       const photos = Array.isArray(shared.photos) ? shared.photos : [];
+      const gameImages = sharedGameImages(shared);
       const sharedDirty = !sameState(core, sync.lastSharedState);
+      const gameRecordsDirty = !sameState(core.gameRecords, sync.lastSharedState?.gameRecords);
       const photosDirty = sync.photosHydrated && !sameState(photos, sync.lastPhotosState);
+      const gameImagesDirty = sync.photosHydrated && !sameState(gameImages, sync.lastGameImagesState);
+      const mediaChanged = photosDirty || gameRecordsDirty || gameImagesDirty;
       const privateDirty = !sameState(privateData, sync.lastPrivateState);
       const [savedShared, savedPrivate] = await Promise.all([
-        sharedDirty || photosDirty ? saveSharedWithRetry(core, photosDirty ? photos : null) : Promise.resolve(null),
+        sharedDirty || mediaChanged ? saveSharedWithRetry(core, mediaChanged ? {
+          photos: photosDirty ? photos : null,
+          gameRecords: gameRecordsDirty || gameImagesDirty ? shared.gameRecords : null
+        } : null) : Promise.resolve(null),
         privateDirty ? savePrivateWithRetry(privateData) : Promise.resolve(null)
       ]);
       if (savedShared) sync.lastSharedState = structuredClone(savedShared);
       if (photosDirty) sync.lastPhotosState = structuredClone(photos);
+      if (gameRecordsDirty || gameImagesDirty) sync.lastGameImagesState = structuredClone(gameImages);
       if (savedPrivate) sync.lastPrivateState = structuredClone(savedPrivate);
       if (savedShared || savedPrivate) {
         sync.applyingRemote = true;
         try {
           emit("love-sync-remote", {
-            shared: savedShared ? (photosDirty ? { ...savedShared, photos } : savedShared) : null,
+            shared: savedShared ? {
+              ...savedShared,
+              ...(photosDirty ? { photos } : {}),
+              ...(gameRecordsDirty || gameImagesDirty ? { gameRecords: shared.gameRecords } : {})
+            } : null,
             privateData: savedPrivate,
             role: sync.role,
-            partialShared: Boolean(savedShared && !photosDirty)
+            partialShared: Boolean(savedShared)
           });
         } finally {
           sync.applyingRemote = false;
         }
       }
-      if (savedShared) broadcastSharedChange(photosDirty);
+      if (savedShared) broadcastSharedChange(mediaChanged);
       updateUi("connected", "已实时同步");
     } catch (error) {
       sync.pendingState ||= snapshot;

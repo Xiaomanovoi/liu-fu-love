@@ -3403,6 +3403,10 @@ function mergeSharedConcurrent(localState, remoteShared, preferLocal = false, pa
       return;
     }
     merged[field] = mergeRecords(localState?.[field], remote[field]);
+    if (field === "gameRecords") {
+      const localImages = new Map((localState?.gameRecords || []).filter((item) => item?.image).map((item) => [item.id, item.image]));
+      merged[field] = merged[field].map((item) => item.image ? item : { ...item, image: localImages.get(item.id) || "" });
+    }
     if (!preferLocal && merged[field].length > (remote[field] || []).filter((item) => item?.id && !deleted.has(item.id)).length) sharedNeedsResync = true;
   });
   if (!partial || Object.prototype.hasOwnProperty.call(remote, "tasks")) {

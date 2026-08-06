@@ -370,6 +370,23 @@ begin
     end if;
     v_old_items := case when jsonb_typeof(old.data -> v_field) = 'array' then old.data -> v_field else '[]'::jsonb end;
     v_new_items := case when jsonb_typeof(new.data -> v_field) = 'array' then new.data -> v_field else '[]'::jsonb end;
+    if v_field = 'gameRecords' then
+      select coalesce(jsonb_agg(
+        case
+          when coalesce(new_item.item ->> 'image', '') = '' then
+            new_item.item || coalesce((
+              select jsonb_build_object('image', old_item.item -> 'image')
+              from jsonb_array_elements(v_old_items) as old_item(item)
+              where old_item.item ->> 'id' = new_item.item ->> 'id'
+                and coalesce(old_item.item ->> 'image', '') <> ''
+              limit 1
+            ), '{}'::jsonb)
+          else new_item.item
+        end
+      ), '[]'::jsonb)
+      into v_new_items
+      from jsonb_array_elements(v_new_items) as new_item(item);
+    end if;
     select coalesce(jsonb_agg(chosen.item order by chosen.item_order), '[]'::jsonb)
     into v_items
     from (
@@ -449,6 +466,25 @@ create trigger protect_love_shared_deletions
 before update on public.love_shared_state
 for each row execute function public.protect_love_shared_deletions();
 
+create or replace function public.love_shared_core_data(p_data jsonb)
+returns jsonb
+language sql
+immutable
+set search_path = public
+as $$
+  select jsonb_set(
+    coalesce(p_data, '{}'::jsonb) - 'photos',
+    '{gameRecords}',
+    coalesce((
+      select jsonb_agg(item - 'image')
+      from jsonb_array_elements(
+        case when jsonb_typeof(p_data -> 'gameRecords') = 'array' then p_data -> 'gameRecords' else '[]'::jsonb end
+      ) as game(item)
+    ), '[]'::jsonb),
+    true
+  );
+$$;
+
 create or replace function public.get_love_shared_core()
 returns jsonb
 language plpgsql
@@ -475,8 +511,45 @@ begin
 
   return jsonb_build_object(
     'exists', v_exists,
-    'data', coalesce(v_data, '{}'::jsonb) - 'photos',
+    'media_split', true,
+    'data', public.love_shared_core_data(v_data),
     'updated_at', v_updated_at
+  );
+end;
+$$;
+
+create or replace function public.get_love_shared_media()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_couple_id uuid;
+  v_data jsonb;
+  v_game_images jsonb;
+begin
+  if auth.uid() is null then raise exception 'Please sign in first'; end if;
+  select couple_id into v_couple_id
+  from public.love_members
+  where user_id = auth.uid()
+  limit 1;
+  if v_couple_id is null then raise exception 'Please join a love space first'; end if;
+
+  select data into v_data
+  from public.love_shared_state
+  where couple_id = v_couple_id;
+  v_data := coalesce(v_data, '{}'::jsonb);
+  select coalesce(jsonb_agg(jsonb_build_object('id', item ->> 'id', 'image', item -> 'image')), '[]'::jsonb)
+  into v_game_images
+  from jsonb_array_elements(
+    case when jsonb_typeof(v_data -> 'gameRecords') = 'array' then v_data -> 'gameRecords' else '[]'::jsonb end
+  ) as game(item)
+  where coalesce(item ->> 'id', '') <> '' and coalesce(item ->> 'image', '') <> '';
+
+  return jsonb_build_object(
+    'photos', case when jsonb_typeof(v_data -> 'photos') = 'array' then v_data -> 'photos' else '[]'::jsonb end,
+    'gameImages', v_game_images
   );
 end;
 $$;
@@ -507,8 +580,10 @@ $$;
 
 revoke all on function public.get_love_shared_core() from public;
 revoke all on function public.get_love_shared_photos() from public;
+revoke all on function public.get_love_shared_media() from public;
 grant execute on function public.get_love_shared_core() to authenticated;
 grant execute on function public.get_love_shared_photos() to authenticated;
+grant execute on function public.get_love_shared_media() to authenticated;
 
 create or replace function public.delete_love_shared_record(p_field text, p_record_id text)
 returns jsonb
@@ -573,7 +648,7 @@ begin
   set data = v_data, updated_by = auth.uid()
   where couple_id = v_couple_id
   returning data into v_data;
-  return v_data - 'photos';
+  return public.love_shared_core_data(v_data);
 end;
 $$;
 
