@@ -1011,7 +1011,7 @@ function bindSyncEvents() {
     }
     saveLocalAndRender();
     restoreFocusedDraft(focusedDraft);
-    if (initializeEmptySpace || recoveryNeeded || (shared && !shared.garden) || Number(shared?.garden?.version || 1) < 2 || gardenNeedsResync || sharedNeedsResync) {
+    if (initializeEmptySpace || recoveryNeeded || (!partialShared && shared && !shared.garden) || (!partialShared && shared?.garden && Number(shared.garden.version || 1) < 2) || gardenNeedsResync || sharedNeedsResync) {
       gardenNeedsResync = false;
       sharedNeedsResync = false;
       window.LoveSync?.scheduleSave(state);

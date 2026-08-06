@@ -810,7 +810,6 @@
     const snapshot = structuredClone(sync.pendingState);
     sync.pendingState = null;
     sync.saveInFlight = true;
-    updateUi("connected", "正在保存");
     try {
       const { shared, privateData } = splitState(snapshot);
       const core = sharedCore(shared);
@@ -822,6 +821,11 @@
       const gameImagesDirty = sync.photosHydrated && !sameState(gameImages, sync.lastGameImagesState);
       const mediaChanged = photosDirty || gameRecordsDirty || gameImagesDirty;
       const privateDirty = !sameState(privateData, sync.lastPrivateState);
+      if (!sharedDirty && !mediaChanged && !privateDirty) {
+        updateUi("connected", "已实时同步");
+        return;
+      }
+      updateUi("connected", "正在保存");
       const [savedShared, savedPrivate] = await Promise.all([
         sharedDirty || mediaChanged ? saveSharedWithRetry(core, mediaChanged ? {
           photos: photosDirty ? photos : null,
