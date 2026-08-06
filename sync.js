@@ -5,9 +5,10 @@
   const sync = {
     client: null, user: null, coupleId: null, role: null, channel: null,
     timer: null, voiceRefreshTimer: null, refreshPromise: null, forceRefreshQueued: false,
+    remoteReloadTimer: null, remotePhotosQueued: false, photosPromise: null,
     pendingState: null, saveInFlight: false, lastForegroundRefresh: 0,
-    hydrated: false, applyingRemote: false,
-    lastSharedState: null, lastPrivateState: null
+    hydrated: false, photosHydrated: false, applyingRemote: false,
+    lastSharedState: null, lastPhotosState: null, lastPrivateState: null
   };
 
   function emit(name, detail) {
@@ -30,6 +31,21 @@
 
   function runQuery(query, label) {
     return withTimeout(query, 10000, label);
+  }
+
+  function runPhotoQuery(query, label) {
+    return withTimeout(query, 30000, label);
+  }
+
+  function isMissingRpcError(error) {
+    const detail = [error?.code, error?.message, error?.details, error?.hint].filter(Boolean).join(" ");
+    return /PGRST202|42883|does not exist|schema cache/i.test(detail);
+  }
+
+  function sharedCore(value) {
+    if (!value || typeof value !== "object") return {};
+    const { photos, ...core } = value;
+    return core;
   }
 
   function readFeatureCache() {
@@ -223,10 +239,15 @@
   function resetConnection() {
     if (sync.channel) sync.client.removeChannel(sync.channel);
     clearTimeout(sync.timer);
+    clearTimeout(sync.remoteReloadTimer);
     clearInterval(sync.voiceRefreshTimer);
     sync.timer = null;
+    sync.remoteReloadTimer = null;
+    sync.remotePhotosQueued = false;
+    sync.photosPromise = null;
     sync.pendingState = null;
     sync.hydrated = false;
+    sync.photosHydrated = false;
     sync.applyingRemote = false;
     sync.user = null;
     sync.coupleId = null;
@@ -234,6 +255,7 @@
     sync.channel = null;
     sync.voiceRefreshTimer = null;
     sync.lastSharedState = null;
+    sync.lastPhotosState = null;
     sync.lastPrivateState = null;
     q("#connectedInvite").hidden = true;
   }
@@ -316,17 +338,71 @@
     q("#connectedInvite").hidden = false;
   }
 
-  async function loadRemoteState() {
+  async function readSharedCore(label = "读取共同记录") {
+    const rpcResult = await runQuery(sync.client.rpc("get_love_shared_core"), label);
+    if (!rpcResult.error) {
+      const payload = rpcResult.data || {};
+      return {
+        exists: payload.exists !== false,
+        data: payload.data || {},
+        updated_at: payload.updated_at || null,
+        photos: null
+      };
+    }
+    if (!isMissingRpcError(rpcResult.error)) throw rpcResult.error;
+
+    const { data: row, error } = await runQuery(
+      sync.client.from("love_shared_state").select("data, updated_at").eq("couple_id", sync.coupleId).maybeSingle(),
+      label
+    );
+    if (error) throw error;
+    return {
+      exists: Boolean(row),
+      data: sharedCore(row?.data || {}),
+      updated_at: row?.updated_at || null,
+      photos: Array.isArray(row?.data?.photos) ? row.data.photos : []
+    };
+  }
+
+  function applyRemotePhotos(photos) {
+    const safePhotos = Array.isArray(photos) ? photos : [];
+    sync.lastPhotosState = structuredClone(safePhotos);
+    sync.photosHydrated = true;
+    sync.applyingRemote = true;
+    try {
+      emit("love-sync-remote", { shared: { photos: safePhotos }, privateData: null, role: sync.role, partialShared: true });
+    } finally {
+      sync.applyingRemote = false;
+    }
+    return safePhotos;
+  }
+
+  function loadRemotePhotos(force = false) {
+    if (sync.photosHydrated && !force) return Promise.resolve(sync.lastPhotosState || []);
+    if (sync.photosPromise) return sync.photosPromise;
+    sync.photosPromise = (async () => {
+      const rpcResult = await runPhotoQuery(sync.client.rpc("get_love_shared_photos"), "读取公共相册");
+      if (!rpcResult.error) return applyRemotePhotos(rpcResult.data);
+      if (!isMissingRpcError(rpcResult.error)) throw rpcResult.error;
+      const { data: row, error } = await runPhotoQuery(
+        sync.client.from("love_shared_state").select("data").eq("couple_id", sync.coupleId).maybeSingle(),
+        "读取公共相册"
+      );
+      if (error) throw error;
+      return applyRemotePhotos(row?.data?.photos || []);
+    })().finally(() => {
+      sync.photosPromise = null;
+    });
+    return sync.photosPromise;
+  }
+
+  async function loadRemoteState({ refreshPhotos = false } = {}) {
     const privatePromise = runQuery(
       sync.client.from("love_private_state").select("data, updated_at").eq("couple_id", sync.coupleId).eq("user_id", sync.user.id).maybeSingle(),
       "读取私人记录"
     ).then((result) => ({ result })).catch((error) => ({ error }));
-    const { data: shared, error: sharedError } = await runQuery(
-      sync.client.from("love_shared_state").select("data, updated_at").eq("couple_id", sync.coupleId).maybeSingle(),
-      "读取共同记录"
-    );
-    if (sharedError) throw sharedError;
-    const sharedData = shared?.data || {};
+    const shared = await readSharedCore();
+    const sharedData = shared.data || {};
     sync.lastSharedState = structuredClone(sharedData);
     const firstHydration = !sync.hydrated;
     if (firstHydration) sync.pendingState = null;
@@ -336,6 +412,7 @@
         shared: sharedData,
         privateData: null,
         role: sync.role,
+        partialShared: true,
         initializeEmptySpace: Object.keys(sharedData).length === 0
       });
     } finally {
@@ -349,17 +426,40 @@
       sync.lastPrivateState = structuredClone(privateRow?.data || {});
       emit("love-sync-remote", { shared: null, privateData: privateRow?.data || {}, role: sync.role });
     }).catch((error) => console.warn("Private state refresh failed", error));
+    if (shared.photos) applyRemotePhotos(shared.photos);
+    else loadRemotePhotos(refreshPhotos).catch((error) => console.warn("Photo refresh failed", error));
     if (sync.pendingState && !sync.timer) sync.timer = setTimeout(flushSave, 0);
+  }
+
+  function queueRemoteReload(refreshPhotos = false) {
+    sync.remotePhotosQueued ||= refreshPhotos;
+    clearTimeout(sync.remoteReloadTimer);
+    sync.remoteReloadTimer = window.setTimeout(() => {
+      const shouldRefreshPhotos = sync.remotePhotosQueued;
+      sync.remotePhotosQueued = false;
+      loadRemoteState({ refreshPhotos: shouldRefreshPhotos }).catch((error) => {
+        console.warn("Shared state refresh failed", error);
+      });
+    }, 120);
+  }
+
+  function broadcastSharedChange(photosChanged = false) {
+    if (!sync.channel || !sync.user) return;
+    sync.channel.send({
+      type: "broadcast",
+      event: "shared-changed",
+      payload: { updatedBy: sync.user.id, photosChanged }
+    }).catch((error) => console.warn("Shared change broadcast failed", error));
   }
 
   function subscribe() {
     if (sync.channel) sync.client.removeChannel(sync.channel);
     sync.channel = sync.client
       .channel(`love-space-${sync.coupleId}`)
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "love_shared_state", filter: `couple_id=eq.${sync.coupleId}` }, (payload) => {
-        if (!sync.hydrated) return;
-        sync.lastSharedState = structuredClone(payload.new.data || {});
-        emit("love-sync-remote", { shared: payload.new.data || {}, privateData: null, role: sync.role });
+      .on("broadcast", { event: "shared-changed" }, ({ payload }) => {
+        if (!sync.hydrated || payload?.updatedBy === sync.user?.id) return;
+        if (payload?.photosChanged) sync.photosHydrated = false;
+        queueRemoteReload(Boolean(payload?.photosChanged));
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "love_private_state", filter: `user_id=eq.${sync.user.id}` }, (payload) => {
         if (!sync.hydrated) return;
@@ -483,16 +583,24 @@
 
   async function deleteSharedRecord(field, id) {
     if (!sync.client || !sync.coupleId || !sync.user || !field || !id) return null;
-    const { data, error } = await sync.client.rpc("delete_love_shared_record", {
+    const { data, error } = await runQuery(sync.client.rpc("delete_love_shared_record", {
       p_field: field,
       p_record_id: id
-    });
+    }), "删除共同记录");
     if (error) {
       const detail = [error.message, error.details, error.hint].filter(Boolean).join(" ");
       if (/PGRST202|42883|does not exist|schema cache/i.test(detail)) return null;
       throw error;
     }
-    if (data && typeof data === "object") emit("love-sync-remote", { shared: data, privateData: null, role: sync.role });
+    if (data && typeof data === "object") {
+      sync.lastSharedState = structuredClone(sharedCore(data));
+      emit("love-sync-remote", { shared: sharedCore(data), privateData: null, role: sync.role, partialShared: true });
+    }
+    if (field === "photos") {
+      sync.photosHydrated = false;
+      loadRemotePhotos(true).catch((refreshError) => console.warn("Photo refresh failed", refreshError));
+    }
+    broadcastSharedChange(field === "photos");
     return data || null;
   }
 
@@ -561,54 +669,48 @@
     return `${code}${detail ? `：${detail}` : ""}`.trim();
   }
 
-  async function saveSharedWithRetry(localState) {
+  async function saveSharedWithRetry(localState, changedPhotos = null) {
+    const photosChanged = Array.isArray(changedPhotos);
+    const runWrite = photosChanged ? runPhotoQuery : runQuery;
     for (let attempt = 0; attempt < 6; attempt += 1) {
-      const { data: current, error: readError } = await runQuery(sync.client
-        .from("love_shared_state")
-        .select("data, updated_at")
-        .eq("couple_id", sync.coupleId)
-        .maybeSingle(), "读取最新共同记录");
-      if (readError) throw readError;
-      const serverState = current?.data || {};
+      const current = await readSharedCore("读取最新共同记录");
+      const serverState = current.data || {};
       const merged = mergeSharedForSave(localState, serverState);
-      if (current && sameState(merged, serverState)) return serverState;
-      if (!current) {
-        const { data: inserted, error: insertError } = await runQuery(sync.client
+      const writeState = photosChanged ? { ...merged, photos: changedPhotos } : merged;
+      if (current.exists && sameState(merged, serverState) && !photosChanged) return serverState;
+      if (!current.exists) {
+        const { data: inserted, error: insertError } = await runWrite(sync.client
           .from("love_shared_state")
-          .insert({ couple_id: sync.coupleId, data: merged, updated_by: sync.user.id })
-          .select("data, updated_at")
+          .insert({ couple_id: sync.coupleId, data: writeState, updated_by: sync.user.id })
+          .select("updated_at")
           .maybeSingle(), "创建共同记录");
-        if (!insertError && inserted) return inserted.data || merged;
+        if (!insertError && inserted) return merged;
         if (insertError && insertError.code !== "23505") throw insertError;
       } else {
-        const { data: updated, error: updateError } = await runQuery(sync.client
+        const { data: updated, error: updateError } = await runWrite(sync.client
           .from("love_shared_state")
-          .update({ data: merged, updated_by: sync.user.id })
+          .update({ data: writeState, updated_by: sync.user.id })
           .eq("couple_id", sync.coupleId)
           .eq("updated_at", current.updated_at)
-          .select("data, updated_at")
+          .select("updated_at")
           .maybeSingle(), "保存共同记录");
         if (updateError) throw updateError;
-        if (updated) return updated.data || merged;
+        if (updated) return merged;
       }
       await new Promise((resolve) => window.setTimeout(resolve, 25 * (attempt + 1)));
     }
-    const { data: latest, error: finalReadError } = await runQuery(sync.client
+    const latest = await readSharedCore("最终读取共同记录");
+    const merged = mergeSharedForSave(localState, latest.data || {});
+    const writeState = photosChanged ? { ...merged, photos: changedPhotos } : merged;
+    const { data: updated, error: finalUpdateError } = await runWrite(sync.client
       .from("love_shared_state")
-      .select("data")
+      .update({ data: writeState, updated_by: sync.user.id })
       .eq("couple_id", sync.coupleId)
-      .maybeSingle(), "最终读取共同记录");
-    if (finalReadError) throw finalReadError;
-    const merged = mergeSharedForSave(localState, latest?.data || {});
-    const { data: updated, error: finalUpdateError } = await runQuery(sync.client
-      .from("love_shared_state")
-      .update({ data: merged, updated_by: sync.user.id })
-      .eq("couple_id", sync.coupleId)
-      .select("data")
+      .select("updated_at")
       .maybeSingle(), "最终保存共同记录");
     if (finalUpdateError) throw finalUpdateError;
     if (!updated) throw new Error("数据库未允许更新共同空间，请检查登录状态和 RLS 权限");
-    return updated.data || merged;
+    return merged;
   }
 
   async function savePrivateWithRetry(localState) {
@@ -675,26 +777,32 @@
     updateUi("connected", "正在保存");
     try {
       const { shared, privateData } = splitState(snapshot);
-      const sharedDirty = !sameState(shared, sync.lastSharedState);
+      const core = sharedCore(shared);
+      const photos = Array.isArray(shared.photos) ? shared.photos : [];
+      const sharedDirty = !sameState(core, sync.lastSharedState);
+      const photosDirty = sync.photosHydrated && !sameState(photos, sync.lastPhotosState);
       const privateDirty = !sameState(privateData, sync.lastPrivateState);
       const [savedShared, savedPrivate] = await Promise.all([
-        sharedDirty ? saveSharedWithRetry(shared) : Promise.resolve(null),
+        sharedDirty || photosDirty ? saveSharedWithRetry(core, photosDirty ? photos : null) : Promise.resolve(null),
         privateDirty ? savePrivateWithRetry(privateData) : Promise.resolve(null)
       ]);
       if (savedShared) sync.lastSharedState = structuredClone(savedShared);
+      if (photosDirty) sync.lastPhotosState = structuredClone(photos);
       if (savedPrivate) sync.lastPrivateState = structuredClone(savedPrivate);
       if (savedShared || savedPrivate) {
         sync.applyingRemote = true;
         try {
           emit("love-sync-remote", {
-            shared: savedShared,
+            shared: savedShared ? (photosDirty ? { ...savedShared, photos } : savedShared) : null,
             privateData: savedPrivate,
-            role: sync.role
+            role: sync.role,
+            partialShared: Boolean(savedShared && !photosDirty)
           });
         } finally {
           sync.applyingRemote = false;
         }
       }
+      if (savedShared) broadcastSharedChange(photosDirty);
       updateUi("connected", "已实时同步");
     } catch (error) {
       sync.pendingState ||= snapshot;

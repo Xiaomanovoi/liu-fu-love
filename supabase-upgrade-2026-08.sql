@@ -202,6 +202,15 @@ begin
 
   foreach v_field in array array['messages', 'tasks', 'loveNotes', 'studyLogs', 'gameRecords', 'meetings', 'photos', 'wheels', 'wheelOptions', 'wheelHistory']
   loop
+    if not (new.data ? v_field) then
+      new.data := jsonb_set(
+        new.data,
+        array[v_field],
+        case when jsonb_typeof(old.data -> v_field) = 'array' then old.data -> v_field else '[]'::jsonb end,
+        true
+      );
+      continue;
+    end if;
     v_old_items := case when jsonb_typeof(old.data -> v_field) = 'array' then old.data -> v_field else '[]'::jsonb end;
     v_new_items := case when jsonb_typeof(new.data -> v_field) = 'array' then new.data -> v_field else '[]'::jsonb end;
     select coalesce(jsonb_agg(chosen.item order by chosen.item_order), '[]'::jsonb)
@@ -283,6 +292,67 @@ create trigger protect_love_shared_deletions
 before update on public.love_shared_state
 for each row execute function public.protect_love_shared_deletions();
 
+create or replace function public.get_love_shared_core()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_couple_id uuid;
+  v_data jsonb;
+  v_updated_at timestamptz;
+  v_exists boolean;
+begin
+  if auth.uid() is null then raise exception 'Please sign in first'; end if;
+  select couple_id into v_couple_id
+  from public.love_members
+  where user_id = auth.uid()
+  limit 1;
+  if v_couple_id is null then raise exception 'Please join a love space first'; end if;
+
+  select data, updated_at into v_data, v_updated_at
+  from public.love_shared_state
+  where couple_id = v_couple_id;
+  v_exists := found;
+
+  return jsonb_build_object(
+    'exists', v_exists,
+    'data', coalesce(v_data, '{}'::jsonb) - 'photos',
+    'updated_at', v_updated_at
+  );
+end;
+$$;
+
+create or replace function public.get_love_shared_photos()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_couple_id uuid;
+  v_photos jsonb;
+begin
+  if auth.uid() is null then raise exception 'Please sign in first'; end if;
+  select couple_id into v_couple_id
+  from public.love_members
+  where user_id = auth.uid()
+  limit 1;
+  if v_couple_id is null then raise exception 'Please join a love space first'; end if;
+
+  select data -> 'photos' into v_photos
+  from public.love_shared_state
+  where couple_id = v_couple_id;
+  return case when jsonb_typeof(v_photos) = 'array' then v_photos else '[]'::jsonb end;
+end;
+$$;
+
+revoke all on function public.get_love_shared_core() from public;
+revoke all on function public.get_love_shared_photos() from public;
+grant execute on function public.get_love_shared_core() to authenticated;
+grant execute on function public.get_love_shared_photos() to authenticated;
+
 create or replace function public.delete_love_shared_record(p_field text, p_record_id text)
 returns jsonb
 language plpgsql
@@ -346,7 +416,7 @@ begin
   set data = v_data, updated_by = auth.uid()
   where couple_id = v_couple_id
   returning data into v_data;
-  return v_data;
+  return v_data - 'photos';
 end;
 $$;
 

@@ -991,11 +991,11 @@ function bindSyncEvents() {
   });
   window.addEventListener("love-sync-remote", (event) => {
     const focusedDraft = captureFocusedDraft();
-    const { shared, privateData, role, initializeEmptySpace } = event.detail;
+    const { shared, privateData, role, initializeEmptySpace, partialShared } = event.detail;
     if (shared) backupSharedState(state, "接收云端数据前");
-    const recoveryNeeded = Boolean(shared && !initializeEmptySpace && shouldRecoverSharedState(state, shared));
+    const recoveryNeeded = Boolean(shared && !partialShared && !initializeEmptySpace && shouldRecoverSharedState(state, shared));
     const safeShared = recoveryNeeded ? mergeRecoverySharedState(state, shared) : shared;
-    const mergedShared = safeShared ? mergeSharedConcurrent(state, safeShared) : safeShared;
+    const mergedShared = safeShared ? mergeSharedConcurrent(state, safeShared, false, Boolean(partialShared)) : safeShared;
     const next = {
       ...state,
       ...(mergedShared || {}),
@@ -3380,7 +3380,7 @@ function mergeGarden(savedGarden) {
   };
 }
 
-function mergeSharedConcurrent(localState, remoteShared, preferLocal = false) {
+function mergeSharedConcurrent(localState, remoteShared, preferLocal = false, partial = false) {
   const remote = remoteShared || {};
   const deletedRecords = mergeDeletedRecords(localState?.deletedRecords, remote.deletedRecords);
   const deleted = new Set(Object.keys(deletedRecords));
@@ -3398,32 +3398,46 @@ function mergeSharedConcurrent(localState, remoteShared, preferLocal = false) {
   };
   const merged = preferLocal ? { ...remote, ...(localState || {}), deletedRecords } : { ...(localState || {}), ...remote, deletedRecords };
   sharedRecordFields.forEach((field) => {
+    if (partial && !Object.prototype.hasOwnProperty.call(remote, field)) {
+      merged[field] = localState?.[field] || [];
+      return;
+    }
     merged[field] = mergeRecords(localState?.[field], remote[field]);
     if (!preferLocal && merged[field].length > (remote[field] || []).filter((item) => item?.id && !deleted.has(item.id)).length) sharedNeedsResync = true;
   });
-  merged.tasks = mergeTaskRecords(localState?.tasks, remote.tasks, deleted, preferLocal);
-  merged.moods = {};
-  Object.keys(people).forEach((person) => {
-    merged.moods[person] = chooseTimestampedRecord(localState?.moods?.[person], remote.moods?.[person], preferLocal) || {};
-  });
-  merged.dailyQuestion = mergeDailyQuestion(localState?.dailyQuestion, remote.dailyQuestion);
-  const questionHistorySides = preferLocal
-    ? [localState?.questionHistory || [], remote.questionHistory || []]
-    : [remote.questionHistory || [], localState?.questionHistory || []];
-  merged.questionHistory = [...new Set(questionHistorySides.flat())].slice(0, 30);
-  if (!preferLocal && (JSON.stringify(merged.dailyQuestion) !== JSON.stringify(remote.dailyQuestion) || merged.questionHistory.length > (remote.questionHistory || []).length)) sharedNeedsResync = true;
-  const custom = mergeRecords(localState?.achievements?.custom, remote.achievements?.custom);
-  merged.achievements = {
-    ...(preferLocal ? (remote.achievements || {}) : (localState?.achievements || {})),
-    ...(preferLocal ? (localState?.achievements || {}) : (remote.achievements || {})),
-    completed: mergeTimestampedMap(localState?.achievements?.completed, remote.achievements?.completed, preferLocal),
-    edits: preferLocal
-      ? { ...(remote.achievements?.edits || {}), ...(localState?.achievements?.edits || {}) }
-      : { ...(localState?.achievements?.edits || {}), ...(remote.achievements?.edits || {}) },
-    custom
-  };
-  if (!preferLocal && (Object.keys(deletedRecords).length > Object.keys(normalizeDeletedRecords(remote.deletedRecords)).length || custom.length > (remote.achievements?.custom || []).filter((item) => !deleted.has(item?.id)).length)) sharedNeedsResync = true;
-  merged.garden = mergeGardenConcurrent(localState?.garden, remote.garden);
+  if (!partial || Object.prototype.hasOwnProperty.call(remote, "tasks")) {
+    merged.tasks = mergeTaskRecords(localState?.tasks, remote.tasks, deleted, preferLocal);
+  }
+  if (!partial || Object.prototype.hasOwnProperty.call(remote, "moods")) {
+    merged.moods = {};
+    Object.keys(people).forEach((person) => {
+      merged.moods[person] = chooseTimestampedRecord(localState?.moods?.[person], remote.moods?.[person], preferLocal) || {};
+    });
+  }
+  if (!partial || Object.prototype.hasOwnProperty.call(remote, "dailyQuestion") || Object.prototype.hasOwnProperty.call(remote, "questionHistory")) {
+    merged.dailyQuestion = mergeDailyQuestion(localState?.dailyQuestion, remote.dailyQuestion);
+    const questionHistorySides = preferLocal
+      ? [localState?.questionHistory || [], remote.questionHistory || []]
+      : [remote.questionHistory || [], localState?.questionHistory || []];
+    merged.questionHistory = [...new Set(questionHistorySides.flat())].slice(0, 30);
+    if (!preferLocal && (JSON.stringify(merged.dailyQuestion) !== JSON.stringify(remote.dailyQuestion) || merged.questionHistory.length > (remote.questionHistory || []).length)) sharedNeedsResync = true;
+  }
+  if (!partial || Object.prototype.hasOwnProperty.call(remote, "achievements")) {
+    const custom = mergeRecords(localState?.achievements?.custom, remote.achievements?.custom);
+    merged.achievements = {
+      ...(preferLocal ? (remote.achievements || {}) : (localState?.achievements || {})),
+      ...(preferLocal ? (localState?.achievements || {}) : (remote.achievements || {})),
+      completed: mergeTimestampedMap(localState?.achievements?.completed, remote.achievements?.completed, preferLocal),
+      edits: preferLocal
+        ? { ...(remote.achievements?.edits || {}), ...(localState?.achievements?.edits || {}) }
+        : { ...(localState?.achievements?.edits || {}), ...(remote.achievements?.edits || {}) },
+      custom
+    };
+    if (!preferLocal && (Object.keys(deletedRecords).length > Object.keys(normalizeDeletedRecords(remote.deletedRecords)).length || custom.length > (remote.achievements?.custom || []).filter((item) => !deleted.has(item?.id)).length)) sharedNeedsResync = true;
+  }
+  if (!partial || Object.prototype.hasOwnProperty.call(remote, "garden")) {
+    merged.garden = mergeGardenConcurrent(localState?.garden, remote.garden);
+  }
   return applySharedDeletionTombstones(merged);
 }
 
