@@ -991,7 +991,7 @@ function bindSyncEvents() {
   });
   window.addEventListener("love-sync-remote", (event) => {
     const focusedDraft = captureFocusedDraft();
-    const { shared, privateData, role, initializeEmptySpace, partialShared } = event.detail;
+    const { shared, privateData, role, initializeEmptySpace, partialShared, suppressResync } = event.detail;
     if (shared) backupSharedState(state, "接收云端数据前");
     const recoveryNeeded = Boolean(shared && !partialShared && !initializeEmptySpace && shouldRecoverSharedState(state, shared));
     const safeShared = recoveryNeeded ? mergeRecoverySharedState(state, shared) : shared;
@@ -1011,7 +1011,10 @@ function bindSyncEvents() {
     }
     saveLocalAndRender();
     restoreFocusedDraft(focusedDraft);
-    if (initializeEmptySpace || recoveryNeeded || (!partialShared && shared && !shared.garden) || (!partialShared && shared?.garden && Number(shared.garden.version || 1) < 2) || gardenNeedsResync || sharedNeedsResync) {
+    if (suppressResync) {
+      gardenNeedsResync = false;
+      sharedNeedsResync = false;
+    } else if (initializeEmptySpace || recoveryNeeded || (!partialShared && shared && !shared.garden) || (!partialShared && shared?.garden && Number(shared.garden.version || 1) < 2) || gardenNeedsResync || sharedNeedsResync) {
       gardenNeedsResync = false;
       sharedNeedsResync = false;
       window.LoveSync?.scheduleSave(state);

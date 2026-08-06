@@ -8,7 +8,8 @@
     remoteReloadTimer: null, remotePhotosQueued: false, photosPromise: null,
     pendingState: null, saveInFlight: false, lastForegroundRefresh: 0,
     hydrated: false, photosHydrated: false, mediaSplitSupported: false, applyingRemote: false,
-    lastSharedState: null, lastPhotosState: null, lastGameImagesState: null, lastPrivateState: null
+    lastSharedState: null, lastPhotosState: null, lastGameImagesState: null, lastPrivateState: null,
+    lastSubmittedState: null
   };
 
   function emit(name, detail) {
@@ -268,6 +269,7 @@
     sync.lastPhotosState = null;
     sync.lastGameImagesState = null;
     sync.lastPrivateState = null;
+    sync.lastSubmittedState = null;
     q("#connectedInvite").hidden = true;
   }
 
@@ -821,6 +823,16 @@
       const gameImagesDirty = sync.photosHydrated && !sameState(gameImages, sync.lastGameImagesState);
       const mediaChanged = photosDirty || gameRecordsDirty || gameImagesDirty;
       const privateDirty = !sameState(privateData, sync.lastPrivateState);
+      const submittedState = {
+        core,
+        photos: sync.photosHydrated ? photos : null,
+        gameImages: sync.photosHydrated ? gameImages : null,
+        privateData
+      };
+      if (sync.lastSubmittedState && sameState(submittedState, sync.lastSubmittedState)) {
+        updateUi("connected", "已实时同步");
+        return;
+      }
       if (!sharedDirty && !mediaChanged && !privateDirty) {
         updateUi("connected", "已实时同步");
         return;
@@ -848,12 +860,14 @@
             } : null,
             privateData: savedPrivate,
             role: sync.role,
-            partialShared: Boolean(savedShared)
+            partialShared: Boolean(savedShared),
+            suppressResync: true
           });
         } finally {
           sync.applyingRemote = false;
         }
       }
+      sync.lastSubmittedState = structuredClone(submittedState);
       if (savedShared) broadcastSharedChange(mediaChanged);
       updateUi("connected", "已实时同步");
     } catch (error) {
