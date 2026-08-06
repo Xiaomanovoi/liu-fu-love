@@ -178,7 +178,7 @@ begin
 end;
 $$;
 
--- Protect shared deletions from stale whole-state writes on another device.
+-- Merge concurrent whole-state writes and protect deletions from stale clients.
 create or replace function public.protect_love_shared_deletions()
 returns trigger
 language plpgsql
@@ -187,6 +187,8 @@ as $$
 declare
   v_deleted jsonb;
   v_items jsonb;
+  v_old_items jsonb;
+  v_new_items jsonb;
   v_achievements jsonb;
   v_field text;
   v_id text;
@@ -198,31 +200,59 @@ begin
 
   new.data := jsonb_set(coalesce(new.data, '{}'::jsonb), '{deletedRecords}', v_deleted, true);
 
-  foreach v_field in array array['messages', 'tasks', 'loveNotes', 'studyLogs', 'gameRecords', 'meetings', 'photos']
+  foreach v_field in array array['messages', 'tasks', 'loveNotes', 'studyLogs', 'gameRecords', 'meetings', 'photos', 'wheels', 'wheelOptions', 'wheelHistory']
   loop
-    v_items := case when jsonb_typeof(new.data -> v_field) = 'array' then new.data -> v_field else '[]'::jsonb end;
+    v_old_items := case when jsonb_typeof(old.data -> v_field) = 'array' then old.data -> v_field else '[]'::jsonb end;
+    v_new_items := case when jsonb_typeof(new.data -> v_field) = 'array' then new.data -> v_field else '[]'::jsonb end;
+    select coalesce(jsonb_agg(chosen.item order by chosen.item_order), '[]'::jsonb)
+    into v_items
+    from (
+      select distinct on (candidate.item ->> 'id') candidate.item, candidate.item_order
+      from (
+        select old_item.item, old_item.item_order, 0 as source_order
+        from jsonb_array_elements(v_old_items) with ordinality as old_item(item, item_order)
+        union all
+        select new_item.item, new_item.item_order, 1 as source_order
+        from jsonb_array_elements(v_new_items) with ordinality as new_item(item, item_order)
+      ) candidate
+      where coalesce(candidate.item ->> 'id', '') <> ''
+        and not (v_deleted ? coalesce(candidate.item ->> 'id', ''))
+      order by candidate.item ->> 'id',
+        coalesce(candidate.item ->> 'updatedAt', candidate.item ->> 'createdAt', candidate.item ->> 'date', '') desc,
+        candidate.source_order desc
+    ) chosen;
     new.data := jsonb_set(
       new.data,
       array[v_field],
-      coalesce((
-        select jsonb_agg(item)
-        from jsonb_array_elements(v_items) as item
-        where not (v_deleted ? coalesce(item ->> 'id', ''))
-      ), '[]'::jsonb),
+      v_items,
       true
     );
   end loop;
 
   v_achievements := case when jsonb_typeof(new.data -> 'achievements') = 'object' then new.data -> 'achievements' else '{}'::jsonb end;
-  v_items := case when jsonb_typeof(v_achievements -> 'custom') = 'array' then v_achievements -> 'custom' else '[]'::jsonb end;
+  v_old_items := case when jsonb_typeof(old.data -> 'achievements' -> 'custom') = 'array' then old.data -> 'achievements' -> 'custom' else '[]'::jsonb end;
+  v_new_items := case when jsonb_typeof(v_achievements -> 'custom') = 'array' then v_achievements -> 'custom' else '[]'::jsonb end;
+  select coalesce(jsonb_agg(chosen.item order by chosen.item_order), '[]'::jsonb)
+  into v_items
+  from (
+    select distinct on (candidate.item ->> 'id') candidate.item, candidate.item_order
+    from (
+      select old_item.item, old_item.item_order, 0 as source_order
+      from jsonb_array_elements(v_old_items) with ordinality as old_item(item, item_order)
+      union all
+      select new_item.item, new_item.item_order, 1 as source_order
+      from jsonb_array_elements(v_new_items) with ordinality as new_item(item, item_order)
+    ) candidate
+    where coalesce(candidate.item ->> 'id', '') <> ''
+      and not (v_deleted ? coalesce(candidate.item ->> 'id', ''))
+    order by candidate.item ->> 'id',
+      coalesce(candidate.item ->> 'updatedAt', candidate.item ->> 'createdAt', candidate.item ->> 'date', '') desc,
+      candidate.source_order desc
+  ) chosen;
   v_achievements := jsonb_set(
     v_achievements,
     '{custom}',
-    coalesce((
-      select jsonb_agg(item)
-      from jsonb_array_elements(v_items) as item
-      where not (v_deleted ? coalesce(item ->> 'id', ''))
-    ), '[]'::jsonb),
+    v_items,
     true
   );
 
@@ -267,7 +297,7 @@ declare
   v_achievements jsonb;
 begin
   if auth.uid() is null then raise exception 'Please sign in first'; end if;
-  if not (p_field = any(array['messages', 'tasks', 'loveNotes', 'studyLogs', 'gameRecords', 'meetings', 'photos', 'achievementCustom']::text[])) then
+  if not (p_field = any(array['messages', 'tasks', 'loveNotes', 'studyLogs', 'gameRecords', 'meetings', 'photos', 'wheels', 'wheelOptions', 'wheelHistory', 'achievementCustom']::text[])) then
     raise exception 'Unsupported shared record field';
   end if;
 

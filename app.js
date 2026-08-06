@@ -330,8 +330,8 @@ const defaults = {
     anniversaries: []
   },
   private: {
-    liu: { goals: [], traits: [{ id: uid(), type: "优点", text: "她会认真记住我随口说过的小事" }], diaries: [], health: { water: 0, movement: 0, weights: [], cycles: [] } },
-    fu: { goals: [], traits: [{ id: uid(), type: "习惯", text: "他会在忙完后第一时间分享今天" }], diaries: [], health: { water: 0, movement: 0, weights: [], cycles: [] } }
+    liu: { goals: [], traits: [{ id: uid(), type: "优点", text: "她会认真记住我随口说过的小事" }], diaries: [], deletedRecords: {}, health: { water: 0, movement: 0, weights: [], cycles: [] } },
+    fu: { goals: [], traits: [{ id: uid(), type: "习惯", text: "他会在忙完后第一时间分享今天" }], diaries: [], deletedRecords: {}, health: { water: 0, movement: 0, weights: [], cycles: [] } }
   }
 };
 
@@ -389,6 +389,11 @@ const els = {
   meetingForm: q("#meetingForm"), meetingTitle: q("#meetingTitle"), meetingDate: q("#meetingDate"), meetingPlace: q("#meetingPlace"), meetingNote: q("#meetingNote"), meetingList: q("#meetingList"),
   albumForm: q("#albumForm"), photoInput: q("#photoInput"), photoPreview: q("#photoPreview"), photoPreviewImage: q("#photoPreviewImage"), clearPhotoSelection: q("#clearPhotoSelection"), photoCaption: q("#photoCaption"), albumGrid: q("#albumGrid"),
   personOptions: qa(".person-option"), goalForm: q("#goalForm"), goalText: q("#goalText"), goalList: q("#goalList"), goalStats: q("#goalStats"), traitForm: q("#traitForm"), traitType: q("#traitType"), traitText: q("#traitText"), traitList: q("#traitList"), diaryForm: q("#diaryForm"), diaryEditId: q("#diaryEditId"), diaryDate: q("#diaryDate"), diaryMood: q("#diaryMood"), diaryTitle: q("#diaryTitle"), diaryText: q("#diaryText"), diaryList: q("#diaryList"), saveDiary: q("#saveDiary"), cancelDiaryEdit: q("#cancelDiaryEdit"), healthPanel: q("#healthPanel"), waterCount: q("#waterCount"), moveCount: q("#moveCount"), weightValue: q("#weightValue"), weightForm: q("#weightForm"), weightDate: q("#weightDate"), weightInput: q("#weightInput"), weightHistory: q("#weightHistory"), encourageLine: q("#encourageLine"), cycleForm: q("#cycleForm"), cycleStart: q("#cycleStart"), cycleEnd: q("#cycleEnd"), cycleLength: q("#cycleLength"), cycleNextDate: q("#cycleNextDate"), cycleDaysLeft: q("#cycleDaysLeft"), cycleHistory: q("#cycleHistory")
+};
+
+window.LoveStateMerge = {
+  shared: (localShared, serverShared) => sharedOnly(mergeSharedConcurrent(localShared || {}, serverShared || {}, true)),
+  private: (localPrivate, serverPrivate, person) => mergePrivateConcurrent(localPrivate || {}, serverPrivate || {}, person || currentPerson(), true)
 };
 
 init();
@@ -463,7 +468,7 @@ function bindActions() {
   }));
   els.saveMood.addEventListener("click", () => {
     const person = state.writer;
-    state.moods[person] = { feeling: selectedMood, note: els.moodNote.value.trim() || "今天也在想你" };
+    state.moods[person] = { feeling: selectedMood, note: els.moodNote.value.trim() || "今天也在想你", updatedAt: new Date().toISOString() };
     els.moodDialog.close();
     persistAndRender();
   });
@@ -497,7 +502,7 @@ function bindActions() {
     event.preventDefault();
     const text = els.messageText.value.trim();
     if (!text) return;
-    state.messages.unshift({ id: uid(), person: state.writer, text, date: todayString() });
+    state.messages.unshift({ id: uid(), person: state.writer, text, date: todayString(), updatedAt: new Date().toISOString() });
     els.messageForm.reset();
     persistAndRender();
   });
@@ -524,7 +529,7 @@ function bindActions() {
     event.preventDefault();
     const text = els.taskText.value.trim();
     if (!text) return;
-    state.tasks.unshift({ id: uid(), text, doneBy: [] });
+    state.tasks.unshift({ id: uid(), text, doneBy: [], doneState: {}, updatedAt: new Date().toISOString() });
     els.taskForm.reset();
     persistAndRender();
   });
@@ -544,7 +549,7 @@ function bindActions() {
     event.preventDefault();
     const text = els.achievementText.value.trim();
     if (!text) return;
-    state.achievements.custom.unshift({ id: `custom-${uid()}`, text, createdAt: todayString() });
+    state.achievements.custom.unshift({ id: `custom-${uid()}`, text, createdAt: todayString(), updatedAt: new Date().toISOString() });
     els.achievementForm.reset();
     activeAchievementFilter = "all";
     achievementsExpanded = false;
@@ -556,7 +561,10 @@ function bindActions() {
     const text = els.achievementEditText.value.trim();
     if (!id || !text) return;
     const custom = state.achievements.custom.find((item) => item.id === id);
-    if (custom) custom.text = text;
+    if (custom) {
+      custom.text = text;
+      custom.updatedAt = new Date().toISOString();
+    }
     else {
       const original = achievementDefinitions.find((item) => item.id === id)?.text;
       if (text === original) delete state.achievements.edits[id];
@@ -571,7 +579,7 @@ function bindActions() {
     if (!text) return;
     state.loveNotes.unshift({
       id: uid(), from: currentPerson(), to: els.noteReceiver.value,
-      text, unlockDate: els.noteUnlockDate.value || todayString(), createdAt: todayString(), opened: false
+      text, unlockDate: els.noteUnlockDate.value || todayString(), createdAt: todayString(), opened: false, updatedAt: new Date().toISOString()
     });
     els.noteForm.reset();
     setFormDates();
@@ -584,7 +592,7 @@ function bindActions() {
     if (!content || !minutes || minutes < 1 || minutes > 1440) return;
     state.studyLogs.unshift({
       id: uid(), person: currentPerson(), content, minutes,
-      date: els.studyDate.value || todayString(), note: els.studyNote.value.trim()
+      date: els.studyDate.value || todayString(), note: els.studyNote.value.trim(), updatedAt: new Date().toISOString()
     });
     els.studyForm.reset();
     setFormDates();
@@ -602,7 +610,7 @@ function bindActions() {
     try {
       const file = els.gamePhotoInput.files[0];
       const image = file ? await shrinkImage(file) : "";
-      state.gameRecords.unshift({ id: uid(), date, game, achievement, image });
+      state.gameRecords.unshift({ id: uid(), date, game, achievement, image, updatedAt: new Date().toISOString() });
       els.gameForm.reset();
       clearGamePhotoPreview();
       setFormDates();
@@ -624,7 +632,7 @@ function bindActions() {
     const title = els.meetingTitle.value.trim();
     const date = els.meetingDate.value;
     if (!title || !date) return;
-    state.meetings.unshift({ id: uid(), title, date, place: els.meetingPlace.value.trim(), note: els.meetingNote.value.trim(), planned: date >= todayString() });
+    state.meetings.unshift({ id: uid(), title, date, place: els.meetingPlace.value.trim(), note: els.meetingNote.value.trim(), planned: date >= todayString(), updatedAt: new Date().toISOString() });
     els.meetingForm.reset();
     persistAndRender();
   });
@@ -633,7 +641,7 @@ function bindActions() {
     const file = els.photoInput.files[0];
     if (!file) return;
     const src = await shrinkImage(file);
-    state.photos.unshift({ id: uid(), src, caption: els.photoCaption.value.trim() || "我们的一个瞬间", date: todayString(), person: state.writer });
+    state.photos.unshift({ id: uid(), src, caption: els.photoCaption.value.trim() || "我们的一个瞬间", date: todayString(), person: state.writer, updatedAt: new Date().toISOString() });
     els.albumForm.reset();
     clearPhotoPreview();
     persistAndRender();
@@ -653,7 +661,7 @@ function bindActions() {
     event.preventDefault();
     const text = els.goalText.value.trim();
     if (!text) return;
-    privateSpace().goals.unshift({ id: uid(), text, completed: false, completedAt: "", createdAt: todayString() });
+    privateSpace().goals.unshift({ id: uid(), text, completed: false, completedAt: "", createdAt: todayString(), updatedAt: new Date().toISOString() });
     els.goalForm.reset();
     persistAndRender();
   });
@@ -661,7 +669,7 @@ function bindActions() {
     event.preventDefault();
     const text = els.traitText.value.trim();
     if (!text) return;
-    privateSpace().traits.unshift({ id: uid(), type: els.traitType.value, text });
+    privateSpace().traits.unshift({ id: uid(), type: els.traitType.value, text, updatedAt: new Date().toISOString() });
     els.traitForm.reset();
     persistAndRender();
   });
@@ -673,7 +681,7 @@ function bindActions() {
     const diaries = privateSpace().diaries;
     const editId = els.diaryEditId.value;
     const record = editId ? diaries.find((item) => item.id === editId) : null;
-    const next = { title, text, mood: els.diaryMood.value.trim(), date: els.diaryDate.value || todayString() };
+    const next = { title, text, mood: els.diaryMood.value.trim(), date: els.diaryDate.value || todayString(), updatedAt: new Date().toISOString() };
     if (record) Object.assign(record, next);
     else diaries.unshift({ id: uid(), ...next });
     resetDiaryForm();
@@ -691,7 +699,7 @@ function bindActions() {
     event.preventDefault();
     const value = Number(els.weightInput.value);
     if (!value || value < 20 || value > 300) return;
-    privateSpace().health.weights.unshift({ id: uid(), value, date: els.weightDate.value || todayString() });
+    privateSpace().health.weights.unshift({ id: uid(), value, date: els.weightDate.value || todayString(), updatedAt: new Date().toISOString() });
     els.weightForm.reset();
     els.weightDate.value = todayString();
     persistAndRender();
@@ -703,7 +711,7 @@ function bindActions() {
     const length = Number(els.cycleLength.value);
     if (!start || (end && end < start) || !length || length < 20 || length > 45) return;
     const cycles = privateSpace().health.cycles;
-    cycles.unshift({ id: uid(), start, end, length });
+    cycles.unshift({ id: uid(), start, end, length, updatedAt: new Date().toISOString() });
     els.cycleForm.reset();
     els.cycleLength.value = "28";
     persistAndRender();
@@ -913,6 +921,37 @@ function bindGardenActions() {
   }));
 }
 
+function focusedDraftContext(element) {
+  if (!element) return "";
+  if (element === els.questionAnswer) return `question:${state.dailyQuestion?.id || ""}:${currentPerson()}`;
+  if (element.dataset?.wheelOption) return `wheel-option:${element.dataset.wheelOption}`;
+  return element.id ? `field:${element.id}` : "";
+}
+
+function captureFocusedDraft() {
+  const element = document.activeElement;
+  if (!element?.matches?.("input, textarea, select") || element.type === "file" || element.type === "checkbox" || element.type === "radio") return null;
+  const selector = element.id
+    ? `#${window.CSS?.escape ? window.CSS.escape(element.id) : element.id}`
+    : (element.dataset?.wheelOption ? `[data-wheel-option="${element.dataset.wheelOption}"]` : "");
+  const context = focusedDraftContext(element);
+  if (!selector || !context) return null;
+  return {
+    selector, context, value: element.value,
+    selectionStart: typeof element.selectionStart === "number" ? element.selectionStart : null,
+    selectionEnd: typeof element.selectionEnd === "number" ? element.selectionEnd : null
+  };
+}
+
+function restoreFocusedDraft(draft) {
+  if (!draft) return;
+  const element = q(draft.selector);
+  if (!element || focusedDraftContext(element) !== draft.context) return;
+  element.value = draft.value;
+  element.focus({ preventScroll: true });
+  if (draft.selectionStart !== null && element.setSelectionRange) element.setSelectionRange(draft.selectionStart, draft.selectionEnd);
+}
+
 function bindSyncEvents() {
   window.addEventListener("love-sync-status", (event) => {
     const { connected, role, needsPairing } = event.detail;
@@ -951,6 +990,7 @@ function bindSyncEvents() {
     if (feature === "miss") els.missHint.textContent = message;
   });
   window.addEventListener("love-sync-remote", (event) => {
+    const focusedDraft = captureFocusedDraft();
     const { shared, privateData, role, initializeEmptySpace } = event.detail;
     if (shared) backupSharedState(state, "接收云端数据前");
     const recoveryNeeded = Boolean(shared && !initializeEmptySpace && shouldRecoverSharedState(state, shared));
@@ -963,13 +1003,14 @@ function bindSyncEvents() {
       privatePerson: role || state.privatePerson,
       private: { ...state.private }
     };
-    if (privateData && role) next.private[role] = privateData;
+    if (privateData && role) next.private[role] = mergePrivateConcurrent(state.private?.[role], privateData, role);
     state = mergeDefaults(next);
     if (shared?.garden && Number(shared.garden.version || 1) < 2) {
       state.garden.baselinePoints = Math.max(Number(state.garden.baselinePoints || 0), Number(shared.garden.points || 0));
       state.garden.migrationComplete = false;
     }
     saveLocalAndRender();
+    restoreFocusedDraft(focusedDraft);
     if (initializeEmptySpace || recoveryNeeded || (shared && !shared.garden) || Number(shared?.garden?.version || 1) < 2 || gardenNeedsResync || sharedNeedsResync) {
       gardenNeedsResync = false;
       sharedNeedsResync = false;
@@ -1272,6 +1313,7 @@ function gardenPointCandidates() {
 
   const customAchievements = new Map((state.achievements?.custom || []).map((item) => [item.id, item.text]));
   Object.entries(state.achievements?.completed || {}).forEach(([id, record]) => {
+    if (!achievementIsDone(record)) return;
     const definition = achievementDefinitions.find((item) => item.id === id);
     const title = state.achievements?.edits?.[id] || customAchievements.get(id) || definition?.text || "共同成就";
     const date = typeof record === "string" ? record : record?.date || todayString();
@@ -2050,6 +2092,7 @@ function gardenMemories() {
   state.messages.slice(0, 24).forEach((item) => memories.push({ id: `message-${item.id}`, type: "留言", title: shortGardenLabel(item.text, 24), copy: item.text, date: item.date, person: item.person }));
   const customAchievements = new Map((state.achievements.custom || []).map((item) => [item.id, item.text]));
   Object.entries(state.achievements.completed || {}).forEach(([id, record]) => {
+    if (!achievementIsDone(record)) return;
     const definition = achievementDefinitions.find((item) => item.id === id);
     const title = state.achievements.edits?.[id] || customAchievements.get(id) || definition?.text;
     if (title) memories.push({ id: `achievement-${id}`, type: "成就", title, copy: "一件由你们共同完成的小事。", date: typeof record === "string" ? record : record?.date || "" });
@@ -2538,7 +2581,12 @@ function renderQuestion() {
   els.questionText.textContent = question.text;
   els.questionCategory.textContent = questionCategoryNames[question.category] || "随机";
   els.questionWriterName.textContent = people[person].name;
-  els.questionAnswer.value = question.answers?.[person] || "";
+  const sameFocusedQuestion = document.activeElement === els.questionAnswer
+    && els.questionAnswer.dataset.questionId === question.id
+    && els.questionAnswer.dataset.person === person;
+  if (!sameFocusedQuestion) els.questionAnswer.value = question.answers?.[person] || "";
+  els.questionAnswer.dataset.questionId = question.id;
+  els.questionAnswer.dataset.person = person;
   els.questionAnswer.placeholder = question.answers?.[person] ? "可以修改自己的答案" : "写下你的答案，双方回答后解锁...";
   els.questionAnswers.replaceChildren(...Object.keys(people).map((id) => {
     const card = document.createElement("article");
@@ -2553,6 +2601,7 @@ function renderQuestion() {
 }
 
 function renderTasks() {
+  state.tasks = (state.tasks || []).map(normalizeTaskRecord);
   const done = state.tasks.filter((task) => task.doneBy.length === 2).length;
   els.taskStats.textContent = `${done}/${state.tasks.length}`;
   const tasks = visibleHistoryItems("tasks", state.tasks);
@@ -2567,7 +2616,11 @@ function renderTasks() {
   els.taskList.querySelectorAll("[data-task-id]").forEach((button) => button.addEventListener("click", () => {
     const task = state.tasks.find((item) => item.id === button.dataset.taskId);
     const person = button.dataset.person;
-    task.doneBy = task.doneBy.includes(person) ? task.doneBy.filter((id) => id !== person) : [...task.doneBy, person];
+    const done = !task.doneBy.includes(person);
+    const updatedAt = new Date().toISOString();
+    task.doneState = { ...(task.doneState || {}), [person]: { done, updatedAt } };
+    task.doneBy = Object.keys(people).filter((id) => Boolean(task.doneState[id]?.done));
+    task.updatedAt = updatedAt;
     persistAndRender();
   }));
   els.taskList.querySelectorAll("[data-delete-task]").forEach((button) => button.addEventListener("click", () => {
@@ -2583,15 +2636,15 @@ function renderAchievements() {
   const preset = achievementDefinitions.map((item) => ({ ...item, text: edits[item.id] || item.text, isCustom: false }));
   const all = [...custom, ...preset];
   const completed = achievementState.completed || {};
-  const completedCount = all.filter((item) => completed[item.id]).length;
+  const completedCount = all.filter((item) => achievementIsDone(completed[item.id])).length;
   const percent = all.length ? Math.round((completedCount / all.length) * 100) : 0;
   els.achievementStats.textContent = `${completedCount}/${all.length}`;
   els.achievementPercent.textContent = `${percent}%`;
   els.achievementProgressBar.style.width = `${percent}%`;
 
   let items = all;
-  if (activeAchievementFilter === "done") items = items.filter((item) => completed[item.id]);
-  if (activeAchievementFilter === "todo") items = items.filter((item) => !completed[item.id]);
+  if (activeAchievementFilter === "done") items = items.filter((item) => achievementIsDone(completed[item.id]));
+  if (activeAchievementFilter === "todo") items = items.filter((item) => !achievementIsDone(completed[item.id]));
   const visibleItems = achievementsExpanded ? items : items.slice(0, 6);
   els.achievementVisibleCount.textContent = `显示 ${visibleItems.length}/${items.length} 项`;
   els.achievementMore.hidden = items.length <= 6;
@@ -2601,7 +2654,7 @@ function renderAchievements() {
   } else {
     els.achievementList.replaceChildren(...visibleItems.map((item) => {
       const record = completed[item.id];
-      const isDone = Boolean(record);
+      const isDone = achievementIsDone(record);
       const completionDate = typeof record === "string" ? record : record?.date || "";
       const node = document.createElement("article");
       node.className = `achievement-item${isDone ? " is-done" : ""}`;
@@ -2613,12 +2666,17 @@ function renderAchievements() {
     }));
   }
   els.achievementList.querySelectorAll("[data-achievement-id]").forEach((input) => input.addEventListener("change", () => {
-    if (input.checked) state.achievements.completed[input.dataset.achievementId] = { date: "" };
-    else delete state.achievements.completed[input.dataset.achievementId];
+    const id = input.dataset.achievementId;
+    const previous = state.achievements.completed[id];
+    state.achievements.completed[id] = {
+      done: input.checked,
+      date: input.checked ? (typeof previous === "string" ? previous : previous?.date || "") : "",
+      updatedAt: new Date().toISOString()
+    };
     persistAndRender();
   }));
   els.achievementList.querySelectorAll("[data-achievement-date]").forEach((input) => input.addEventListener("change", () => {
-    state.achievements.completed[input.dataset.achievementDate] = { date: input.value };
+    state.achievements.completed[input.dataset.achievementDate] = { done: true, date: input.value, updatedAt: new Date().toISOString() };
     persistAndRender();
   }));
   els.achievementList.querySelectorAll("[data-edit-achievement]").forEach((button) => button.addEventListener("click", () => {
@@ -2661,7 +2719,10 @@ function renderLoveNotes() {
   }));
   els.noteList.querySelectorAll("[data-open-note]").forEach((button) => button.addEventListener("click", () => {
     const note = state.loveNotes.find((item) => item.id === button.dataset.openNote);
-    if (note && note.to === currentPerson() && note.unlockDate <= todayString()) note.opened = true;
+    if (note && note.to === currentPerson() && note.unlockDate <= todayString()) {
+      note.opened = true;
+      note.updatedAt = new Date().toISOString();
+    }
     persistAndRender();
   }));
   els.noteList.querySelectorAll("[data-delete-note]").forEach((button) => button.addEventListener("click", () => {
@@ -2757,6 +2818,7 @@ function renderPrivate() {
       return node;
     }));
     els.traitList.querySelectorAll("[data-delete-trait]").forEach((button) => button.addEventListener("click", () => {
+      markPrivateRecordDeleted("traits", button.dataset.deleteTrait);
       space.traits = space.traits.filter((item) => item.id !== button.dataset.deleteTrait);
       persistAndRender();
     }));
@@ -2794,11 +2856,13 @@ function renderGoals(space) {
     if (!goal) return;
     goal.completed = input.checked;
     goal.completedAt = input.checked ? todayString() : "";
+    goal.updatedAt = new Date().toISOString();
     persistAndRender();
   }));
   els.goalList.querySelectorAll("[data-delete-goal]").forEach((button) => button.addEventListener("click", () => {
     if (!window.confirm("确定删除这个个人目标吗？")) return;
     const currentSpace = privateSpace();
+    markPrivateRecordDeleted("goals", button.dataset.deleteGoal, currentSpace);
     currentSpace.goals = currentSpace.goals.filter((item) => item.id !== button.dataset.deleteGoal);
     persistAndRender();
   }));
@@ -2816,6 +2880,7 @@ function renderDiaries(diaries) {
   els.diaryList.querySelectorAll("[data-delete-diary]").forEach((button) => button.addEventListener("click", () => {
     if (!window.confirm("确定删除这篇私人日记吗？")) return;
     const space = privateSpace();
+    markPrivateRecordDeleted("diaries", button.dataset.deleteDiary, space);
     space.diaries = space.diaries.filter((item) => item.id !== button.dataset.deleteDiary);
     resetDiaryForm();
     persistAndRender();
@@ -2858,6 +2923,7 @@ function renderCycles(cycles) {
     return record;
   }));
   els.cycleHistory.querySelectorAll("[data-delete-cycle]").forEach((button) => button.addEventListener("click", () => {
+    markPrivateRecordDeleted("cycles", button.dataset.deleteCycle);
     const health = privateSpace().health;
     health.cycles = health.cycles.filter((item) => item.id !== button.dataset.deleteCycle);
     persistAndRender();
@@ -2869,6 +2935,7 @@ function renderCycles(cycles) {
     const record = health.cycles.find((item) => item.id === button.dataset.saveCycleEnd);
     if (!record || !end || end < record.start) return;
     record.end = end;
+    record.updatedAt = new Date().toISOString();
     persistAndRender();
   }));
 }
@@ -2885,6 +2952,7 @@ function renderWeights(weights, health) {
     return record;
   }));
   els.weightHistory.querySelectorAll("[data-delete-weight]").forEach((button) => button.addEventListener("click", () => {
+    markPrivateRecordDeleted("weights", button.dataset.deleteWeight);
     health.weights = health.weights.filter((item) => item.id !== button.dataset.deleteWeight);
     persistAndRender();
   }));
@@ -3001,6 +3069,71 @@ function mergeDailyQuestion(localQuestion, remoteQuestion) {
   return { ...base, answers, answerUpdatedAt };
 }
 
+function recordUpdatedAt(record) {
+  if (!record || typeof record !== "object") return "";
+  return record.updatedAt || record.createdAt || record.date || "";
+}
+
+function chooseTimestampedRecord(localRecord, remoteRecord, preferLocal = false) {
+  if (!localRecord) return remoteRecord;
+  if (!remoteRecord) return localRecord;
+  const localTime = recordUpdatedAt(localRecord);
+  const remoteTime = recordUpdatedAt(remoteRecord);
+  if (localTime === remoteTime) return preferLocal ? localRecord : remoteRecord;
+  return localTime > remoteTime ? localRecord : remoteRecord;
+}
+
+function normalizeTaskRecord(task) {
+  const doneState = { ...(task?.doneState || {}) };
+  (task?.doneBy || []).forEach((person) => {
+    if (!doneState[person]) doneState[person] = { done: true, updatedAt: task?.updatedAt || "" };
+  });
+  return {
+    ...(task || {}),
+    doneState,
+    doneBy: Object.keys(people).filter((person) => Boolean(doneState[person]?.done))
+  };
+}
+
+function mergeTaskRecords(localItems, remoteItems, deleted, preferLocal = false) {
+  const records = new Map();
+  const sides = preferLocal ? [remoteItems || [], localItems || []] : [localItems || [], remoteItems || []];
+  sides.flat().forEach((rawTask) => {
+    if (!rawTask?.id || deleted.has(rawTask.id)) return;
+    const task = normalizeTaskRecord(rawTask);
+    const previous = records.get(task.id);
+    if (!previous) {
+      records.set(task.id, task);
+      return;
+    }
+    const base = chooseTimestampedRecord(previous, task, true);
+    const doneState = {};
+    Object.keys(people).forEach((person) => {
+      doneState[person] = chooseTimestampedRecord(previous.doneState?.[person], task.doneState?.[person], true) || undefined;
+      if (!doneState[person]) delete doneState[person];
+    });
+    records.set(task.id, normalizeTaskRecord({ ...base, doneState }));
+  });
+  return [...records.values()];
+}
+
+function mergeTimestampedMap(localMap, remoteMap, preferLocal = false) {
+  const merged = {};
+  const keys = new Set([...Object.keys(localMap || {}), ...Object.keys(remoteMap || {})]);
+  keys.forEach((key) => {
+    const rawLocalValue = localMap?.[key];
+    const rawRemoteValue = remoteMap?.[key];
+    const localValue = typeof rawLocalValue === "string" ? { done: true, date: rawLocalValue, updatedAt: "" } : rawLocalValue;
+    const remoteValue = typeof rawRemoteValue === "string" ? { done: true, date: rawRemoteValue, updatedAt: "" } : rawRemoteValue;
+    merged[key] = chooseTimestampedRecord(localValue, remoteValue, preferLocal);
+  });
+  return merged;
+}
+
+function achievementIsDone(record) {
+  return Boolean(record) && (typeof record === "string" || record.done !== false);
+}
+
 function applySharedDeletionTombstones(value) {
   const deletedRecords = normalizeDeletedRecords(value?.deletedRecords);
   const deleted = new Set(Object.keys(deletedRecords));
@@ -3029,6 +3162,14 @@ function markSharedRecordDeleted(field, id) {
   });
 }
 
+function markPrivateRecordDeleted(field, id, space = privateSpace()) {
+  if (!id || !space) return;
+  space.deletedRecords = {
+    ...(space.deletedRecords || {}),
+    [id]: { field, deletedAt: new Date().toISOString() }
+  };
+}
+
 function commitSharedRecordDeletion(field, id, removeRecord, reason = "删除共同记录") {
   if (!id) return;
   markSharedRecordDeleted(field, id);
@@ -3054,7 +3195,7 @@ function sharedStateScore(value) {
   let score = listFields.reduce((sum, field) => sum + (Array.isArray(value[field]) ? value[field].length : 0), 0);
   score += (value.meetings || []).filter((item) => item?.date || item?.place || (item?.title && item.title !== "下一次见面")).length;
   score += Object.values(value.dailyQuestion?.answers || {}).filter((answer) => String(answer || "").trim()).length;
-  score += Object.keys(value.achievements?.completed || {}).length + (value.achievements?.custom || []).length;
+  score += Object.values(value.achievements?.completed || {}).filter(achievementIsDone).length + (value.achievements?.custom || []).length;
   const customWheelIds = new Set((value.wheels || []).filter((item) => !item?.isDefault).map((item) => item.id));
   score += customWheelIds.size + (value.wheelOptions || []).filter((item) => customWheelIds.has(item?.wheelId)).length + (value.wheelHistory || []).length;
   const garden = value.garden || {};
@@ -3124,11 +3265,16 @@ function mergeRecoverySharedState(localState, remoteShared) {
   sharedRecordFields.forEach((field) => {
     merged[field] = mergeRecords(remoteShared?.[field], localShared?.[field]);
   });
+  merged.tasks = mergeTaskRecords(localShared.tasks, remoteShared?.tasks, deleted, true);
+  merged.moods = {};
+  Object.keys(people).forEach((person) => {
+    merged.moods[person] = chooseTimestampedRecord(localShared.moods?.[person], remoteShared?.moods?.[person], true) || {};
+  });
   merged.dailyQuestion = mergeDailyQuestion(localShared.dailyQuestion, remoteShared?.dailyQuestion);
   merged.questionHistory = [...new Set([...(localShared.questionHistory || []), ...(remoteShared?.questionHistory || [])])].slice(0, 30);
   merged.achievements = {
     ...(remoteShared?.achievements || {}), ...(localShared.achievements || {}),
-    completed: { ...(remoteShared?.achievements?.completed || {}), ...(localShared.achievements?.completed || {}) },
+    completed: mergeTimestampedMap(localShared.achievements?.completed, remoteShared?.achievements?.completed, true),
     edits: { ...(remoteShared?.achievements?.edits || {}), ...(localShared.achievements?.edits || {}) },
     custom: mergeRecords(remoteShared?.achievements?.custom, localShared.achievements?.custom)
   };
@@ -3162,6 +3308,7 @@ function mergeDefaults(saved) {
       answerUpdatedAt: { liu: "", fu: "", ...(saved.dailyQuestion?.answerUpdatedAt || {}) }
     },
     questionHistory: Array.isArray(saved.questionHistory) ? saved.questionHistory.slice(0, 30) : [],
+    tasks: (Array.isArray(saved.tasks) ? saved.tasks : base.tasks).map(normalizeTaskRecord),
     loveNotes: Array.isArray(saved.loveNotes) ? saved.loveNotes : [],
     studyLogs: Array.isArray(saved.studyLogs) ? saved.studyLogs : [],
     gameRecords: Array.isArray(saved.gameRecords) ? saved.gameRecords : [],
@@ -3233,13 +3380,14 @@ function mergeGarden(savedGarden) {
   };
 }
 
-function mergeSharedConcurrent(localState, remoteShared) {
+function mergeSharedConcurrent(localState, remoteShared, preferLocal = false) {
   const remote = remoteShared || {};
   const deletedRecords = mergeDeletedRecords(localState?.deletedRecords, remote.deletedRecords);
   const deleted = new Set(Object.keys(deletedRecords));
   const mergeRecords = (localItems, remoteItems) => {
     const records = new Map();
-    [...(localItems || []), ...(remoteItems || [])].forEach((item) => {
+    const sides = preferLocal ? [remoteItems || [], localItems || []] : [localItems || [], remoteItems || []];
+    sides.flat().forEach((item) => {
       if (!item?.id || deleted.has(item.id)) return;
       const previous = records.get(item.id);
       const previousTime = previous?.updatedAt || previous?.createdAt || previous?.date || "";
@@ -3248,23 +3396,33 @@ function mergeSharedConcurrent(localState, remoteShared) {
     });
     return [...records.values()];
   };
-  const merged = { ...remote, deletedRecords };
+  const merged = preferLocal ? { ...remote, ...(localState || {}), deletedRecords } : { ...(localState || {}), ...remote, deletedRecords };
   sharedRecordFields.forEach((field) => {
     merged[field] = mergeRecords(localState?.[field], remote[field]);
-    if (merged[field].length > (remote[field] || []).filter((item) => item?.id && !deleted.has(item.id)).length) sharedNeedsResync = true;
+    if (!preferLocal && merged[field].length > (remote[field] || []).filter((item) => item?.id && !deleted.has(item.id)).length) sharedNeedsResync = true;
+  });
+  merged.tasks = mergeTaskRecords(localState?.tasks, remote.tasks, deleted, preferLocal);
+  merged.moods = {};
+  Object.keys(people).forEach((person) => {
+    merged.moods[person] = chooseTimestampedRecord(localState?.moods?.[person], remote.moods?.[person], preferLocal) || {};
   });
   merged.dailyQuestion = mergeDailyQuestion(localState?.dailyQuestion, remote.dailyQuestion);
-  merged.questionHistory = [...new Set([...(localState?.questionHistory || []), ...(remote.questionHistory || [])])].slice(0, 30);
-  if (JSON.stringify(merged.dailyQuestion) !== JSON.stringify(remote.dailyQuestion) || merged.questionHistory.length > (remote.questionHistory || []).length) sharedNeedsResync = true;
+  const questionHistorySides = preferLocal
+    ? [localState?.questionHistory || [], remote.questionHistory || []]
+    : [remote.questionHistory || [], localState?.questionHistory || []];
+  merged.questionHistory = [...new Set(questionHistorySides.flat())].slice(0, 30);
+  if (!preferLocal && (JSON.stringify(merged.dailyQuestion) !== JSON.stringify(remote.dailyQuestion) || merged.questionHistory.length > (remote.questionHistory || []).length)) sharedNeedsResync = true;
   const custom = mergeRecords(localState?.achievements?.custom, remote.achievements?.custom);
   merged.achievements = {
-    ...(localState?.achievements || {}),
-    ...(remote.achievements || {}),
-    completed: { ...(localState?.achievements?.completed || {}), ...(remote.achievements?.completed || {}) },
-    edits: { ...(localState?.achievements?.edits || {}), ...(remote.achievements?.edits || {}) },
+    ...(preferLocal ? (remote.achievements || {}) : (localState?.achievements || {})),
+    ...(preferLocal ? (localState?.achievements || {}) : (remote.achievements || {})),
+    completed: mergeTimestampedMap(localState?.achievements?.completed, remote.achievements?.completed, preferLocal),
+    edits: preferLocal
+      ? { ...(remote.achievements?.edits || {}), ...(localState?.achievements?.edits || {}) }
+      : { ...(localState?.achievements?.edits || {}), ...(remote.achievements?.edits || {}) },
     custom
   };
-  if (Object.keys(deletedRecords).length > Object.keys(normalizeDeletedRecords(remote.deletedRecords)).length || custom.length > (remote.achievements?.custom || []).filter((item) => !deleted.has(item?.id)).length) sharedNeedsResync = true;
+  if (!preferLocal && (Object.keys(deletedRecords).length > Object.keys(normalizeDeletedRecords(remote.deletedRecords)).length || custom.length > (remote.achievements?.custom || []).filter((item) => !deleted.has(item?.id)).length)) sharedNeedsResync = true;
   merged.garden = mergeGardenConcurrent(localState?.garden, remote.garden);
   return applySharedDeletionTombstones(merged);
 }
@@ -3397,15 +3555,58 @@ function mergeGardenConcurrent(localGarden, remoteGarden) {
     anniversaries: mergeRecords(local.anniversaries, remote.anniversaries)
   };
 }
+function mergePrivateConcurrent(localSpace, remoteSpace, person, preferLocal = false) {
+  const local = mergePrivateSpace(localSpace, person);
+  const remote = mergePrivateSpace(remoteSpace, person);
+  const deletedRecords = mergeDeletedRecords(local.deletedRecords, remote.deletedRecords);
+  const deleted = new Set(Object.keys(deletedRecords));
+  const mergeRecords = (localItems, remoteItems) => {
+    const records = new Map();
+    const sides = preferLocal ? [remoteItems || [], localItems || []] : [localItems || [], remoteItems || []];
+    sides.flat().forEach((item) => {
+      if (!item?.id || deleted.has(item.id)) return;
+      const previous = records.get(item.id);
+      if (!previous) records.set(item.id, item);
+      else records.set(item.id, chooseTimestampedRecord(previous, item, true));
+    });
+    return [...records.values()];
+  };
+  return {
+    ...(preferLocal ? remote : local),
+    ...(preferLocal ? local : remote),
+    deletedRecords,
+    goals: mergeRecords(local.goals, remote.goals),
+    traits: mergeRecords(local.traits, remote.traits),
+    diaries: mergeRecords(local.diaries, remote.diaries),
+    health: {
+      ...(preferLocal ? remote.health : local.health),
+      ...(preferLocal ? local.health : remote.health),
+      water: Math.max(Number(local.health.water || 0), Number(remote.health.water || 0)),
+      movement: Math.max(Number(local.health.movement || 0), Number(remote.health.movement || 0)),
+      weights: mergeRecords(local.health.weights, remote.health.weights),
+      cycles: mergeRecords(local.health.cycles, remote.health.cycles)
+    }
+  };
+}
+
 function mergePrivateSpace(savedSpace, person) {
   const base = structuredClone(defaults).private[person];
+  const deletedRecords = normalizeDeletedRecords(savedSpace?.deletedRecords);
+  const deleted = new Set(Object.keys(deletedRecords));
+  const keepRecords = (items, fallback = []) => (Array.isArray(items) ? items : fallback).filter((item) => item?.id && !deleted.has(item.id));
   return {
     ...base,
     ...(savedSpace || {}),
-    goals: Array.isArray(savedSpace?.goals) ? savedSpace.goals : [],
-    traits: Array.isArray(savedSpace?.traits) ? savedSpace.traits : base.traits,
-    diaries: Array.isArray(savedSpace?.diaries) ? savedSpace.diaries : [],
-    health: { ...base.health, ...(savedSpace?.health || {}) }
+    deletedRecords,
+    goals: keepRecords(savedSpace?.goals),
+    traits: keepRecords(savedSpace?.traits, base.traits),
+    diaries: keepRecords(savedSpace?.diaries),
+    health: {
+      ...base.health,
+      ...(savedSpace?.health || {}),
+      weights: keepRecords(savedSpace?.health?.weights),
+      cycles: keepRecords(savedSpace?.health?.cycles)
+    }
   };
 }
 function renderEmpty(root, text) { root.innerHTML = `<p class="empty">${text}</p>`; }

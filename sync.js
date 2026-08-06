@@ -6,7 +6,8 @@
     client: null, user: null, coupleId: null, role: null, channel: null,
     timer: null, voiceRefreshTimer: null, refreshPromise: null, forceRefreshQueued: false,
     pendingState: null, saveInFlight: false, lastForegroundRefresh: 0,
-    hydrated: false, applyingRemote: false
+    hydrated: false, applyingRemote: false,
+    lastSharedState: null, lastPrivateState: null
   };
 
   function emit(name, detail) {
@@ -218,6 +219,8 @@
     sync.role = null;
     sync.channel = null;
     sync.voiceRefreshTimer = null;
+    sync.lastSharedState = null;
+    sync.lastPrivateState = null;
     q("#connectedInvite").hidden = true;
   }
 
@@ -291,11 +294,13 @@
 
   async function loadRemoteState() {
     const [{ data: shared, error: sharedError }, { data: privateRow, error: privateError }] = await Promise.all([
-      sync.client.from("love_shared_state").select("data").eq("couple_id", sync.coupleId).maybeSingle(),
-      sync.client.from("love_private_state").select("data").eq("couple_id", sync.coupleId).eq("user_id", sync.user.id).maybeSingle()
+      sync.client.from("love_shared_state").select("data, updated_at").eq("couple_id", sync.coupleId).maybeSingle(),
+      sync.client.from("love_private_state").select("data, updated_at").eq("couple_id", sync.coupleId).eq("user_id", sync.user.id).maybeSingle()
     ]);
     if (sharedError || privateError) throw sharedError || privateError;
     const sharedData = shared?.data || {};
+    sync.lastSharedState = structuredClone(sharedData);
+    sync.lastPrivateState = structuredClone(privateRow?.data || {});
     const firstHydration = !sync.hydrated;
     if (firstHydration) sync.pendingState = null;
     sync.applyingRemote = true;
@@ -319,10 +324,12 @@
       .channel(`love-space-${sync.coupleId}`)
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "love_shared_state", filter: `couple_id=eq.${sync.coupleId}` }, (payload) => {
         if (!sync.hydrated) return;
+        sync.lastSharedState = structuredClone(payload.new.data || {});
         emit("love-sync-remote", { shared: payload.new.data || {}, privateData: null, role: sync.role });
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "love_private_state", filter: `user_id=eq.${sync.user.id}` }, (payload) => {
         if (!sync.hydrated) return;
+        sync.lastPrivateState = structuredClone(payload.new.data || {});
         emit("love-sync-remote", { shared: null, privateData: payload.new.data || {}, role: sync.role });
       })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "love_miss_events", filter: `couple_id=eq.${sync.coupleId}` }, () => {
@@ -471,6 +478,114 @@
     if (sync.hydrated) sync.timer = setTimeout(flushSave, 80);
   }
 
+  function comparableState(value) {
+    if (Array.isArray(value)) {
+      const items = value.map(comparableState);
+      if (items.every((item) => item && typeof item === "object" && !Array.isArray(item) && item.id)) {
+        items.sort((left, right) => String(left.id).localeCompare(String(right.id)));
+      }
+      return items;
+    }
+    if (!value || typeof value !== "object") return value;
+    return Object.keys(value).sort().reduce((result, key) => {
+      result[key] = comparableState(value[key]);
+      return result;
+    }, {});
+  }
+
+  function sameState(left, right) {
+    const leftState = left || {};
+    const rightState = right || {};
+    const leftJson = JSON.stringify(leftState);
+    const rightJson = JSON.stringify(rightState);
+    if (leftJson === rightJson) return true;
+    return JSON.stringify(comparableState(leftState)) === JSON.stringify(comparableState(rightState));
+  }
+
+  function mergeSharedForSave(localState, serverState) {
+    return window.LoveStateMerge?.shared
+      ? window.LoveStateMerge.shared(localState || {}, serverState || {})
+      : { ...(serverState || {}), ...(localState || {}) };
+  }
+
+  function mergePrivateForSave(localState, serverState) {
+    return window.LoveStateMerge?.private
+      ? window.LoveStateMerge.private(localState || {}, serverState || {}, sync.role)
+      : { ...(serverState || {}), ...(localState || {}) };
+  }
+
+  async function saveSharedWithRetry(localState) {
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const { data: current, error: readError } = await sync.client
+        .from("love_shared_state")
+        .select("data, updated_at")
+        .eq("couple_id", sync.coupleId)
+        .maybeSingle();
+      if (readError) throw readError;
+      const serverState = current?.data || {};
+      const merged = mergeSharedForSave(localState, serverState);
+      if (current && sameState(merged, serverState)) return serverState;
+      if (!current) {
+        const { data: inserted, error: insertError } = await sync.client
+          .from("love_shared_state")
+          .insert({ couple_id: sync.coupleId, data: merged, updated_by: sync.user.id })
+          .select("data, updated_at")
+          .maybeSingle();
+        if (!insertError && inserted) return inserted.data || merged;
+        if (insertError && insertError.code !== "23505") throw insertError;
+      } else {
+        const { data: updated, error: updateError } = await sync.client
+          .from("love_shared_state")
+          .update({ data: merged, updated_by: sync.user.id })
+          .eq("couple_id", sync.coupleId)
+          .eq("updated_at", current.updated_at)
+          .select("data, updated_at")
+          .maybeSingle();
+        if (updateError) throw updateError;
+        if (updated) return updated.data || merged;
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 25 * (attempt + 1)));
+    }
+    throw new Error("Shared state changed repeatedly while saving");
+  }
+
+  async function savePrivateWithRetry(localState) {
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const { data: current, error: readError } = await sync.client
+        .from("love_private_state")
+        .select("data, updated_at")
+        .eq("couple_id", sync.coupleId)
+        .eq("user_id", sync.user.id)
+        .maybeSingle();
+      if (readError) throw readError;
+      const serverState = current?.data || {};
+      const merged = mergePrivateForSave(localState, serverState);
+      if (current && sameState(merged, serverState)) return serverState;
+      if (!current) {
+        const { data: inserted, error: insertError } = await sync.client
+          .from("love_private_state")
+          .insert({ couple_id: sync.coupleId, user_id: sync.user.id, data: merged })
+          .select("data, updated_at")
+          .maybeSingle();
+        if (!insertError && inserted) return inserted.data || merged;
+        if (insertError && insertError.code !== "23505") throw insertError;
+      } else {
+        const { data: updated, error: updateError } = await sync.client
+          .from("love_private_state")
+          .update({ data: merged })
+          .eq("couple_id", sync.coupleId)
+          .eq("user_id", sync.user.id)
+          .eq("updated_at", current.updated_at)
+          .select("data, updated_at")
+          .maybeSingle();
+        if (updateError) throw updateError;
+        if (updated) return updated.data || merged;
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 25 * (attempt + 1)));
+    }
+    throw new Error("Private state changed repeatedly while saving");
+  }
+
   async function flushSave() {
     clearTimeout(sync.timer);
     sync.timer = null;
@@ -481,17 +596,27 @@
     updateUi("connected", "正在保存");
     try {
       const { shared, privateData } = splitState(snapshot);
-      const [sharedResult, privateResult] = await Promise.all([
-        sync.client.from("love_shared_state").upsert({ couple_id: sync.coupleId, data: shared, updated_by: sync.user.id }),
-        sync.client.from("love_private_state").upsert({ couple_id: sync.coupleId, user_id: sync.user.id, data: privateData })
+      const sharedDirty = !sameState(shared, sync.lastSharedState);
+      const privateDirty = !sameState(privateData, sync.lastPrivateState);
+      const [savedShared, savedPrivate] = await Promise.all([
+        sharedDirty ? saveSharedWithRetry(shared) : Promise.resolve(null),
+        privateDirty ? savePrivateWithRetry(privateData) : Promise.resolve(null)
       ]);
-      if (sharedResult.error || privateResult.error) {
-        sync.pendingState ||= snapshot;
-        updateUi("connected", "同步重试中");
-        sync.timer = setTimeout(flushSave, 1500);
-      } else {
-        updateUi("connected", "已实时同步");
+      if (savedShared) sync.lastSharedState = structuredClone(savedShared);
+      if (savedPrivate) sync.lastPrivateState = structuredClone(savedPrivate);
+      if (savedShared || savedPrivate) {
+        sync.applyingRemote = true;
+        try {
+          emit("love-sync-remote", {
+            shared: savedShared,
+            privateData: savedPrivate,
+            role: sync.role
+          });
+        } finally {
+          sync.applyingRemote = false;
+        }
       }
+      updateUi("connected", "已实时同步");
     } catch {
       sync.pendingState ||= snapshot;
       updateUi("connected", "同步重试中");
