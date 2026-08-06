@@ -18,6 +18,20 @@
     return document.querySelector(selector);
   }
 
+  function withTimeout(promise, timeoutMs, label) {
+    let timer;
+    return Promise.race([
+      Promise.resolve(promise),
+      new Promise((_, reject) => {
+        timer = window.setTimeout(() => reject(new Error(`${label}超时，请检查网络后重试`)), timeoutMs);
+      })
+    ]).finally(() => window.clearTimeout(timer));
+  }
+
+  function runQuery(query, label) {
+    return withTimeout(query, 10000, label);
+  }
+
   function readFeatureCache() {
     try { return JSON.parse(localStorage.getItem(featureCacheKey)) || {}; }
     catch { return {}; }
@@ -229,7 +243,12 @@
       sync.forceRefreshQueued ||= force;
       return sync.refreshPromise;
     }
-    sync.refreshPromise = performSessionRefresh(force).finally(() => {
+    sync.refreshPromise = performSessionRefresh(force).catch((error) => {
+      const detail = syncErrorMessage(error);
+      console.error("Love sync session refresh failed", error);
+      updateUi(sync.coupleId ? "connected" : (sync.user ? "pairing" : "signed-out"), detail ? `连接失败${detail}` : "连接失败，请稍后重试");
+      return null;
+    }).finally(() => {
       sync.refreshPromise = null;
       if (sync.forceRefreshQueued) {
         sync.forceRefreshQueued = false;
@@ -240,7 +259,7 @@
   }
 
   async function performSessionRefresh(force) {
-    const { data: { session } } = await sync.client.auth.getSession();
+    const { data: { session } } = await withTimeout(sync.client.auth.getSession(), 8000, "读取登录状态");
     if (!session) {
       resetConnection();
       updateUi("signed-out", "请登录");
@@ -250,11 +269,11 @@
     if (!force && sync.user?.id === session.user.id && sync.coupleId) return;
     sync.user = session.user;
     emitCachedFeatures(sync.user.id);
-    const { data: member, error } = await sync.client
+    const { data: member, error } = await runQuery(sync.client
       .from("love_members")
       .select("couple_id, role")
       .eq("user_id", sync.user.id)
-      .maybeSingle();
+      .maybeSingle(), "读取双人空间");
     if (error) {
       updateUi("signed-out", "配置异常");
       return;
@@ -273,19 +292,24 @@
     q("#connectedInvite").hidden = true;
     subscribe();
     emit("love-sync-status", { connected: true, authenticated: true, needsPairing: false, role: sync.role });
-    const results = await Promise.allSettled([loadInviteCode(), loadRemoteState(), refreshMissStats(), refreshVoiceMessages()]);
-    const coreFailed = results.slice(0, 2).some((result) => result.status === "rejected");
-    updateUi("connected", coreFailed ? "部分数据重试中" : "已实时同步");
+    try {
+      await loadRemoteState();
+      updateUi("connected", "已实时同步");
+    } catch (loadError) {
+      const detail = syncErrorMessage(loadError);
+      updateUi("connected", detail ? `刷新失败${detail}` : "刷新失败，请稍后重试");
+    }
+    Promise.allSettled([loadInviteCode(), refreshMissStats(), refreshVoiceMessages()]);
     clearInterval(sync.voiceRefreshTimer);
     sync.voiceRefreshTimer = setInterval(refreshVoiceMessages, 45 * 60 * 1000);
   }
 
   async function loadInviteCode() {
-    const { data: couple, error } = await sync.client
+    const { data: couple, error } = await runQuery(sync.client
       .from("love_couples")
       .select("invite_code")
       .eq("id", sync.coupleId)
-      .maybeSingle();
+      .maybeSingle(), "读取邀请码");
     if (error) throw error;
     if (!couple?.invite_code) return;
     q("#syncInviteCode").textContent = couple.invite_code;
@@ -293,21 +317,24 @@
   }
 
   async function loadRemoteState() {
-    const [{ data: shared, error: sharedError }, { data: privateRow, error: privateError }] = await Promise.all([
+    const privatePromise = runQuery(
+      sync.client.from("love_private_state").select("data, updated_at").eq("couple_id", sync.coupleId).eq("user_id", sync.user.id).maybeSingle(),
+      "读取私人记录"
+    ).then((result) => ({ result })).catch((error) => ({ error }));
+    const { data: shared, error: sharedError } = await runQuery(
       sync.client.from("love_shared_state").select("data, updated_at").eq("couple_id", sync.coupleId).maybeSingle(),
-      sync.client.from("love_private_state").select("data, updated_at").eq("couple_id", sync.coupleId).eq("user_id", sync.user.id).maybeSingle()
-    ]);
-    if (sharedError || privateError) throw sharedError || privateError;
+      "读取共同记录"
+    );
+    if (sharedError) throw sharedError;
     const sharedData = shared?.data || {};
     sync.lastSharedState = structuredClone(sharedData);
-    sync.lastPrivateState = structuredClone(privateRow?.data || {});
     const firstHydration = !sync.hydrated;
     if (firstHydration) sync.pendingState = null;
     sync.applyingRemote = true;
     try {
       emit("love-sync-remote", {
         shared: sharedData,
-        privateData: privateRow?.data || null,
+        privateData: null,
         role: sync.role,
         initializeEmptySpace: Object.keys(sharedData).length === 0
       });
@@ -315,6 +342,13 @@
       sync.applyingRemote = false;
       sync.hydrated = true;
     }
+    privatePromise.then(({ result, error: requestError }) => {
+      if (requestError) throw requestError;
+      const { data: privateRow, error: privateError } = result;
+      if (privateError) throw privateError;
+      sync.lastPrivateState = structuredClone(privateRow?.data || {});
+      emit("love-sync-remote", { shared: null, privateData: privateRow?.data || {}, role: sync.role });
+    }).catch((error) => console.warn("Private state refresh failed", error));
     if (sync.pendingState && !sync.timer) sync.timer = setTimeout(flushSave, 0);
   }
 
@@ -468,7 +502,14 @@
   }
 
   function scheduleSave(state) {
-    if (!sync.client || !sync.coupleId || !sync.user) return;
+    if (!sync.client || !sync.user) {
+      updateUi(hasConfig ? "signed-out" : "local", hasConfig ? "未登录，本次记录仅保存在当前浏览器" : "本机模式");
+      return;
+    }
+    if (!sync.coupleId) {
+      updateUi("pairing", "尚未进入双人空间，本次记录仅保存在当前浏览器");
+      return;
+    }
     if (!sync.hydrated && !sync.applyingRemote) {
       updateUi("connected", "正在加载原有数据");
       return;
@@ -514,76 +555,114 @@
       : { ...(serverState || {}), ...(localState || {}) };
   }
 
+  function syncErrorMessage(error) {
+    const code = error?.code ? ` ${error.code}` : "";
+    const detail = [error?.message, error?.details, error?.hint].filter(Boolean).join(" ");
+    return `${code}${detail ? `：${detail}` : ""}`.trim();
+  }
+
   async function saveSharedWithRetry(localState) {
     for (let attempt = 0; attempt < 6; attempt += 1) {
-      const { data: current, error: readError } = await sync.client
+      const { data: current, error: readError } = await runQuery(sync.client
         .from("love_shared_state")
         .select("data, updated_at")
         .eq("couple_id", sync.coupleId)
-        .maybeSingle();
+        .maybeSingle(), "读取最新共同记录");
       if (readError) throw readError;
       const serverState = current?.data || {};
       const merged = mergeSharedForSave(localState, serverState);
       if (current && sameState(merged, serverState)) return serverState;
       if (!current) {
-        const { data: inserted, error: insertError } = await sync.client
+        const { data: inserted, error: insertError } = await runQuery(sync.client
           .from("love_shared_state")
           .insert({ couple_id: sync.coupleId, data: merged, updated_by: sync.user.id })
           .select("data, updated_at")
-          .maybeSingle();
+          .maybeSingle(), "创建共同记录");
         if (!insertError && inserted) return inserted.data || merged;
         if (insertError && insertError.code !== "23505") throw insertError;
       } else {
-        const { data: updated, error: updateError } = await sync.client
+        const { data: updated, error: updateError } = await runQuery(sync.client
           .from("love_shared_state")
           .update({ data: merged, updated_by: sync.user.id })
           .eq("couple_id", sync.coupleId)
           .eq("updated_at", current.updated_at)
           .select("data, updated_at")
-          .maybeSingle();
+          .maybeSingle(), "保存共同记录");
         if (updateError) throw updateError;
         if (updated) return updated.data || merged;
       }
       await new Promise((resolve) => window.setTimeout(resolve, 25 * (attempt + 1)));
     }
-    throw new Error("Shared state changed repeatedly while saving");
+    const { data: latest, error: finalReadError } = await runQuery(sync.client
+      .from("love_shared_state")
+      .select("data")
+      .eq("couple_id", sync.coupleId)
+      .maybeSingle(), "最终读取共同记录");
+    if (finalReadError) throw finalReadError;
+    const merged = mergeSharedForSave(localState, latest?.data || {});
+    const { data: updated, error: finalUpdateError } = await runQuery(sync.client
+      .from("love_shared_state")
+      .update({ data: merged, updated_by: sync.user.id })
+      .eq("couple_id", sync.coupleId)
+      .select("data")
+      .maybeSingle(), "最终保存共同记录");
+    if (finalUpdateError) throw finalUpdateError;
+    if (!updated) throw new Error("数据库未允许更新共同空间，请检查登录状态和 RLS 权限");
+    return updated.data || merged;
   }
 
   async function savePrivateWithRetry(localState) {
     for (let attempt = 0; attempt < 6; attempt += 1) {
-      const { data: current, error: readError } = await sync.client
+      const { data: current, error: readError } = await runQuery(sync.client
         .from("love_private_state")
         .select("data, updated_at")
         .eq("couple_id", sync.coupleId)
         .eq("user_id", sync.user.id)
-        .maybeSingle();
+        .maybeSingle(), "读取最新私人记录");
       if (readError) throw readError;
       const serverState = current?.data || {};
       const merged = mergePrivateForSave(localState, serverState);
       if (current && sameState(merged, serverState)) return serverState;
       if (!current) {
-        const { data: inserted, error: insertError } = await sync.client
+        const { data: inserted, error: insertError } = await runQuery(sync.client
           .from("love_private_state")
           .insert({ couple_id: sync.coupleId, user_id: sync.user.id, data: merged })
           .select("data, updated_at")
-          .maybeSingle();
+          .maybeSingle(), "创建私人记录");
         if (!insertError && inserted) return inserted.data || merged;
         if (insertError && insertError.code !== "23505") throw insertError;
       } else {
-        const { data: updated, error: updateError } = await sync.client
+        const { data: updated, error: updateError } = await runQuery(sync.client
           .from("love_private_state")
           .update({ data: merged })
           .eq("couple_id", sync.coupleId)
           .eq("user_id", sync.user.id)
           .eq("updated_at", current.updated_at)
           .select("data, updated_at")
-          .maybeSingle();
+          .maybeSingle(), "保存私人记录");
         if (updateError) throw updateError;
         if (updated) return updated.data || merged;
       }
       await new Promise((resolve) => window.setTimeout(resolve, 25 * (attempt + 1)));
     }
-    throw new Error("Private state changed repeatedly while saving");
+    const { data: latest, error: finalReadError } = await runQuery(sync.client
+      .from("love_private_state")
+      .select("data")
+      .eq("couple_id", sync.coupleId)
+      .eq("user_id", sync.user.id)
+      .maybeSingle(), "最终读取私人记录");
+    if (finalReadError) throw finalReadError;
+    const merged = mergePrivateForSave(localState, latest?.data || {});
+    const { data: updated, error: finalUpdateError } = await runQuery(sync.client
+      .from("love_private_state")
+      .update({ data: merged })
+      .eq("couple_id", sync.coupleId)
+      .eq("user_id", sync.user.id)
+      .select("data")
+      .maybeSingle(), "最终保存私人记录");
+    if (finalUpdateError) throw finalUpdateError;
+    if (!updated) throw new Error("数据库未允许更新私人空间，请检查登录状态和 RLS 权限");
+    return updated.data || merged;
   }
 
   async function flushSave() {
@@ -617,9 +696,12 @@
         }
       }
       updateUi("connected", "已实时同步");
-    } catch {
+    } catch (error) {
       sync.pendingState ||= snapshot;
-      updateUi("connected", "同步重试中");
+      const detail = syncErrorMessage(error);
+      console.error("Love sync save failed", error);
+      updateUi("connected", detail ? `同步失败${detail}，正在重试` : "同步失败，正在重试");
+      emit("love-sync-error", { message: detail || "未知错误" });
       sync.timer = setTimeout(flushSave, 1500);
     } finally {
       sync.saveInFlight = false;
@@ -636,8 +718,14 @@
     if (Date.now() - sync.lastForegroundRefresh < 3000) return;
     sync.lastForegroundRefresh = Date.now();
     updateUi("connected", "正在刷新");
-    const results = await Promise.allSettled([loadRemoteState(), refreshMissStats(), refreshVoiceMessages()]);
-    updateUi("connected", results[0].status === "rejected" ? "部分数据重试中" : "已实时同步");
+    try {
+      await loadRemoteState();
+      updateUi("connected", "已实时同步");
+    } catch (error) {
+      const detail = syncErrorMessage(error);
+      updateUi("connected", detail ? `刷新失败${detail}` : "刷新失败，请稍后重试");
+    }
+    Promise.allSettled([refreshMissStats(), refreshVoiceMessages()]);
   }
 
   function bindLifecycleFlush() {
@@ -676,6 +764,8 @@
     refreshVoiceMessages,
     refreshVisibleData,
     isConnected: () => Boolean(sync.coupleId),
+    isAuthenticated: () => Boolean(sync.user),
+    isReady: () => Boolean(sync.coupleId && sync.hydrated),
     getRole: () => sync.role
   };
 }());
