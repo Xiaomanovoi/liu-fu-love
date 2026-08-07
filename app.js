@@ -2270,18 +2270,31 @@ function gardenDecorationMarkup(id) {
   return markup[id] || "";
 }
 
-function visibleHistoryItems(key, items) {
+function visibleHistoryItems(key, items, options = {}) {
   const values = Array.isArray(items) ? items : [];
   const limit = historyLimits[key] || 5;
   const button = q(`[data-history-toggle="${key}"]`);
-  const hasMore = values.length > limit;
+  const alwaysVisible = typeof options.alwaysVisible === "function"
+    ? values.filter(options.alwaysVisible)
+    : [];
+  const regularItems = alwaysVisible.length
+    ? values.filter((item) => !options.alwaysVisible(item))
+    : values;
+  const collapsedItems = alwaysVisible.length
+    ? [...alwaysVisible, ...regularItems.slice(0, Math.max(0, limit - alwaysVisible.length))]
+    : values.slice(0, limit);
+  const hasMore = values.length > collapsedItems.length;
   if (!hasMore) historyExpanded[key] = false;
   if (button) {
     button.hidden = !hasMore;
     button.setAttribute("aria-expanded", String(Boolean(historyExpanded[key])));
-    button.textContent = historyExpanded[key] ? `收起到最近 ${limit} 条` : `展开全部（共 ${values.length} 条）`;
+    button.textContent = historyExpanded[key]
+      ? (alwaysVisible.length && options.alwaysVisibleLabel
+        ? `收起（保留${options.alwaysVisibleLabel}）`
+        : `收起到最近 ${limit} 条`)
+      : `展开全部（共 ${values.length} 条）`;
   }
-  return historyExpanded[key] ? values : values.slice(0, limit);
+  return historyExpanded[key] ? values : collapsedItems;
 }
 
 function renderHistorySection(key) {
@@ -2701,8 +2714,11 @@ function renderAchievements() {
 
 function renderLoveNotes() {
   const notes = state.loveNotes || [];
-  const visibleNotes = visibleHistoryItems("notes", notes);
   const person = currentPerson();
+  const visibleNotes = visibleHistoryItems("notes", notes, {
+    alwaysVisible: (item) => item.to === person && item.unlockDate <= todayString() && !item.opened,
+    alwaysVisibleLabel: "待打开纸条"
+  });
   els.noteStats.textContent = `${notes.length} 张`;
   els.noteReceiver.value = person === "liu" ? "fu" : "liu";
   if (!notes.length) return renderEmpty(els.noteList, "折一张小纸条，留给对方在某天打开。");
