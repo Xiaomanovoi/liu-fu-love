@@ -88,7 +88,8 @@ const questionBank = {
 };
 Object.entries(window.EXTRA_LOVE_QUESTIONS || {}).forEach(([category, questions]) => {
   if (!questionBank[category] || !Array.isArray(questions)) return;
-  questionBank[category] = [...new Set([...questionBank[category], ...questions])];
+  const refreshedQuestions = [...new Set(questions.map((question) => String(question || "").trim()).filter(Boolean))];
+  if (refreshedQuestions.length) questionBank[category] = refreshedQuestions;
 });
 const questionCategoryNames = { daily: "日常", romance: "浪漫", memory: "回忆", future: "未来", deep: "深入", private: "私密", flirty: "情趣" };
 const dailyCapsules = [
@@ -2575,7 +2576,8 @@ function renderWheelHistory() {
 }
 
 function renderMessages() {
-  const messages = visibleHistoryItems("messages", state.messages);
+  const orderedMessages = sortByUpdatedDesc(state.messages || []);
+  const messages = visibleHistoryItems("messages", orderedMessages);
   if (!state.messages.length) return renderEmpty(els.messageList, "第一条留言，留给此刻最想说的话。");
   els.messageList.replaceChildren(...messages.map((item) => {
     const node = document.createElement("article");
@@ -3675,6 +3677,14 @@ function todayString() { const now = new Date(); return `${now.getFullYear()}-${
 function uid() { return window.crypto?.randomUUID?.() || `id-${Date.now()}-${Math.random().toString(16).slice(2)}`; }
 function pickRandom(items) { return items[Math.floor(Math.random() * items.length)] || ""; }
 function sortByDateDesc(items, key = "date") { return [...items].sort((a, b) => (b[key] || "").localeCompare(a[key] || "")); }
+function sortByUpdatedDesc(items) {
+  const timestamp = (item) => {
+    const value = item?.updatedAt || item?.createdAt || (item?.date ? `${item.date}T00:00:00` : "");
+    const parsed = Date.parse(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+  return [...items].sort((a, b) => timestamp(b) - timestamp(a) || String(b?.id || "").localeCompare(String(a?.id || "")));
+}
 function escapeHTML(value) { return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
 function syncFeatureError(error, feature) {
   const detail = [error?.message, error?.details, error?.hint].filter(Boolean).join(" ");
