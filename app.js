@@ -214,9 +214,18 @@ const gardenStages = [
   { name: "星光庭院", min: 3400, scene: "courtyard", copy: "夜晚也有温柔的光，庭院开始拥有自己的四季。", reward: "星幕、花架与月光拱门" },
   { name: "四季秘境", min: 4300, scene: "sanctuary", copy: "被认真照顾的爱，终于长成了一座四季都盛开的花园。", reward: "双人亭与完整四季花境" }
 ];
-const gardenColorNames = { coral: "珊瑚粉", lavender: "淡紫色", mint: "薄荷绿", gold: "晨光金" };
-const gardenColorHex = { coral: "#df7e8d", lavender: "#9d92c5", mint: "#79a58e", gold: "#d4a45f" };
-const gardenShapeNames = { round: "圆润", star: "星形", heart: "心形", soft: "轻盈" };
+const gardenColorNames = { coral: "珊瑚粉", lavender: "淡紫色", mint: "薄荷绿", gold: "晨光金", peach: "蜜桃橙", sky: "晴空蓝", berry: "莓果红", ivory: "月光白" };
+const gardenColorHex = { coral: "#df7e8d", lavender: "#9d92c5", mint: "#79a58e", gold: "#d4a45f", peach: "#eaa17e", sky: "#78a8c5", berry: "#b85f79", ivory: "#f3eee6" };
+const gardenShapeNames = { round: "圆润", star: "星形", heart: "心形", soft: "轻盈", pointed: "纤长", ruffled: "褶边", spoon: "匙形" };
+const gardenPatternNames = { solid: "柔和纯色", edge: "描边", dew: "晨露", blush: "渐染" };
+const gardenCenterNames = { sun: "暖阳", pearl: "珍珠", berry: "莓果", starlight: "星光" };
+const gardenAreaDefinitions = [
+  { id: "nursery", name: "心意苗圃", threshold: 0, copy: "种子与浇水", panel: "seeds", icon: "sprout" },
+  { id: "memory", name: "回忆角落", threshold: 900, copy: "花朵图鉴", panel: "flowers", icon: "images" },
+  { id: "glasshouse", name: "晨光花房", threshold: 2000, copy: "共同培育", panel: "together", icon: "heart-handshake" },
+  { id: "path", name: "花间小径", threshold: 2800, copy: "愿望花苞", panel: "wishes", icon: "flower-2" },
+  { id: "courtyard", name: "星光庭院", threshold: 3400, copy: "成长年鉴", panel: "growth", icon: "moon-star" }
+];
 const gardenDecorations = [
   { id: "plaque", name: "心意木牌", threshold: 80, slot: "foreground", icon: "signpost" },
   { id: "mushrooms", name: "蘑菇小灯", threshold: 120, slot: "left", icon: "lamp-desk" },
@@ -328,7 +337,9 @@ const defaults = {
     companionPlant: { name: "", species: "rose", createdAt: "", care: {} },
     flowerLetters: [],
     weeklyQuests: {},
-    anniversaries: []
+    anniversaries: [],
+    sign: { name: "向强与嘉颖的花园", motto: "异地也在一起生长", style: "rose", updatedAt: "" },
+    yearbookHighlights: {}
   },
   private: {
     liu: { goals: [], traits: [{ id: uid(), type: "优点", text: "她会认真记住我随口说过的小事" }], diaries: [], deletedRecords: {}, health: { water: 0, movement: 0, weights: [], cycles: [] } },
@@ -357,6 +368,8 @@ let voiceDraftUrl = "";
 let gardenReturnTab = "home";
 let gardenReturnScroll = 0;
 let activeGardenPanel = "seeds";
+let gardenBloomsExpanded = false;
+let activeYearbookKey = "";
 let gardenNeedsResync = false;
 let gardenSeedPhotoOptionsKey = "";
 let gardenSeedVoiceOptionsKey = "";
@@ -377,7 +390,8 @@ const els = {
   recordVoice: q("#recordVoice"), voiceRecordStatus: q("#voiceRecordStatus"), voiceRecordTimer: q("#voiceRecordTimer"), voiceDraft: q("#voiceDraft"), voicePreview: q("#voicePreview"), discardVoice: q("#discardVoice"), sendVoice: q("#sendVoice"), voiceNotice: q("#voiceNotice"), voiceList: q("#voiceList"), voiceCount: q("#voiceCount"),
   openGardenHome: q("#openGardenHome"), openGardenTogether: q("#openGardenTogether"), closeGarden: q("#closeGarden"), gardenPreviewStatus: q("#gardenPreviewStatus"), gardenShortcutStage: q("#gardenShortcutStage"), gardenShortcutWater: q("#gardenShortcutWater"), gardenWeatherChip: q("#gardenWeatherChip"), gardenStage: q("#gardenStage"), gardenPlant: q("#gardenPlant"), gardenGateSign: q("#gardenGateSign"), gardenStageName: q("#gardenStageName"), gardenPoints: q("#gardenPoints"), gardenProgressBar: q("#gardenProgressBar"), gardenNextStage: q("#gardenNextStage"), gardenWateringStatus: q("#gardenWateringStatus"), waterGarden: q("#waterGarden"), gardenNotice: q("#gardenNotice"), gardenTools: q(".garden-tools"), gardenPanels: qa("[data-garden-content]"), gardenButterfly: q("#gardenButterfly"), gardenMemoryReveal: q("#gardenMemoryReveal"), closeGardenMemory: q("#closeGardenMemory"), gardenMemoryTitle: q("#gardenMemoryTitle"), gardenMemoryText: q("#gardenMemoryText"), gardenFestivalScene: q("#gardenFestivalScene"), gardenCompanionScene: q("#gardenCompanionScene"),
   gardenSeedForm: q("#gardenSeedForm"), gardenSeedText: q("#gardenSeedText"), gardenSeedUnlockDate: q("#gardenSeedUnlockDate"), gardenSeedPhoto: q("#gardenSeedPhoto"), gardenSeedVoice: q("#gardenSeedVoice"), gardenSeedCount: q("#gardenSeedCount"), gardenSeedList: q("#gardenSeedList"), gardenWishForm: q("#gardenWishForm"), gardenWishText: q("#gardenWishText"), gardenWishDate: q("#gardenWishDate"), gardenWishCount: q("#gardenWishCount"), gardenWishList: q("#gardenWishList"),
-  gardenHybridForm: q("#gardenHybridForm"), gardenHybridColor: q("#gardenHybridColor"), gardenHybridShape: q("#gardenHybridShape"), gardenHybridStatus: q("#gardenHybridStatus"), gardenBloomCount: q("#gardenBloomCount"), gardenBloomGallery: q("#gardenBloomGallery"), gardenMemoryFlowers: q("#gardenMemoryFlowers"), gardenSnapshotCount: q("#gardenSnapshotCount"), gardenStageProgressText: q("#gardenStageProgressText"), gardenStageRemaining: q("#gardenStageRemaining"), gardenRoadmap: q("#gardenRoadmap"), gardenLedgerSummary: q("#gardenLedgerSummary"), gardenPointBreakdown: q("#gardenPointBreakdown"), gardenPointLedger: q("#gardenPointLedger"), gardenAreaProgress: q("#gardenAreaProgress"), gardenTimeline: q("#gardenTimeline"),
+  gardenHybridForm: q("#gardenHybridForm"), gardenHybridColor: q("#gardenHybridColor"), gardenHybridShape: q("#gardenHybridShape"), gardenHybridPattern: q("#gardenHybridPattern"), gardenHybridCenter: q("#gardenHybridCenter"), gardenHybridPreview: q("#gardenHybridPreview"), gardenHybridStatus: q("#gardenHybridStatus"), gardenBloomCount: q("#gardenBloomCount"), gardenBloomGallery: q("#gardenBloomGallery"), toggleGardenBlooms: q("#toggleGardenBlooms"), gardenMemoryFlowers: q("#gardenMemoryFlowers"), gardenSnapshotCount: q("#gardenSnapshotCount"), gardenStageProgressText: q("#gardenStageProgressText"), gardenStageRemaining: q("#gardenStageRemaining"), gardenRoadmap: q("#gardenRoadmap"), gardenLedgerSummary: q("#gardenLedgerSummary"), gardenPointBreakdown: q("#gardenPointBreakdown"), gardenPointLedger: q("#gardenPointLedger"), gardenAreaProgress: q("#gardenAreaProgress"), gardenTimeline: q("#gardenTimeline"),
+  gardenNameplate: q("#gardenNameplate"), gardenNameplateName: q("#gardenNameplateName"), gardenNameplateMotto: q("#gardenNameplateMotto"), gardenAreaMap: q("#gardenAreaMap"), gardenSignForm: q("#gardenSignForm"), gardenSignName: q("#gardenSignName"), gardenSignMotto: q("#gardenSignMotto"), gardenSignStyle: q("#gardenSignStyle"), gardenYearbookSeason: q("#gardenYearbookSeason"), gardenYearbookHighlight: q("#gardenYearbookHighlight"), gardenYearbookPreview: q("#gardenYearbookPreview"), gardenYearbookRange: q("#gardenYearbookRange"), gardenYearbookTitle: q("#gardenYearbookTitle"), gardenYearbookMemory: q("#gardenYearbookMemory"), gardenYearbookStats: q("#gardenYearbookStats"), saveGardenYearbook: q("#saveGardenYearbook"), gardenYearbookArchive: q("#gardenYearbookArchive"),
   gardenSceneDecoration: q("#gardenSceneDecoration"), gardenDecorationList: q("#gardenDecorationList"),
   gardenTogetherSeason: q("#gardenTogetherSeason"), gardenCompanionDisplay: q("#gardenCompanionDisplay"), gardenCompanionForm: q("#gardenCompanionForm"), gardenCompanionName: q("#gardenCompanionName"), gardenCompanionSpecies: q("#gardenCompanionSpecies"), gardenCompanionStatus: q("#gardenCompanionStatus"), gardenCompanionPlantName: q("#gardenCompanionPlantName"), gardenCompanionMeta: q("#gardenCompanionMeta"), gardenCompanionProgress: q("#gardenCompanionProgress"), gardenCompanionCareStatus: q("#gardenCompanionCareStatus"), gardenCompanionCare: q("#gardenCompanionCare"), gardenQuestWeek: q("#gardenQuestWeek"), gardenQuestProgress: q("#gardenQuestProgress"), gardenQuestList: q("#gardenQuestList"), gardenPostcardWeek: q("#gardenPostcardWeek"), gardenPostcardStage: q("#gardenPostcardStage"), gardenPostcardBotanical: q("#gardenPostcardBotanical"), gardenPostcardTitle: q("#gardenPostcardTitle"), gardenPostcardCopy: q("#gardenPostcardCopy"), gardenPostcardStats: q("#gardenPostcardStats"), saveGardenPostcard: q("#saveGardenPostcard"), gardenPostcardNotice: q("#gardenPostcardNotice"), gardenLetterForm: q("#gardenLetterForm"), gardenLetterText: q("#gardenLetterText"), gardenLetterDate: q("#gardenLetterDate"), gardenLetterCount: q("#gardenLetterCount"), gardenLetterList: q("#gardenLetterList"), gardenAnniversaryForm: q("#gardenAnniversaryForm"), gardenAnniversaryTitle: q("#gardenAnniversaryTitle"), gardenAnniversaryDate: q("#gardenAnniversaryDate"), gardenAnniversaryStyle: q("#gardenAnniversaryStyle"), gardenAnniversaryList: q("#gardenAnniversaryList"),
   gardenMemoryDialog: q("#gardenMemoryDialog"), closeGardenMemoryDialog: q("#closeGardenMemoryDialog"), gardenMemoryImage: q("#gardenMemoryImage"), gardenMemoryType: q("#gardenMemoryType"), gardenMemoryDialogTitle: q("#gardenMemoryDialogTitle"), gardenMemoryMeta: q("#gardenMemoryMeta"), gardenMemoryDialogText: q("#gardenMemoryDialogText"),
@@ -730,6 +744,15 @@ function bindGardenActions() {
     activeGardenPanel = button.dataset.gardenPanel;
     renderGardenPanels();
   });
+  els.gardenAreaMap.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-garden-area]");
+    if (!button || button.disabled) return;
+    const area = gardenAreaDefinitions.find((item) => item.id === button.dataset.gardenArea);
+    if (!area) return;
+    activeGardenPanel = area.panel;
+    renderGardenPanels();
+    els.gardenTools.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
   els.gardenDecorationList.addEventListener("click", (event) => {
     const button = event.target.closest("[data-garden-decoration]");
     if (!button || button.disabled) return;
@@ -886,7 +909,15 @@ function bindGardenActions() {
     event.preventDefault();
     const garden = gardenState();
     const person = currentPerson();
-    garden.hybrid.choices[person] = { round: garden.hybrid.round, color: els.gardenHybridColor.value, shape: els.gardenHybridShape.value, date: todayString(), updatedAt: new Date().toISOString() };
+    garden.hybrid.choices[person] = {
+      round: garden.hybrid.round,
+      color: els.gardenHybridColor.value,
+      shape: els.gardenHybridShape.value,
+      pattern: els.gardenHybridPattern.value,
+      center: els.gardenHybridCenter.value,
+      date: todayString(),
+      updatedAt: new Date().toISOString()
+    };
     const left = garden.hybrid.choices.liu;
     const right = garden.hybrid.choices.fu;
     if (left && right) {
@@ -902,6 +933,34 @@ function bindGardenActions() {
     }
     persistAndRender("培育双色花");
   });
+  [els.gardenHybridColor, els.gardenHybridShape, els.gardenHybridPattern, els.gardenHybridCenter].forEach((select) => select.addEventListener("change", renderGardenHybridPreview));
+  els.toggleGardenBlooms.addEventListener("click", () => {
+    gardenBloomsExpanded = !gardenBloomsExpanded;
+    renderGardenFlowers();
+  });
+  els.gardenSignForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const name = els.gardenSignName.value.trim();
+    if (!name) return;
+    gardenState().sign = {
+      name,
+      motto: els.gardenSignMotto.value.trim(),
+      style: els.gardenSignStyle.value,
+      updatedAt: new Date().toISOString()
+    };
+    persistAndRender("挂上专属花园门牌");
+  });
+  els.gardenYearbookSeason.addEventListener("change", () => {
+    activeYearbookKey = els.gardenYearbookSeason.value;
+    renderGardenYearbook();
+  });
+  els.gardenYearbookHighlight.addEventListener("change", () => {
+    const key = els.gardenYearbookSeason.value;
+    if (!key) return;
+    gardenState().yearbookHighlights[key] = { memoryId: els.gardenYearbookHighlight.value, updatedAt: new Date().toISOString() };
+    persistAndRender("保存四季年鉴回忆");
+  });
+  els.saveGardenYearbook.addEventListener("click", saveGardenYearbook);
   els.gardenButterfly.addEventListener("click", () => {
     const memory = gardenDailyMemory();
     els.gardenMemoryTitle.textContent = memory?.title || "今天还没有找到回忆";
@@ -1488,12 +1547,14 @@ function gardenWeather() {
 }
 
 function gardenLeafSvg(x, y, rotation, scale = 1, color = "#75a77e") {
-  return `<g transform="translate(${x} ${y}) rotate(${rotation}) scale(${scale})"><path d="M0 0C11-20 32-20 43-3C29 12 10 13 0 0Z" fill="${color}"/><path d="M5 1C17-1 28-4 38-8" fill="none" stroke="rgba(255,255,255,.38)" stroke-width="2" stroke-linecap="round"/></g>`;
+  return `<g transform="translate(${x} ${y}) rotate(${rotation}) scale(${scale})"><path d="M0 0C10-21 33-22 45-4C33 13 11 14 0 0Z" fill="${color}"/><path d="M4 1C17-1 30-5 40-10" fill="none" stroke="rgba(255,255,255,.46)" stroke-width="2" stroke-linecap="round"/><path d="M18-2L14-9M27-5L24-13" fill="none" stroke="rgba(54,101,67,.22)" stroke-width="1.4" stroke-linecap="round"/></g>`;
 }
 
 function gardenFlowerSvg(x, y, scale, color, accent = "#f4d68d", petals = 8) {
-  const petalMarkup = Array.from({ length: petals }, (_, index) => `<ellipse cx="0" cy="-17" rx="8.5" ry="17" fill="${index % 2 ? color : lightenGardenColor(color)}" transform="rotate(${index * (360 / petals)})"/>`).join("");
-  return `<g transform="translate(${x} ${y}) scale(${scale})" class="garden-svg-flower">${petalMarkup}<circle r="10" fill="${accent}"/><circle r="4" fill="#9b6e42" opacity=".5"/></g>`;
+  const light = lightenGardenColor(color);
+  const petalMarkup = Array.from({ length: petals }, (_, index) => `<ellipse cx="0" cy="-18" rx="9" ry="18" fill="${index % 2 ? color : light}" transform="rotate(${index * (360 / petals)})"/>`).join("");
+  const innerMarkup = Array.from({ length: Math.max(5, petals - 2) }, (_, index) => `<ellipse cx="0" cy="-10" rx="5.3" ry="10.5" fill="${index % 2 ? light : color}" opacity=".76" transform="rotate(${(index + .5) * (360 / Math.max(5, petals - 2))})"/>`).join("");
+  return `<g transform="translate(${x} ${y}) scale(${scale})" class="garden-svg-flower">${petalMarkup}${innerMarkup}<circle r="9" fill="${accent}"/><circle r="4" fill="#9b6e42" opacity=".55"/><g fill="#fff4c9" opacity=".85"><circle cx="0" cy="-6" r="1.2"/><circle cx="5" cy="-2" r="1.2"/><circle cx="-5" cy="-2" r="1.2"/></g></g>`;
 }
 
 function lightenGardenColor(color) {
@@ -1516,50 +1577,48 @@ function mainGardenPlantSvg(stageIndex, growthStep = 0) {
   const bonus = Math.min(10, Math.max(0, growthStep) * 3);
 
   if (stage === 0) {
-    details.push(`<ellipse cx="150" cy="232" rx="30" ry="9" fill="#6b4d3d" opacity=".7"/><path d="M150 228C138 218 139 202 150 196C161 202 162 218 150 228Z" fill="#8b5d49"/><path d="M150 207C146 203 144 199 145 194" fill="none" stroke="#f1d3c2" stroke-width="2" stroke-linecap="round"/>`);
+    details.push(`<ellipse cx="150" cy="234" rx="34" ry="10" fill="#6b4d3d" opacity=".72"/><path d="M150 229C136 217 138 199 150 192C162 199 164 217 150 229Z" fill="#8b5d49"/><path d="M150 208C145 204 143 199 145 193" fill="none" stroke="#f1d3c2" stroke-width="2.4" stroke-linecap="round"/><circle cx="143" cy="215" r="2" fill="#f5d9c8" opacity=".65"/>`);
   } else if (stage === 1) {
-    stems.push(`<path d="M150 239C151 211 148 185 151 ${165 - bonus}"/>`);
-    foliage.push(gardenLeafSvg(149, 197, 202, .78), gardenLeafSvg(151, 184, -21, .72, "#8bb894"));
-    details.push(`<path d="M151 ${165 - bonus}C147 157 145 151 146 146C154 148 158 155 151 ${165 - bonus}Z" fill="#a4c9a8"/>`);
+    stems.push(`<path d="M145 241C143 216 137 190 136 ${174 - bonus}"/><path d="M155 241C158 213 164 187 166 ${166 - bonus}"/>`);
+    foliage.push(gardenLeafSvg(137, 205, 202, .7), gardenLeafSvg(141, 191, -24, .62, "#91bd98"), gardenLeafSvg(163, 199, -18, .72, "#82b089"), gardenLeafSvg(160, 184, 204, .61, "#9bc39d"));
+    details.push(`<path d="M136 ${174 - bonus}C129 ${166 - bonus} 130 ${157 - bonus} 139 ${152 - bonus}C145 ${162 - bonus} 143 ${170 - bonus} 136 ${174 - bonus}Z" fill="#acd0ae"/><path d="M166 ${166 - bonus}C159 ${157 - bonus} 161 ${148 - bonus} 171 ${143 - bonus}C177 ${153 - bonus} 174 ${162 - bonus} 166 ${166 - bonus}Z" fill="#94c099"/><path d="M132 231Q150 222 168 231" fill="none" stroke="#b78a67" stroke-width="3" opacity=".65"/>`);
   } else {
-    const top = [0, 0, 124, 87, 65, 52, 43, 36, 29][stage] - bonus;
-    stems.push(`<path d="M145 242C142 202 129 161 108 ${top + 20}"/>`, `<path d="M155 242C158 202 171 161 192 ${top + 20}"/>`);
-    if (stage >= 4) stems.push(`<path d="M150 220C149 164 150 115 150 ${top + 25}"/>`);
-    foliage.push(
-      gardenLeafSvg(131, 190, 196, .74), gardenLeafSvg(169, 188, -15, .75, "#8db58f"),
-      gardenLeafSvg(119, 153, 210, .7, "#6f9c76"), gardenLeafSvg(181, 151, -30, .7, "#80aa82")
-    );
-    if (stage >= 3) foliage.push(gardenLeafSvg(111, 119, 205, .63), gardenLeafSvg(189, 116, -25, .63, "#97bd96"));
-    if (stage >= 5) foliage.push(gardenLeafSvg(145, 137, 205, .66), gardenLeafSvg(155, 112, -25, .66, "#70a176"));
-    if (stage === 2) details.push(`<path d="M108 ${top + 20}C101 ${top + 8} 104 ${top} 114 ${top - 5}" fill="none" stroke="#82ad83" stroke-width="4" stroke-linecap="round"/><path d="M192 ${top + 20}C199 ${top + 8} 196 ${top} 186 ${top - 5}" fill="none" stroke="#82ad83" stroke-width="4" stroke-linecap="round"/>`);
-    if (stage === 3) {
-      flowers.push(gardenBudSvg(106, top + 18, .72, leftColor), gardenBudSvg(194, top + 18, .72, rightColor));
+    const top = [0, 0, 130, 94, 70, 56, 46, 38, 30][stage] - bonus;
+    stems.push(`<path d="M143 243C139 202 128 160 105 ${top + 24}"/>`, `<path d="M157 243C162 201 174 159 195 ${top + 24}"/>`);
+    if (stage >= 3) stems.push(`<path d="M150 229C150 181 151 127 150 ${top + 27}"/>`);
+    foliage.push(gardenLeafSvg(132, 205, 198, .72), gardenLeafSvg(168, 201, -17, .74, "#8bb491"), gardenLeafSvg(121, 168, 210, .66, "#6f9c76"), gardenLeafSvg(179, 165, -31, .67, "#88b18b"), gardenLeafSvg(109, 137, 201, .58, "#82aa82"), gardenLeafSvg(191, 134, -22, .58, "#9ac19a"));
+    if (stage >= 3) foliage.push(gardenLeafSvg(145, 154, 205, .61), gardenLeafSvg(155, 128, -24, .6, "#75a37c"));
+    if (stage >= 5) foliage.push(gardenLeafSvg(96, 116, 202, .52), gardenLeafSvg(204, 113, -23, .52, "#94bb95"), gardenLeafSvg(138, 99, 208, .48), gardenLeafSvg(162, 82, -28, .46, "#83ad88"));
+    if (stage === 2) {
+      details.push(`<path d="M105 ${top + 24}C97 ${top + 12} 100 ${top + 1} 113 ${top - 4}" fill="none" stroke="#82ad83" stroke-width="5" stroke-linecap="round"/><path d="M195 ${top + 24}C203 ${top + 12} 200 ${top + 1} 187 ${top - 4}" fill="none" stroke="#82ad83" stroke-width="5" stroke-linecap="round"/>`);
+      foliage.push(gardenLeafSvg(108, top + 16, 205, .45), gardenLeafSvg(192, top + 14, -24, .45, "#a0c5a1"));
     }
+    if (stage === 3) flowers.push(gardenBudSvg(104, top + 22, .78, leftColor), gardenBudSvg(196, top + 22, .78, rightColor), gardenBudSvg(150, top + 28, .62, "#e1a85d"));
     if (stage >= 4) {
-      const bloomScale = stage === 4 ? .72 : (stage === 5 ? .9 : 1);
-      flowers.push(gardenFlowerSvg(105, top + 18, bloomScale, leftColor), gardenFlowerSvg(195, top + 18, bloomScale, rightColor));
-      flowers.push(stage === 4 ? gardenBudSvg(150, top + 26, .64, "#e1a85d") : gardenFlowerSvg(150, top + 27, stage >= 7 ? .82 : .67, "#e1a85d", "#f7dd97", 7));
+      const bloomScale = stage === 4 ? .78 : stage === 5 ? .9 : 1;
+      flowers.push(gardenFlowerSvg(103, top + 20, bloomScale, leftColor, "#f5d693", 8), gardenFlowerSvg(197, top + 20, bloomScale, rightColor, "#f3d58e", 8));
+      flowers.push(stage === 4 ? gardenBudSvg(150, top + 29, .68, "#e1a85d") : gardenFlowerSvg(150, top + 27, stage >= 7 ? .88 : .72, "#e1a85d", "#f7e2a7", 9));
     }
     if (stage >= 5) {
-      stems.push(`<path d="M119 168C98 153 82 135 77 114"/><path d="M181 168C202 153 218 135 223 114"/>`);
-      foliage.push(gardenLeafSvg(90, 137, 205, .55), gardenLeafSvg(210, 135, -25, .55, "#8cb592"));
-      flowers.push(gardenFlowerSvg(76, 108, .47, rightColor, "#f2d58a", 7), gardenFlowerSvg(224, 108, .47, leftColor, "#f2d58a", 7));
+      stems.push(`<path d="M121 178C98 158 82 135 76 111"/><path d="M179 178C202 157 218 134 224 111"/>`);
+      foliage.push(gardenLeafSvg(91, 142, 207, .55), gardenLeafSvg(209, 139, -27, .55, "#8cb592"));
+      flowers.push(gardenFlowerSvg(75, 105, .5, rightColor, "#f2d58a", 7), gardenFlowerSvg(225, 105, .5, leftColor, "#f2d58a", 7));
     }
     if (stage >= 6) {
-      details.push(`<path d="M62 229C55 177 70 121 111 83C130 65 142 56 150 49C158 56 170 65 189 83C230 121 245 177 238 229" fill="none" stroke="#5b8965" stroke-width="5" stroke-linecap="round" opacity=".72"/>`);
-      [67, 91, 116, 184, 209, 233].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 218 - (index % 2) * 8, .32, index % 2 ? leftColor : rightColor, "#f5da93", 6)));
+      details.push(`<path d="M61 230C55 178 70 122 111 82C130 64 142 54 150 47C158 54 170 64 189 82C230 122 245 178 239 230" fill="none" stroke="#5b8965" stroke-width="5.5" stroke-linecap="round" opacity=".78"/>`);
+      [64, 88, 114, 186, 212, 236].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 220 - (index % 2) * 10, .34, index % 2 ? leftColor : rightColor, "#f5da93", 7)));
     }
     if (stage >= 7) {
-      details.push(`<path d="M80 225C62 154 72 74 150 39C228 74 238 154 220 225" fill="none" stroke="#719a73" stroke-width="7" stroke-linecap="round" opacity=".65"/>`);
-      [86, 107, 129, 171, 193, 214].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 83 + Math.abs(150 - x) * .5, .34, index % 2 ? rightColor : leftColor, "#f5d98c", 7)));
+      details.push(`<path d="M79 226C62 153 72 74 150 37C228 74 238 153 221 226" fill="none" stroke="#719a73" stroke-width="7" stroke-linecap="round" opacity=".68"/>`);
+      [84, 106, 129, 171, 194, 216].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 81 + Math.abs(150 - x) * .48, .37, index % 2 ? rightColor : leftColor, "#f5d98c", 8)));
     }
     if (stage >= 8) {
-      [57, 83, 112, 150, 188, 217, 243].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 212 - (index % 3) * 18, .38 + (index % 2) * .08, [leftColor, rightColor, "#e1a85d", "#78a889"][index % 4], "#f6dc96", 8)));
-      details.push(`<g fill="#ffe9a9" opacity=".9"><circle cx="57" cy="77" r="2.5"/><circle cx="243" cy="72" r="3"/><circle cx="45" cy="132" r="2"/><circle cx="258" cy="139" r="2.3"/></g>`);
+      [54, 80, 108, 150, 192, 220, 246].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 216 - (index % 3) * 18, .41 + (index % 2) * .07, [leftColor, rightColor, "#e1a85d", "#78a889"][index % 4], "#f6dc96", 8)));
+      details.push(`<g fill="#ffe9a9" opacity=".92"><circle cx="55" cy="74" r="2.5"/><circle cx="245" cy="70" r="3"/><circle cx="44" cy="130" r="2"/><circle cx="258" cy="136" r="2.3"/><path d="M150 17l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z"/></g>`);
     }
   }
 
-  return `<svg class="garden-plant-svg" viewBox="0 0 300 310" role="presentation"><defs><linearGradient id="main-pot-${stage}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d8967f"/><stop offset="1" stop-color="#9f6559"/></linearGradient><linearGradient id="main-soil-${stage}" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#67483a"/><stop offset="1" stop-color="#4b342d"/></linearGradient><filter id="main-shadow-${stage}" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#31483a" flood-opacity=".22"/></filter></defs><g class="garden-svg-stems" fill="none" stroke="#4f805d" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">${stems.join("")}</g>${details.join("")}${foliage.join("")}${flowers.join("")}<g filter="url(#main-shadow-${stage})"><ellipse cx="150" cy="244" rx="70" ry="16" fill="url(#main-soil-${stage})"/><path d="M78 246H222L209 296Q205 305 195 305H105Q95 305 91 296Z" fill="url(#main-pot-${stage})"/><path d="M72 242Q72 232 83 232H217Q228 232 228 242V253H72Z" fill="#c98270"/><path d="M91 266Q150 278 209 266" fill="none" stroke="rgba(255,255,255,.16)" stroke-width="4" stroke-linecap="round"/><text x="150" y="288" text-anchor="middle" fill="#fff8ef" font-family="Georgia,serif" font-size="13" font-weight="700" letter-spacing="1">LIU ♥ FU</text></g></svg>`;
+  return `<svg class="garden-plant-svg" viewBox="0 0 300 310" role="presentation"><defs><linearGradient id="main-pot-${stage}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dda088"/><stop offset=".5" stop-color="#bd7869"/><stop offset="1" stop-color="#8f5a53"/></linearGradient><linearGradient id="main-soil-${stage}" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#705044"/><stop offset="1" stop-color="#48332d"/></linearGradient><filter id="main-shadow-${stage}" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#31483a" flood-opacity=".22"/></filter></defs><ellipse cx="150" cy="303" rx="78" ry="8" fill="#304a39" opacity=".17"/><g class="garden-svg-stems" fill="none" stroke="#4f805d" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">${stems.join("")}</g>${details.join("")}${foliage.join("")}${flowers.join("")}<g filter="url(#main-shadow-${stage})"><ellipse cx="150" cy="244" rx="72" ry="16" fill="url(#main-soil-${stage})"/><path d="M78 246H222L209 296Q205 305 195 305H105Q95 305 91 296Z" fill="url(#main-pot-${stage})"/><path d="M72 242Q72 232 83 232H217Q228 232 228 242V253H72Z" fill="#ca826f"/><path d="M91 266Q150 279 209 266" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="4" stroke-linecap="round"/><path d="M101 286Q150 296 199 286" fill="none" stroke="rgba(88,46,43,.12)" stroke-width="2"/><text x="150" y="288" text-anchor="middle" fill="#fff8ef" font-family="Georgia,serif" font-size="13" font-weight="700" letter-spacing="1">LIU ♥ FU</text></g></svg>`;
 }
 
 function companionBlossomSvg(species, x, y, scale = 1) {
@@ -1571,45 +1630,75 @@ function companionBlossomSvg(species, x, y, scale = 1) {
 
 function companionPlantSvg(species = "rose", level = 0, compact = false) {
   const currentLevel = Math.max(0, Math.min(6, Number(level) || 0));
-  const height = [0, 32, 58, 82, 105, 123, 142][currentLevel];
+  const height = [0, 38, 66, 92, 116, 134, 151][currentLevel];
   const top = 151 - height;
   const leaves = [];
   const stems = [];
   const flowers = [];
   if (currentLevel === 0) {
-    flowers.push(`<path d="M130 150C119 142 120 128 130 122C140 128 141 142 130 150Z" fill="#8a624d"/><path d="M130 136C126 132 125 128 127 124" fill="none" stroke="#f0d0bc" stroke-width="2"/>`);
+    flowers.push(`<ellipse cx="130" cy="153" rx="26" ry="7" fill="#6b4b3e" opacity=".7"/><path d="M130 150C117 141 118 125 130 118C142 125 143 141 130 150Z" fill="#8a624d"/><path d="M130 136C125 132 124 127 127 121" fill="none" stroke="#f0d0bc" stroke-width="2.3"/>`);
   } else {
-    stems.push(`<path d="M130 158C130 131 129 101 130 ${top}"/>`);
-    leaves.push(gardenLeafSvg(129, 132, 205, .58), gardenLeafSvg(131, 116, -25, .56, "#8fba92"));
-    if (currentLevel >= 2) leaves.push(gardenLeafSvg(128, 98, 203, .54), gardenLeafSvg(132, 82, -23, .52, "#6fa179"));
+    stems.push(`<path d="M124 159C121 132 115 101 112 ${top + 12}"/><path d="M136 159C141 131 147 99 150 ${top + 8}"/>`);
+    leaves.push(gardenLeafSvg(119, 137, 204, .54), gardenLeafSvg(138, 133, -24, .55, "#91ba96"), gardenLeafSvg(113, 117, -24, .5, "#7eaa84"), gardenLeafSvg(146, 112, 204, .5, "#9ac09b"));
+    if (currentLevel >= 2) leaves.push(gardenLeafSvg(110, 96, 205, .49), gardenLeafSvg(151, 91, -25, .5, "#70a27a"), gardenLeafSvg(126, 77, 207, .44, "#8db38e"));
     if (currentLevel >= 3) {
-      stems.push(`<path d="M129 122C111 108 101 92 96 ${top + 20}"/><path d="M131 119C149 106 159 90 164 ${top + 18}"/>`);
-      leaves.push(gardenLeafSvg(108, 108, 205, .47), gardenLeafSvg(152, 105, -25, .47, "#94bd98"));
+      stems.push(`<path d="M120 121C101 108 89 91 84 ${top + 27}"/><path d="M140 117C159 104 172 87 177 ${top + 24}"/>`);
+      leaves.push(gardenLeafSvg(99, 108, 204, .47), gardenLeafSvg(161, 104, -26, .47, "#94bd98"), gardenLeafSvg(87, 83, 207, .4), gardenLeafSvg(174, 79, -25, .4, "#82ad88"));
     }
-    if (currentLevel === 4) flowers.push(gardenBudSvg(130, top + 4, .62, species === "lavender" ? "#9886c4" : "#d87e91"));
-    if (currentLevel >= 5) flowers.push(companionBlossomSvg(species, 130, top + 4, species === "lavender" ? .72 : .75));
-    if (currentLevel >= 6) flowers.push(companionBlossomSvg(species, 95, top + 24, species === "lavender" ? .58 : .55), companionBlossomSvg(species, 165, top + 22, species === "lavender" ? .58 : .55));
+    if (currentLevel === 4) flowers.push(gardenBudSvg(112, top + 17, .58, species === "lavender" ? "#9886c4" : "#d87e91"), gardenBudSvg(151, top + 13, .62, species === "lavender" ? "#a18dcb" : "#e295a3"), gardenBudSvg(178, top + 31, .48, "#e0ad63"));
+    if (currentLevel >= 5) flowers.push(companionBlossomSvg(species, 112, top + 15, species === "lavender" ? .65 : .68), companionBlossomSvg(species, 151, top + 10, species === "lavender" ? .72 : .75), companionBlossomSvg(species, 179, top + 29, species === "lavender" ? .53 : .55));
+    if (currentLevel >= 6) {
+      stems.push(`<path d="M101 124C83 115 70 103 63 86"/><path d="M159 123C179 115 193 102 200 84"/>`);
+      flowers.push(companionBlossomSvg(species, 64, 82, species === "lavender" ? .48 : .5), companionBlossomSvg(species, 201, 80, species === "lavender" ? .48 : .5));
+      leaves.push(gardenLeafSvg(78, 105, 205, .4), gardenLeafSvg(185, 102, -26, .4, "#91b995"));
+    }
   }
-  return `<svg class="companion-plant-svg${compact ? " is-compact" : ""}" viewBox="0 0 260 210" role="presentation"><defs><linearGradient id="companion-pot-${species}-${compact ? "c" : "f"}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#d7a287"/><stop offset="1" stop-color="#a96f64"/></linearGradient></defs><g fill="none" stroke="#4f805d" stroke-width="6" stroke-linecap="round">${stems.join("")}</g>${leaves.join("")}${flowers.join("")}<ellipse cx="130" cy="160" rx="58" ry="13" fill="#5b4134"/><path d="M72 160H188L178 200Q175 207 167 207H93Q85 207 82 200Z" fill="url(#companion-pot-${species}-${compact ? "c" : "f"})"/><path d="M68 157Q68 149 77 149H183Q192 149 192 157V166H68Z" fill="#c98573"/><path d="M94 180Q130 189 166 180" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="3" stroke-linecap="round"/></svg>`;
+  return `<svg class="companion-plant-svg${compact ? " is-compact" : ""}" viewBox="0 0 260 210" role="presentation"><defs><linearGradient id="companion-pot-${species}-${compact ? "c" : "f"}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dda68e"/><stop offset=".55" stop-color="#c68372"/><stop offset="1" stop-color="#9b625c"/></linearGradient></defs><ellipse cx="130" cy="205" rx="62" ry="5" fill="#395341" opacity=".14"/><g fill="none" stroke="#4f805d" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">${stems.join("")}</g>${leaves.join("")}${flowers.join("")}<ellipse cx="130" cy="160" rx="59" ry="13" fill="#5b4134"/><path d="M72 160H188L178 200Q175 207 167 207H93Q85 207 82 200Z" fill="url(#companion-pot-${species}-${compact ? "c" : "f"})"/><path d="M68 157Q68 149 77 149H183Q192 149 192 157V166H68Z" fill="#c98573"/><path d="M91 179Q130 191 169 179M101 194Q130 200 159 194" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="3" stroke-linecap="round"/></svg>`;
 }
 
 function hybridPetalPath(shape) {
   if (shape === "heart") return "M50 49C42 39 31 31 33 19C35 8 47 8 50 18C53 8 65 8 67 19C69 31 58 39 50 49Z";
   if (shape === "star") return "M50 49L39 31L44 8L50 20L56 8L61 31Z";
   if (shape === "soft") return "M50 49C35 41 35 19 50 7C65 19 65 41 50 49Z";
+  if (shape === "pointed") return "M50 49C41 39 42 20 50 3C58 20 59 39 50 49Z";
+  if (shape === "ruffled") return "M50 49C39 44 35 34 39 27C33 17 41 7 50 11C59 7 67 17 61 27C65 34 61 44 50 49Z";
+  if (shape === "spoon") return "M50 49C46 37 35 32 37 19C39 7 48 5 50 15C52 5 61 7 63 19C65 32 54 37 50 49Z";
   return "M50 49C37 43 36 18 50 7C64 18 63 43 50 49Z";
 }
 
 function hybridFlowerSvg(bloom) {
-  const left = gardenColorHex[bloom.left.color] || gardenColorHex.coral;
-  const right = gardenColorHex[bloom.right.color] || gardenColorHex.lavender;
+  const leftChoice = { color: "coral", shape: "round", pattern: "solid", center: "sun", ...(bloom.left || {}) };
+  const rightChoice = { color: "lavender", shape: "round", pattern: "solid", center: "sun", ...(bloom.right || {}) };
+  const left = gardenColorHex[leftChoice.color] || gardenColorHex.coral;
+  const right = gardenColorHex[rightChoice.color] || gardenColorHex.lavender;
   const offset = (Number(bloom.round || 1) * 7) % 45;
   const petals = Array.from({ length: 8 }, (_, index) => {
-    const side = index % 2 ? bloom.right : bloom.left;
+    const side = index % 2 ? rightChoice : leftChoice;
     const color = index % 2 ? right : left;
-    return `<path d="${hybridPetalPath(side.shape)}" fill="${color}" transform="rotate(${offset + index * 45} 50 50)"/>`;
+    const pattern = side.pattern || "solid";
+    const stroke = pattern === "edge" ? "rgba(92,69,78,.42)" : "rgba(255,255,255,.18)";
+    const opacity = pattern === "blush" ? .82 : 1;
+    const accent = pattern === "dew" ? `<circle cx="46" cy="20" r="2.2" fill="#fff" opacity=".8"/><circle cx="53" cy="28" r="1.3" fill="#fff" opacity=".62"/>` : (pattern === "blush" ? `<path d="M50 46C47 35 44 24 50 12C56 24 53 35 50 46Z" fill="#fff" opacity=".24"/>` : "");
+    return `<g transform="rotate(${offset + index * 45} 50 50)"><path d="${hybridPetalPath(side.shape)}" fill="${color}" fill-opacity="${opacity}" stroke="${stroke}" stroke-width="${pattern === "edge" ? 1.7 : .7}"/>${accent}</g>`;
   }).join("");
-  return `<svg class="hybrid-flower-svg" viewBox="0 0 100 112" role="presentation"><g>${petals}<circle cx="50" cy="50" r="13" fill="#f3d58a"/><circle cx="50" cy="50" r="6" fill="#9d744b" opacity=".58"/></g><path d="M50 63C50 79 49 91 47 108" fill="none" stroke="#5b8967" stroke-width="5" stroke-linecap="round"/><path d="M49 82C36 70 24 74 19 84C32 93 43 91 49 82Z" fill="#7daa85"/><path d="M48 94C62 83 74 87 78 98C65 105 54 103 48 94Z" fill="#94bb99"/></svg>`;
+  const centers = [leftChoice.center, rightChoice.center];
+  const center = centers.includes("berry") ? "#a75a70" : centers.includes("starlight") ? "#756b9d" : centers.includes("pearl") ? "#eee5dc" : "#f2ce79";
+  const centerMark = centers.includes("starlight")
+    ? `<path d="M50 39l3.3 7.2 7.7 3.1-7.7 3.2-3.3 7.5-3.3-7.5-7.7-3.2 7.7-3.1Z" fill="#fff1be"/>`
+    : `<g fill="#fff6d0" opacity=".84"><circle cx="50" cy="43" r="1.5"/><circle cx="56" cy="48" r="1.5"/><circle cx="53" cy="55" r="1.5"/><circle cx="45" cy="54" r="1.5"/><circle cx="43" cy="47" r="1.5"/></g>`;
+  return `<svg class="hybrid-flower-svg" viewBox="0 0 100 112" role="presentation"><ellipse cx="49" cy="108" rx="27" ry="4" fill="#3c5b47" opacity=".13"/><g>${petals}<circle cx="50" cy="50" r="13.5" fill="${center}"/><circle cx="50" cy="50" r="10" fill="none" stroke="rgba(255,255,255,.32)" stroke-width="1.5"/>${centerMark}</g><path d="M50 63C50 79 49 92 47 108" fill="none" stroke="#5b8967" stroke-width="5" stroke-linecap="round"/><path d="M49 82C36 70 24 74 19 84C32 93 43 91 49 82Z" fill="#7daa85"/><path d="M48 94C62 83 74 87 78 98C65 105 54 103 48 94Z" fill="#94bb99"/><path d="M23 83Q35 82 47 83M52 94Q64 94 75 98" fill="none" stroke="rgba(255,255,255,.34)" stroke-width="1.3"/></svg>`;
+}
+
+function renderGardenHybridPreview() {
+  if (!els.gardenHybridPreview) return;
+  const choice = {
+    color: els.gardenHybridColor.value,
+    shape: els.gardenHybridShape.value,
+    pattern: els.gardenHybridPattern.value,
+    center: els.gardenHybridCenter.value
+  };
+  const partner = gardenState().hybrid.choices?.[otherPerson(currentPerson())] || { color: "lavender", shape: "soft", pattern: "blush", center: "pearl" };
+  els.gardenHybridPreview.innerHTML = `<span>${hybridFlowerSvg({ round: gardenState().hybrid.round, left: currentPerson() === "liu" ? choice : partner, right: currentPerson() === "liu" ? partner : choice })}</span><div><small>你的花瓣预览</small><strong>${gardenColorNames[choice.color]} · ${gardenShapeNames[choice.shape]} · ${gardenPatternNames[choice.pattern]}</strong></div>`;
 }
 
 function setGardenArtwork(element, key, markup) {
@@ -1662,6 +1751,14 @@ function renderGarden() {
     window.lucide?.createIcons();
   }
   els.gardenGateSign.querySelector("span").textContent = gateMode === "open" ? "晨光花房已经打开" : `秘密花房 · 还差 ${Math.max(0, 2000 - points)} 心意值`;
+  const sign = garden.sign || defaults.garden.sign;
+  els.gardenNameplate.dataset.style = sign.style || "rose";
+  els.gardenNameplateName.textContent = sign.name || defaults.garden.sign.name;
+  els.gardenNameplateMotto.textContent = sign.motto || defaults.garden.sign.motto;
+  if (document.activeElement !== els.gardenSignName) els.gardenSignName.value = sign.name || defaults.garden.sign.name;
+  if (document.activeElement !== els.gardenSignMotto) els.gardenSignMotto.value = sign.motto || "";
+  if (document.activeElement !== els.gardenSignStyle) els.gardenSignStyle.value = sign.style || "rose";
+  renderGardenAreaMap(points);
   els.gardenWateringStatus.innerHTML = Object.keys(people).map((person) => `<span class="${watered.has(person) ? "is-done" : ""}"><i aria-hidden="true">${watered.has(person) ? "✓" : "○"}</i>${people[person].short}</span>`).join("");
   els.waterGarden.disabled = watered.has(current);
   els.waterGarden.querySelector("span").textContent = watered.has(current) ? "今天已经浇水" : "浇一点心意";
@@ -1678,8 +1775,26 @@ function renderGarden() {
   renderGardenPanels();
 }
 
+function renderGardenAreaMap(points) {
+  els.gardenAreaMap.replaceChildren(...gardenAreaDefinitions.map((area) => {
+    const unlocked = points >= area.threshold;
+    const node = document.createElement("button");
+    node.type = "button";
+    node.dataset.gardenArea = area.id;
+    node.disabled = !unlocked;
+    node.className = `${unlocked ? "is-unlocked" : "is-locked"}${activeGardenPanel === area.panel ? " is-current" : ""}`;
+    node.innerHTML = `<span><i data-lucide="${unlocked ? area.icon : "lock-keyhole"}" aria-hidden="true"></i></span><strong>${area.name}</strong><small>${unlocked ? area.copy : `还差 ${area.threshold - points}`}</small>`;
+    return node;
+  }));
+  window.lucide?.createIcons();
+}
+
 function renderGardenPanels() {
   els.gardenTools.querySelectorAll("[data-garden-panel]").forEach((button) => button.classList.toggle("is-active", button.dataset.gardenPanel === activeGardenPanel));
+  els.gardenAreaMap.querySelectorAll("[data-garden-area]").forEach((button) => {
+    const area = gardenAreaDefinitions.find((item) => item.id === button.dataset.gardenArea);
+    button.classList.toggle("is-current", area?.panel === activeGardenPanel);
+  });
   els.gardenPanels.forEach((panel) => {
     const active = panel.dataset.gardenContent === activeGardenPanel;
     panel.hidden = !active;
@@ -1761,7 +1876,7 @@ function renderGardenTogether() {
   }));
   renderWeeklyGardenPostcard(week, completed);
 
-  const letters = garden.flowerLetters || [];
+  const letters = sortGardenByBloomDate(garden.flowerLetters || []);
   const openedCount = letters.filter((item) => item.unlockDate <= todayString()).length;
   els.gardenLetterCount.textContent = `${openedCount}/${letters.length} 盛开`;
   if (!letters.length) {
@@ -1993,7 +2108,7 @@ function saveWeeklyGardenPostcard() {
 }
 
 function renderGardenSeeds() {
-  const seeds = gardenState().seeds || [];
+  const seeds = sortGardenByBloomDate(gardenState().seeds || []);
   els.gardenSeedCount.textContent = `${seeds.length} 颗`;
   if (!seeds.length) return renderEmpty(els.gardenSeedList, "第一颗种子，可以藏下一句话或一段回忆。");
   els.gardenSeedList.replaceChildren(...seeds.map((seed) => {
@@ -2016,6 +2131,14 @@ function renderGardenSeeds() {
     gardenState().seeds = gardenState().seeds.filter((seed) => seed.id !== button.dataset.deleteGardenSeed);
     persistAndRender("整理心意种子");
   }));
+}
+
+function sortGardenByBloomDate(items) {
+  return [...items].sort((a, b) => {
+    const dateOrder = String(b.unlockDate || b.date || "").localeCompare(String(a.unlockDate || a.date || ""));
+    if (dateOrder) return dateOrder;
+    return String(b.createdAt || b.updatedAt || "").localeCompare(String(a.createdAt || a.updatedAt || ""));
+  });
 }
 
 function renderGardenWishes() {
@@ -2065,14 +2188,20 @@ function renderGardenFlowers() {
   els.gardenHybridStatus.textContent = own
     ? `你的${gardenColorNames[own.color]}花瓣已经放好，${partner ? "正在生成新花" : `等待${people[other].short}选择`}`
     : `${partner ? `${people[other].short}已经选好花瓣，轮到你了` : "两个人各选一次，才会生成一朵双色花"}`;
-  els.gardenBloomCount.textContent = `${garden.hybrid.blooms.length} 朵`;
-  if (!garden.hybrid.blooms.length) {
+  renderGardenHybridPreview();
+  const blooms = [...garden.hybrid.blooms].sort((a, b) => String(b.updatedAt || b.date || "").localeCompare(String(a.updatedAt || a.date || "")));
+  els.gardenBloomCount.textContent = `${blooms.length} 朵`;
+  els.toggleGardenBlooms.hidden = blooms.length <= 5;
+  els.toggleGardenBlooms.textContent = gardenBloomsExpanded ? "收起双色花" : `展开其余 ${Math.max(0, blooms.length - 5)} 朵`;
+  if (!blooms.length) {
     renderEmpty(els.gardenBloomGallery, "第一朵双色花，等待两个人各自选一片花瓣。");
   } else {
-    els.gardenBloomGallery.replaceChildren(...garden.hybrid.blooms.slice(0, 12).map((bloom) => {
+    els.gardenBloomGallery.replaceChildren(...blooms.slice(0, gardenBloomsExpanded ? blooms.length : 5).map((bloom) => {
       const node = document.createElement("article");
       node.className = "hybrid-bloom";
-      node.innerHTML = `<span class="hybrid-flower" aria-hidden="true">${hybridFlowerSvg(bloom)}</span><div><strong>${escapeHTML(bloom.name)}</strong><small>${gardenShapeNames[bloom.left.shape]} × ${gardenShapeNames[bloom.right.shape]} · ${formatDate(parseDate(bloom.date))}</small></div>`;
+      const left = { shape: "round", pattern: "solid", center: "sun", ...(bloom.left || {}) };
+      const right = { shape: "round", pattern: "solid", center: "sun", ...(bloom.right || {}) };
+      node.innerHTML = `<span class="hybrid-flower" aria-hidden="true">${hybridFlowerSvg(bloom)}</span><div><strong>${escapeHTML(bloom.name)}</strong><small>${gardenShapeNames[left.shape] || "圆润"} × ${gardenShapeNames[right.shape] || "圆润"} · ${gardenPatternNames[left.pattern] || "纯色"}/${gardenPatternNames[right.pattern] || "纯色"}</small><time>${formatDate(parseDate(bloom.date))} · ${gardenCenterNames[left.center] || "暖阳"}/${gardenCenterNames[right.center] || "暖阳"}花心</time></div>`;
       return node;
     }));
   }
@@ -2129,6 +2258,160 @@ function gardenDailyMemory() {
   return memories[seed % memories.length];
 }
 
+function gardenSeasonKey(date = new Date()) {
+  const month = date.getMonth();
+  if (month >= 2 && month <= 4) return `${date.getFullYear()}-spring`;
+  if (month >= 5 && month <= 7) return `${date.getFullYear()}-summer`;
+  if (month >= 8 && month <= 10) return `${date.getFullYear()}-autumn`;
+  return `${month === 11 ? date.getFullYear() : date.getFullYear() - 1}-winter`;
+}
+
+function gardenSeasonDescriptor(key) {
+  const [yearText, season] = String(key || "").split("-");
+  const year = Number(yearText) || new Date().getFullYear();
+  const names = { spring: "春季", summer: "夏季", autumn: "秋季", winter: "冬季" };
+  const starts = { spring: [year, 2, 1], summer: [year, 5, 1], autumn: [year, 8, 1], winter: [year, 11, 1] };
+  const ends = { spring: [year, 5, 0], summer: [year, 8, 0], autumn: [year, 11, 0], winter: [year + 1, 2, 0] };
+  const start = localDateString(new Date(...(starts[season] || starts.spring)));
+  const end = localDateString(new Date(...(ends[season] || ends.spring)));
+  return { key: `${year}-${season || "spring"}`, year, season: season || "spring", name: names[season] || "春季", label: `${year} · ${names[season] || "春季"}`, start, end };
+}
+
+function gardenSeasonKeys() {
+  const dated = [state.startDate, ...gardenMemories().map((item) => item.date), ...(state.studyLogs || []).map((item) => item.date), ...effectiveGardenPointEvents().map((item) => item.date)].filter(Boolean).sort();
+  const earliest = dated[0] || todayString();
+  const current = gardenSeasonDescriptor(gardenSeasonKey());
+  const cursor = parseDate(current.start);
+  const result = [];
+  for (let index = 0; index < 20; index += 1) {
+    const key = gardenSeasonKey(cursor);
+    const descriptor = gardenSeasonDescriptor(key);
+    result.push(descriptor);
+    if (result.length >= 4 && descriptor.start <= earliest) break;
+    cursor.setMonth(cursor.getMonth() - 3);
+  }
+  return result;
+}
+
+function gardenYearbookData(key) {
+  const descriptor = gardenSeasonDescriptor(key);
+  const inSeason = (date) => Boolean(date && date >= descriptor.start && date <= descriptor.end);
+  const memories = gardenMemories().filter((item) => inSeason(item.date));
+  const events = effectiveGardenPointEvents().filter((item) => inSeason(item.date));
+  const studies = (state.studyLogs || []).filter((item) => inSeason(item.date));
+  const blooms = (gardenState().hybrid.blooms || []).filter((item) => inSeason(item.date));
+  const wateredDays = Object.keys(gardenState().waterings || {}).filter(inSeason).length;
+  const selectedId = gardenState().yearbookHighlights?.[descriptor.key]?.memoryId || "";
+  const highlight = memories.find((item) => item.id === selectedId) || memories[0] || null;
+  return {
+    ...descriptor,
+    memories,
+    events,
+    studies,
+    blooms,
+    wateredDays,
+    highlight,
+    points: events.reduce((total, item) => total + Number(item.points || 0), 0)
+  };
+}
+
+function renderGardenYearbook() {
+  const seasons = gardenSeasonKeys();
+  if (!activeYearbookKey || !seasons.some((item) => item.key === activeYearbookKey)) activeYearbookKey = seasons[0]?.key || gardenSeasonKey();
+  els.gardenYearbookSeason.innerHTML = seasons.map((item) => `<option value="${item.key}">${item.label}</option>`).join("");
+  els.gardenYearbookSeason.value = activeYearbookKey;
+  const data = gardenYearbookData(activeYearbookKey);
+  const selectedId = gardenState().yearbookHighlights?.[data.key]?.memoryId || "";
+  els.gardenYearbookHighlight.innerHTML = `<option value="">自动选择</option>${data.memories.map((item) => `<option value="${item.id}">${escapeHTML(formatDate(parseDate(item.date)))} · ${escapeHTML(shortGardenLabel(item.title, 22))}</option>`).join("")}`;
+  els.gardenYearbookHighlight.value = data.memories.some((item) => item.id === selectedId) ? selectedId : "";
+  els.gardenYearbookPreview.dataset.season = data.season;
+  els.gardenYearbookRange.textContent = `${formatDate(parseDate(data.start))} - ${formatDate(parseDate(data.end))}`;
+  els.gardenYearbookTitle.textContent = `${data.label}，我们一起留下的花园`;
+  els.gardenYearbookMemory.textContent = data.highlight ? `${data.highlight.title}：${data.highlight.copy || data.highlight.title}` : "这一季还没有共同回忆，下一条记录会成为这里的第一朵花。";
+  els.gardenYearbookStats.innerHTML = `<span><b>${data.points}</b>心意值</span><span><b>${data.memories.length}</b>共同回忆</span><span><b>${data.studies.length}</b>学习打卡</span><span><b>${data.wateredDays}</b>浇水日</span>`;
+  els.gardenYearbookArchive.replaceChildren(...seasons.map((season) => {
+    const item = gardenYearbookData(season.key);
+    const node = document.createElement("button");
+    node.type = "button";
+    node.dataset.yearbookKey = item.key;
+    node.className = item.key === data.key ? "is-active" : "";
+    node.innerHTML = `<span data-season="${item.season}">${item.name.slice(0, 1)}</span><div><strong>${item.label}</strong><small>${item.memories.length} 段回忆 · ${item.points} 心意值</small></div><i aria-hidden="true">›</i>`;
+    node.addEventListener("click", () => {
+      activeYearbookKey = item.key;
+      renderGardenYearbook();
+      els.gardenYearbookPreview.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    return node;
+  }));
+}
+
+function saveGardenYearbook() {
+  const data = gardenYearbookData(els.gardenYearbookSeason.value || activeYearbookKey || gardenSeasonKey());
+  const palette = {
+    spring: ["#edf5ed", "#d87f91", "#5d8067"], summer: ["#e7f2e9", "#5f9272", "#e1ac57"],
+    autumn: ["#f5eee2", "#b57756", "#7c7651"], winter: ["#edf1f3", "#8093a7", "#a798bd"]
+  }[data.season] || ["#edf5ed", "#d87f91", "#5d8067"];
+  const canvas = document.createElement("canvas");
+  canvas.width = 1080;
+  canvas.height = 1440;
+  const context = canvas.getContext("2d");
+  const background = context.createLinearGradient(0, 0, 1080, 1440);
+  background.addColorStop(0, palette[0]);
+  background.addColorStop(1, "#fffaf6");
+  context.fillStyle = background;
+  context.fillRect(0, 0, 1080, 1440);
+  context.fillStyle = palette[2];
+  context.beginPath();
+  context.arc(860, 220, 125, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = "rgba(255,255,255,.72)";
+  context.beginPath();
+  context.arc(820, 180, 125, 0, Math.PI * 2);
+  context.fill();
+  context.fillStyle = palette[1];
+  context.font = "700 34px Georgia,serif";
+  context.fillText("LIU & FU · FOUR SEASONS", 90, 115);
+  context.fillStyle = "#35312f";
+  context.font = '700 66px "Microsoft YaHei",sans-serif';
+  context.fillText(`${data.label}花园年鉴`, 90, 225);
+  context.fillStyle = "#77716e";
+  context.font = '400 30px "Microsoft YaHei",sans-serif';
+  context.fillText(`${formatDate(parseDate(data.start))} - ${formatDate(parseDate(data.end))}`, 90, 285);
+  context.fillStyle = "rgba(255,255,255,.76)";
+  context.fillRect(70, 355, 940, 620);
+  context.fillStyle = palette[2];
+  context.font = '700 34px "Microsoft YaHei",sans-serif';
+  context.fillText("这一季的代表回忆", 120, 440);
+  context.fillStyle = "#34312f";
+  context.font = '700 46px "Microsoft YaHei",sans-serif';
+  canvasWrappedText(context, data.highlight?.title || "我们的四季正在生长", 120, 530, 820, 62, 2);
+  context.fillStyle = "#706b68";
+  context.font = '400 31px "Microsoft YaHei",sans-serif';
+  canvasWrappedText(context, data.highlight?.copy || "这一季的第一段共同回忆，还在等待你们写下。", 120, 680, 820, 49, 4);
+  const stats = [[data.points, "心意值"], [data.memories.length, "共同回忆"], [data.studies.length, "学习打卡"], [data.wateredDays, "浇水日"]];
+  stats.forEach(([value, label], index) => {
+    const x = 95 + index * 235;
+    context.fillStyle = palette[0];
+    context.fillRect(x, 1030, 205, 150);
+    context.fillStyle = palette[2];
+    context.font = "700 46px Georgia,serif";
+    context.fillText(String(value), x + 25, 1095);
+    context.fillStyle = "#6d6865";
+    context.font = '400 27px "Microsoft YaHei",sans-serif';
+    context.fillText(label, x + 25, 1145);
+  });
+  context.fillStyle = palette[1];
+  context.font = "700 26px Georgia,serif";
+  context.fillText("刘向强 ♥ 付嘉颖 · 一起生长的第一个又一个四季", 90, 1325);
+  const link = document.createElement("a");
+  link.href = canvas.toDataURL("image/png", .94);
+  link.download = `刘向强-付嘉颖-花园年鉴-${data.key}.png`;
+  link.target = "_blank";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 function renderGardenGrowth() {
   const garden = gardenState();
   const points = Math.max(Number(garden.points || 0), calculateGardenPoints());
@@ -2136,6 +2419,7 @@ function renderGardenGrowth() {
   const nextStage = gardenStages[stageIndex + 1];
   const events = effectiveGardenPointEvents();
   renderGardenDecorations(points);
+  renderGardenYearbook();
   els.gardenSnapshotCount.textContent = `${garden.snapshots.length} 次`;
   els.gardenStageProgressText.textContent = nextStage ? `${points} / ${nextStage.min}` : `${points} · 已抵达最高阶段`;
   els.gardenStageRemaining.textContent = nextStage ? `距离「${nextStage.name}」还差 ${Math.max(0, nextStage.min - points)} 心意值` : "四季秘境会继续收藏此后的每一份心意";
@@ -2176,14 +2460,7 @@ function renderGardenGrowth() {
     }));
   }
 
-  const areas = [
-    { name: "主花园", threshold: 0, copy: "浇水、种子与双生花" },
-    { name: "回忆角落", threshold: 900, copy: "记忆花朵与蝴蝶来访" },
-    { name: "晨光花房", threshold: 2000, copy: "心形藤蔓与花房入口" },
-    { name: "花间小径", threshold: 2800, copy: "小池与花路延伸" },
-    { name: "星光庭院", threshold: 3400, copy: "夜色中的庭院风景" }
-  ];
-  els.gardenAreaProgress.replaceChildren(...areas.map((area) => {
+  els.gardenAreaProgress.replaceChildren(...gardenAreaDefinitions.map((area) => {
     const unlocked = points >= area.threshold;
     const node = document.createElement("article");
     node.className = `garden-area${unlocked ? " is-unlocked" : ""}`;
@@ -3397,7 +3674,9 @@ function mergeGarden(savedGarden) {
     },
     flowerLetters: Array.isArray(savedGarden?.flowerLetters) ? savedGarden.flowerLetters : [],
     weeklyQuests: savedGarden?.weeklyQuests && typeof savedGarden.weeklyQuests === "object" ? savedGarden.weeklyQuests : {},
-    anniversaries: Array.isArray(savedGarden?.anniversaries) ? savedGarden.anniversaries : []
+    anniversaries: Array.isArray(savedGarden?.anniversaries) ? savedGarden.anniversaries : [],
+    sign: { ...base.sign, ...(savedGarden?.sign || {}) },
+    yearbookHighlights: savedGarden?.yearbookHighlights && typeof savedGarden.yearbookHighlights === "object" ? savedGarden.yearbookHighlights : {}
   };
 }
 
@@ -3549,6 +3828,15 @@ function mergeGardenConcurrent(localGarden, remoteGarden) {
     });
     weeklyQuests[weekKey] = { ...(left || {}), ...(right || {}), weekKey, items: [...items.values()] };
   });
+  const localSign = local.sign || defaults.garden.sign;
+  const remoteSign = remote.sign || defaults.garden.sign;
+  const sign = (remoteSign.updatedAt || "") >= (localSign.updatedAt || "") ? remoteSign : localSign;
+  const yearbookHighlights = {};
+  [...new Set([...Object.keys(local.yearbookHighlights || {}), ...Object.keys(remote.yearbookHighlights || {})])].forEach((key) => {
+    const left = local.yearbookHighlights?.[key];
+    const right = remote.yearbookHighlights?.[key];
+    yearbookHighlights[key] = !left ? right : (!right ? left : ((right.updatedAt || "") >= (left.updatedAt || "") ? right : left));
+  });
   if (choices.liu && choices.fu) {
     const bloomId = `garden-bloom-${round}`;
     if (!blooms.some((bloom) => bloom.id === bloomId)) {
@@ -3591,7 +3879,9 @@ function mergeGardenConcurrent(localGarden, remoteGarden) {
     companionPlant: { ...localPlant, ...remotePlant, ...plantIdentity, care: plantCare },
     flowerLetters: mergeRecords(local.flowerLetters, remote.flowerLetters),
     weeklyQuests,
-    anniversaries: mergeRecords(local.anniversaries, remote.anniversaries)
+    anniversaries: mergeRecords(local.anniversaries, remote.anniversaries),
+    sign: { ...defaults.garden.sign, ...sign },
+    yearbookHighlights
   };
 }
 function mergePrivateConcurrent(localSpace, remoteSpace, person, preferLocal = false) {

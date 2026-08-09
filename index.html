@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#e88488">
     <title>刘向强 × 付嘉颖</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=20260809-garden-redesign">
   </head>
   <body>
     <main class="app-shell">
@@ -453,6 +453,10 @@
             <small>今日回忆</small>
           </button>
           <div class="garden-gate-sign" id="gardenGateSign"><i data-lucide="lock-keyhole" aria-hidden="true"></i><span>花房尚未解锁</span></div>
+          <div class="garden-nameplate" id="gardenNameplate" data-style="rose">
+            <strong id="gardenNameplateName">向强与嘉颖的花园</strong>
+            <small id="gardenNameplateMotto">异地也在一起生长</small>
+          </div>
           <div class="garden-plant" id="gardenPlant" aria-hidden="true"></div>
           <div class="garden-companion-scene" id="gardenCompanionScene" aria-hidden="true"></div>
           <div class="garden-memory-reveal" id="gardenMemoryReveal" hidden>
@@ -477,6 +481,8 @@
           </button>
           <p class="garden-notice" id="gardenNotice" aria-live="polite"></p>
         </section>
+
+        <nav class="garden-area-map" id="gardenAreaMap" aria-label="花园区域地图"></nav>
 
         <nav class="garden-tools" aria-label="秘密花园功能">
           <button class="is-active" data-garden-panel="seeds" type="button"><i data-lucide="sprout" aria-hidden="true"></i><span>心意种子</span></button>
@@ -558,7 +564,7 @@
 
             <article class="garden-feature garden-letter-card">
               <div class="garden-feature-heading">
-                <span class="garden-feature-icon letter"><i data-lucide="mail-heart" aria-hidden="true"></i></span>
+                <span class="garden-feature-icon letter"><i data-lucide="mail-open" aria-hidden="true"></i></span>
                 <div><small>OPEN WHEN IT BLOOMS</small><h4>花期信箱</h4><p>写给未来的彼此，到约定那天才会盛开。</p></div>
                 <b id="gardenLetterCount">0 封</b>
               </div>
@@ -607,19 +613,27 @@
               <div class="form-grid">
                 <label>我的花色
                   <select id="gardenHybridColor">
-                    <option value="coral">珊瑚粉</option><option value="lavender">淡紫色</option><option value="mint">薄荷绿</option><option value="gold">晨光金</option>
+                    <option value="coral">珊瑚粉</option><option value="lavender">淡紫色</option><option value="mint">薄荷绿</option><option value="gold">晨光金</option><option value="peach">蜜桃橙</option><option value="sky">晴空蓝</option><option value="berry">莓果红</option><option value="ivory">月光白</option>
                   </select>
                 </label>
                 <label>我的花瓣
                   <select id="gardenHybridShape">
-                    <option value="round">圆润花瓣</option><option value="star">星形花瓣</option><option value="heart">心形花瓣</option><option value="soft">轻盈花瓣</option>
+                    <option value="round">圆润花瓣</option><option value="star">星形花瓣</option><option value="heart">心形花瓣</option><option value="soft">轻盈花瓣</option><option value="pointed">纤长花瓣</option><option value="ruffled">褶边花瓣</option><option value="spoon">匙形花瓣</option>
                   </select>
                 </label>
+                <label>我的花纹
+                  <select id="gardenHybridPattern"><option value="solid">柔和纯色</option><option value="edge">描边花瓣</option><option value="dew">晨露光点</option><option value="blush">渐染花瓣</option></select>
+                </label>
+                <label>我的花心
+                  <select id="gardenHybridCenter"><option value="sun">暖阳花心</option><option value="pearl">珍珠花心</option><option value="berry">莓果花心</option><option value="starlight">星光花心</option></select>
+                </label>
               </div>
+              <div class="garden-hybrid-preview" id="gardenHybridPreview" aria-hidden="true"></div>
               <button class="soft-button" type="submit">保存我的选择</button>
               <p class="hybrid-status" id="gardenHybridStatus"></p>
             </form>
             <div class="garden-bloom-gallery" id="gardenBloomGallery"></div>
+            <button class="garden-list-toggle" id="toggleGardenBlooms" type="button" hidden>展开更多双色花</button>
             <div class="garden-panel-heading memory-flower-heading">
               <div><p class="section-kicker">Memories in bloom</p><h3>记忆花朵</h3></div>
             </div>
@@ -639,6 +653,18 @@
               </div>
               <div class="garden-roadmap" id="gardenRoadmap" aria-label="花园成长地图"></div>
             </section>
+            <article class="garden-feature garden-sign-card">
+              <div class="garden-feature-heading">
+                <span class="garden-feature-icon sign"><i data-lucide="signpost" aria-hidden="true"></i></span>
+                <div><small>OUR GARDEN, OUR NAME</small><h4>专属花园门牌</h4><p>给这片共同照顾的地方，留一个只属于你们的名字。</p></div>
+              </div>
+              <form class="garden-form garden-sign-form" id="gardenSignForm">
+                <label>花园名字<input id="gardenSignName" maxlength="18" autocomplete="off" placeholder="向强与嘉颖的花园"></label>
+                <label>门牌小句<input id="gardenSignMotto" maxlength="30" autocomplete="off" placeholder="异地也在一起生长"></label>
+                <label>门牌风格<select id="gardenSignStyle"><option value="rose">蔷薇木牌</option><option value="mint">晨露青绿</option><option value="gold">暖阳黄铜</option><option value="night">星夜深蓝</option></select></label>
+                <button class="soft-button" type="submit">挂上我们的门牌</button>
+              </form>
+            </article>
             <details class="garden-ledger-details">
               <summary>
                 <span class="garden-ledger-summary-icon"><i data-lucide="notebook-tabs" aria-hidden="true"></i></span>
@@ -672,6 +698,24 @@
               <div><p class="section-kicker">Places waiting for us</p><h3>区域解锁</h3></div>
             </div>
             <div class="garden-area-progress" id="gardenAreaProgress"></div>
+            <article class="garden-feature garden-yearbook-card">
+              <div class="garden-feature-heading">
+                <span class="garden-feature-icon yearbook"><i data-lucide="book-open" aria-hidden="true"></i></span>
+                <div><small>FOUR SEASONS TOGETHER</small><h4>四季年鉴</h4><p>按春夏秋冬，看看你们一起给花园留下了什么。</p></div>
+              </div>
+              <div class="garden-yearbook-controls">
+                <label>选择季节<select id="gardenYearbookSeason"></select></label>
+                <label>本季代表回忆<select id="gardenYearbookHighlight"><option value="">自动选择</option></select></label>
+              </div>
+              <div class="garden-yearbook-preview" id="gardenYearbookPreview">
+                <small id="gardenYearbookRange">这一季</small>
+                <strong id="gardenYearbookTitle">我们的四季正在生长</strong>
+                <p id="gardenYearbookMemory">花园会从共同记录中选出一段季节回忆。</p>
+                <div id="gardenYearbookStats"></div>
+              </div>
+              <button class="garden-postcard-save" id="saveGardenYearbook" type="button"><i data-lucide="download" aria-hidden="true"></i><span>保存这一季年鉴</span></button>
+              <div class="garden-yearbook-archive" id="gardenYearbookArchive"></div>
+            </article>
             <div class="garden-panel-heading garden-timeline-heading">
               <div><p class="section-kicker">Milestones we have reached</p><h3>成长时间线</h3></div>
             </div>
@@ -950,6 +994,6 @@
     <script src="supabase-config.js"></script>
     <script src="sync.js?v=20260806-loop-guard"></script>
     <script src="questions-extra.js?v=20260809-balanced-bank"></script>
-    <script src="app.js?v=20260808-message-sort"></script>
+    <script src="app.js?v=20260809-garden-redesign"></script>
   </body>
 </html>

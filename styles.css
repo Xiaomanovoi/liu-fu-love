@@ -863,6 +863,131 @@ dialog::backdrop { background: rgba(63,49,47,.38); backdrop-filter: blur(4px); }
   .garden-svg-stems { animation: none; }
 }
 
+/* Secret Garden 2026-08 scene and keepsake refinement */
+.garden-stage { min-height: 468px; border-bottom: 1px solid rgba(65,96,72,.14); background-position: center 42%; box-shadow: inset 0 -22px 34px rgba(42,78,53,.12); }
+.garden-stage::before { position: absolute; right: 7%; bottom: 14px; left: 7%; z-index: 0; height: 54px; border-radius: 50%; background: radial-gradient(ellipse at center,rgba(28,58,38,.2),rgba(28,58,38,0) 70%); content: ""; pointer-events: none; }
+.garden-stage .garden-landscape { z-index: 0; }
+.garden-scene-decoration { z-index: 1; }
+.garden-scene-decoration .garden-decor { filter: drop-shadow(0 6px 5px rgba(45,58,46,.17)); }
+.garden-plant { bottom: 13px; z-index: 3; width: min(326px,84vw); height: 326px; }
+.garden-stage[data-stage="seed"] .garden-plant { width: min(282px,74vw); }
+.garden-stage[data-stage="sprout"] .garden-plant { width: min(306px,80vw); }
+.garden-stage[data-stage="seedling"] .garden-plant { width: min(314px,82vw); }
+.garden-companion-scene { right: 2%; bottom: 30px; z-index: 4; width: 80px; }
+.garden-status-band { padding-right: 4px; padding-left: 4px; }
+
+.garden-nameplate { position: absolute; top: 126px; left: 17px; z-index: 5; display: grid; max-width: 162px; min-height: 54px; padding: 9px 12px 8px; align-content: center; border: 1px solid rgba(79,56,47,.2); border-radius: 6px; color: #fff8ee; background: linear-gradient(145deg,#9d6557,#704a43); box-shadow: 0 8px 16px rgba(49,48,40,.15),inset 0 0 0 3px rgba(255,255,255,.08); transform: rotate(-1.5deg); }
+.garden-nameplate::after { position: absolute; top: 100%; left: 26px; width: 6px; height: 38px; background: #684b40; content: ""; }
+.garden-nameplate strong,.garden-nameplate small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.garden-nameplate strong { font-size: .66rem; }
+.garden-nameplate small { margin-top: 3px; color: rgba(255,248,238,.76); font-size: .47rem; }
+.garden-nameplate[data-style="mint"] { color: #f8fff9; border-color: rgba(47,87,68,.18); background: linear-gradient(145deg,#6f9b7c,#4e725d); }
+.garden-nameplate[data-style="gold"] { color: #fffaf0; border-color: rgba(113,82,31,.18); background: linear-gradient(145deg,#b88c4f,#86633b); }
+.garden-nameplate[data-style="night"] { color: #fff9d5; border-color: rgba(30,42,66,.3); background: linear-gradient(145deg,#5e6686,#343c5a); }
+
+.garden-area-map { display: grid; grid-template-columns: repeat(5,minmax(74px,1fr)); gap: 6px; margin: 12px -2px 15px; padding: 4px 2px 7px; overflow-x: auto; scrollbar-width: none; }
+.garden-area-map::-webkit-scrollbar { display: none; }
+.garden-area-map button { position: relative; display: grid; min-width: 74px; min-height: 78px; padding: 8px 5px 6px; place-items: center; border: 1px solid rgba(93,119,99,.13); border-radius: 7px; color: #6f746f; background: rgba(255,255,255,.62); }
+.garden-area-map button::after { position: absolute; top: 24px; left: calc(50% + 21px); width: 27px; height: 1px; background: rgba(102,135,111,.19); content: ""; }
+.garden-area-map button:last-child::after { display: none; }
+.garden-area-map button > span { display: grid; width: 31px; height: 31px; place-items: center; border-radius: 50%; color: #7c837d; background: #eef0eb; }
+.garden-area-map svg { width: 15px; height: 15px; }
+.garden-area-map strong { font-size: .56rem; white-space: nowrap; }
+.garden-area-map small { color: #999c98; font-size: .45rem; white-space: nowrap; }
+.garden-area-map button.is-unlocked > span { color: #547760; background: #e1eee4; }
+.garden-area-map button.is-current { border-color: rgba(196,103,121,.3); color: #9e5363; background: #fff1ef; box-shadow: 0 6px 14px rgba(144,90,97,.09); }
+.garden-area-map button.is-current > span { color: #a45666; background: #f9dfe1; }
+.garden-area-map button:disabled { opacity: .58; }
+
+.garden-gate-sign { top: 17px; right: 15px; max-width: 174px; }
+.garden-butterfly { top: 17px; left: 15px; }
+.decor-plaque { bottom: 17px; left: 5%; display: grid; width: 66px; height: 27px; place-items: center; border: 1px solid rgba(86,69,58,.22); border-radius: 48% 48% 7px 7px; color: #fff6e9; background: linear-gradient(145deg,#9c705c,#6f5248); box-shadow: inset 0 3px rgba(255,255,255,.12); }
+.decor-plaque b { font-size: .43rem; }
+.decor-bench { bottom: 64px; left: 4%; width: 78px; transform: scale(.9); transform-origin: bottom left; }
+.decor-mailbox { right: 5%; bottom: 56px; transform: scale(.86); transform-origin: bottom right; }
+.decor-birdhouse { top: 132px; right: 5%; transform: scale(.82); transform-origin: top right; }
+.garden-windchime { top: 91px; right: 23%; transform: scale(.86); }
+.decor-arch { right: 10%; bottom: 24px; width: 80%; height: 254px; opacity: .58; }
+.decor-swing { bottom: 52px; left: 5%; height: 142px; transform: scale(.86); transform-origin: bottom left; }
+.decor-fountain { right: 3%; bottom: 42px; transform: scale(.82); transform-origin: bottom right; }
+.decor-pond { right: 3%; bottom: 14px; width: 105px; }
+.decor-shelf { right: 4%; bottom: 54px; transform: scale(.84); transform-origin: bottom right; }
+.decor-flowercart { bottom: 48px; left: 3%; transform: scale(.82); transform-origin: bottom left; }
+.decor-moongate { right: 9%; bottom: 25px; width: 82%; height: 258px; opacity: .58; }
+.decor-pavilion { right: 9%; bottom: 29px; left: 9%; height: 226px; opacity: .58; }
+.decor-seasongate { right: 8%; bottom: 22px; left: 8%; height: 267px; opacity: .58; }
+.decor-mushrooms,.decor-planters,.decor-picnic,.decor-wishbottles { bottom: 46px; transform: scale(.88); transform-origin: bottom; }
+.decor-stones,.decor-bridge { bottom: 8px; opacity: .86; }
+.decor-lanterns { bottom: 33px; }
+.decor-moonlamp { top: 65px; right: 16%; }
+
+.garden-feature-icon.letter { position: relative; color: #9d596a; background: linear-gradient(145deg,#fff0ed,#f1dce7); overflow: visible; }
+.garden-feature-icon.letter::after { position: absolute; right: -3px; bottom: -2px; width: 16px; height: 16px; border: 3px solid #d88091; border-radius: 50%; background: #f2cf79; box-shadow: -5px 1px #e79aaa,5px 1px #a79ac9,0 -5px #f0b7a7; content: ""; transform: scale(.62); }
+.garden-letter-bloom { width: 50px; height: 52px; }
+.garden-letter-bloom::before { position: absolute; right: 3px; bottom: 4px; left: 3px; height: 29px; border: 1px solid rgba(137,93,105,.18); border-radius: 5px; background: linear-gradient(145deg,#fff9f6,#f4e1e5); box-shadow: 0 5px 10px rgba(93,71,77,.08); content: ""; }
+.garden-letter-bloom::after { position: absolute; right: 7px; bottom: 16px; left: 7px; height: 24px; border-bottom: 1px solid rgba(137,93,105,.2); background: #f8ebeb; content: ""; clip-path: polygon(0 0,50% 72%,100% 0,100% 16%,50% 88%,0 16%); }
+.garden-letter-bloom i { z-index: 2; top: 2px; left: 17px; width: 12px; height: 19px; border-radius: 70% 70% 45% 45%; background: #d98191; transform-origin: 6px 15px; }
+.garden-letter-bloom i:nth-child(1) { transform: rotate(-42deg) translateY(-4px); }
+.garden-letter-bloom i:nth-child(2) { background: #a89ac9; transform: rotate(42deg) translateY(-4px); }
+.garden-letter-bloom i:nth-child(3),.garden-letter-bloom i:nth-child(4) { display: none; }
+.garden-letter-bloom b { z-index: 3; top: 14px; width: 10px; height: 10px; background: #efce76; }
+.garden-letter-item:not(.is-open) .garden-letter-bloom { transform: none; filter: grayscale(.2); opacity: .72; }
+
+.garden-hybrid-preview { display: grid; grid-template-columns: 76px minmax(0,1fr); gap: 10px; min-height: 96px; align-items: center; padding: 8px 12px; border: 1px solid rgba(107,139,114,.14); border-radius: 7px; background: linear-gradient(135deg,#f7fbf6,#fff5f3); }
+.garden-hybrid-preview > span { display: block; width: 70px; height: 80px; }
+.garden-hybrid-preview svg { width: 100%; height: 100%; }
+.garden-hybrid-preview small,.garden-hybrid-preview strong { display: block; }
+.garden-hybrid-preview small { color: #9c6875; font-size: .52rem; }
+.garden-hybrid-preview strong { margin-top: 5px; font-size: .66rem; line-height: 1.45; }
+.hybrid-bloom time { display: block; margin-top: 5px; color: #8d8883; font-size: .51rem; }
+.garden-list-toggle { width: 100%; min-height: 39px; margin: 9px 0 16px; border: 1px solid rgba(104,133,111,.14); border-radius: 7px; color: #617a68; font-size: .62rem; font-weight: 800; background: #f1f6f0; }
+
+.garden-sign-card,.garden-yearbook-card { margin-top: 18px; }
+.garden-feature-icon.sign { color: #8c614f; background: #f3e6db; }
+.garden-sign-form { grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+.garden-sign-form label:nth-child(1),.garden-sign-form label:nth-child(2) { grid-column: 1 / -1; }
+.garden-sign-form button { align-self: end; min-height: 42px; }
+.garden-feature-icon.yearbook { color: #6c728f; background: #e9e8f1; }
+.garden-yearbook-controls { display: grid; grid-template-columns: 1fr 1.25fr; gap: 8px; margin-top: 13px; }
+.garden-yearbook-controls label { display: grid; gap: 5px; color: #716d69; font-size: .56rem; font-weight: 750; }
+.garden-yearbook-controls select { min-width: 0; min-height: 40px; padding: 7px 8px; border: 1px solid rgba(107,116,109,.18); border-radius: 6px; background: #fff; }
+.garden-yearbook-preview { position: relative; min-height: 245px; margin-top: 12px; padding: 24px 18px 18px; overflow: hidden; border: 1px solid rgba(93,126,101,.15); border-radius: 8px; background: linear-gradient(145deg,#edf5ed,#fff8f4); }
+.garden-yearbook-preview::before { position: absolute; top: -45px; right: -32px; width: 145px; height: 145px; border-radius: 50%; background: rgba(221,132,150,.16); box-shadow: 0 0 0 17px rgba(255,255,255,.24); content: ""; }
+.garden-yearbook-preview[data-season="summer"] { background: linear-gradient(145deg,#e7f3e9,#fff8e7); }
+.garden-yearbook-preview[data-season="autumn"] { background: linear-gradient(145deg,#f5eee2,#fff8f2); }
+.garden-yearbook-preview[data-season="winter"] { background: linear-gradient(145deg,#edf1f3,#f7f3fa); }
+.garden-yearbook-preview > small,.garden-yearbook-preview > strong,.garden-yearbook-preview > p,.garden-yearbook-preview > div { position: relative; z-index: 1; }
+.garden-yearbook-preview > small { color: #8e6370; font-size: .54rem; font-weight: 800; }
+.garden-yearbook-preview > strong { display: block; max-width: 78%; margin-top: 12px; font-family: Georgia,"Noto Serif SC",serif; font-size: 1rem; line-height: 1.45; }
+.garden-yearbook-preview > p { min-height: 62px; margin: 13px 0 17px; color: #6f6966; font-size: .64rem; line-height: 1.65; }
+.garden-yearbook-preview > div { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 5px; }
+.garden-yearbook-preview > div span { display: grid; gap: 2px; padding: 7px 3px; color: #77736e; font-size: .46rem; text-align: center; background: rgba(255,255,255,.58); }
+.garden-yearbook-preview > div b { color: #587762; font-family: Georgia,serif; font-size: .7rem; }
+.garden-yearbook-archive { display: grid; gap: 6px; max-height: 260px; margin-top: 11px; overflow-y: auto; }
+.garden-yearbook-archive button { display: grid; grid-template-columns: 36px minmax(0,1fr) 15px; gap: 9px; min-height: 54px; padding: 7px 10px; align-items: center; border: 1px solid rgba(104,124,108,.11); border-radius: 7px; text-align: left; background: rgba(255,255,255,.56); }
+.garden-yearbook-archive button > span { display: grid; width: 34px; height: 34px; place-items: center; border-radius: 50%; color: #5d7b66; font-family: Georgia,"Noto Serif SC",serif; background: #e5efe7; }
+.garden-yearbook-archive button > span[data-season="summer"] { color: #8b7139; background: #f5eacb; }
+.garden-yearbook-archive button > span[data-season="autumn"] { color: #9a644d; background: #f2e1d4; }
+.garden-yearbook-archive button > span[data-season="winter"] { color: #6e7895; background: #e7e9f1; }
+.garden-yearbook-archive strong,.garden-yearbook-archive small { display: block; }
+.garden-yearbook-archive strong { font-size: .65rem; }
+.garden-yearbook-archive small { margin-top: 3px; color: #8b8985; font-size: .51rem; }
+.garden-yearbook-archive button.is-active { border-color: rgba(201,112,129,.25); background: #fff3f1; }
+
+@media (max-width: 380px) {
+  .garden-stage { min-height: 438px; }
+  .garden-plant { width: min(310px,88vw); transform: translateX(-50%) scale(.94); }
+  .garden-nameplate { top: 121px; max-width: 145px; }
+  .garden-area-map { grid-template-columns: repeat(5,74px); }
+  .garden-sign-form,.garden-yearbook-controls { grid-template-columns: 1fr; }
+  .garden-sign-form label,.garden-sign-form button { grid-column: 1; }
+  .garden-yearbook-preview > div { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .garden-area-map button,.garden-nameplate { scroll-behavior: auto; }
+}
+
 /* Shared history folding */
 .history-toggle { display: flex; width: 100%; min-height: 38px; margin-top: 9px; align-items: center; justify-content: center; border: 1px solid rgba(115,91,96,.11); border-radius: 7px; color: #8e5e6a; font-size: .62rem; font-weight: 800; background: rgba(255,248,246,.82); }
 .history-toggle::after { margin-left: 6px; content: "↓"; }
