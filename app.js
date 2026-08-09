@@ -205,7 +205,7 @@ const encouragements = [
 
 const gardenStages = [
   { name: "心意种子", min: 0, scene: "seed", copy: "一颗属于你们的种子，正在安静等待。", reward: "泥土里会出现第一点嫩绿" },
-  { name: "刚刚发芽", min: 200, scene: "sprout", copy: "第一片嫩叶，记住了你们的认真。", reward: "解锁心意木牌与新叶" },
+  { name: "刚刚发芽", min: 200, scene: "sprout", copy: "第一片嫩叶，记住了你们的认真。", reward: "解锁蘑菇小灯与新叶" },
   { name: "双生幼苗", min: 500, scene: "seedling", copy: "两株花藤，正在向彼此靠近。", reward: "双枝幼苗与暖光灯串" },
   { name: "心意花苞", min: 900, scene: "bud", copy: "花苞已经出现，离第一次盛开不远了。", reward: "花苞、长椅与新的叶片" },
   { name: "初次盛开", min: 1400, scene: "bloom", copy: "你们共同照顾的花，已经认真盛开。", reward: "双花盛开与玻璃风铃" },
@@ -227,7 +227,6 @@ const gardenAreaDefinitions = [
   { id: "courtyard", name: "星光庭院", threshold: 3400, copy: "成长年鉴", panel: "growth", icon: "moon-star" }
 ];
 const gardenDecorations = [
-  { id: "plaque", name: "心意木牌", threshold: 80, slot: "foreground", icon: "signpost" },
   { id: "mushrooms", name: "蘑菇小灯", threshold: 120, slot: "left", icon: "lamp-desk" },
   { id: "stones", name: "月白石径", threshold: 160, slot: "path", icon: "footprints" },
   { id: "planters", name: "彩釉花盆", threshold: 220, slot: "right", icon: "flower-2" },
@@ -391,7 +390,7 @@ const els = {
   openGardenHome: q("#openGardenHome"), openGardenTogether: q("#openGardenTogether"), closeGarden: q("#closeGarden"), gardenPreviewStatus: q("#gardenPreviewStatus"), gardenShortcutStage: q("#gardenShortcutStage"), gardenShortcutWater: q("#gardenShortcutWater"), gardenWeatherChip: q("#gardenWeatherChip"), gardenStage: q("#gardenStage"), gardenPlant: q("#gardenPlant"), gardenGateSign: q("#gardenGateSign"), gardenStageName: q("#gardenStageName"), gardenPoints: q("#gardenPoints"), gardenProgressBar: q("#gardenProgressBar"), gardenNextStage: q("#gardenNextStage"), gardenWateringStatus: q("#gardenWateringStatus"), waterGarden: q("#waterGarden"), gardenNotice: q("#gardenNotice"), gardenTools: q(".garden-tools"), gardenPanels: qa("[data-garden-content]"), gardenButterfly: q("#gardenButterfly"), gardenMemoryReveal: q("#gardenMemoryReveal"), closeGardenMemory: q("#closeGardenMemory"), gardenMemoryTitle: q("#gardenMemoryTitle"), gardenMemoryText: q("#gardenMemoryText"), gardenFestivalScene: q("#gardenFestivalScene"), gardenCompanionScene: q("#gardenCompanionScene"),
   gardenSeedForm: q("#gardenSeedForm"), gardenSeedText: q("#gardenSeedText"), gardenSeedUnlockDate: q("#gardenSeedUnlockDate"), gardenSeedPhoto: q("#gardenSeedPhoto"), gardenSeedVoice: q("#gardenSeedVoice"), gardenSeedCount: q("#gardenSeedCount"), gardenSeedList: q("#gardenSeedList"), gardenWishForm: q("#gardenWishForm"), gardenWishText: q("#gardenWishText"), gardenWishDate: q("#gardenWishDate"), gardenWishCount: q("#gardenWishCount"), gardenWishList: q("#gardenWishList"),
   gardenHybridForm: q("#gardenHybridForm"), gardenHybridColor: q("#gardenHybridColor"), gardenHybridShape: q("#gardenHybridShape"), gardenHybridPattern: q("#gardenHybridPattern"), gardenHybridCenter: q("#gardenHybridCenter"), gardenHybridPreview: q("#gardenHybridPreview"), gardenHybridStatus: q("#gardenHybridStatus"), gardenBloomCount: q("#gardenBloomCount"), gardenBloomGallery: q("#gardenBloomGallery"), toggleGardenBlooms: q("#toggleGardenBlooms"), gardenMemoryFlowers: q("#gardenMemoryFlowers"), gardenSnapshotCount: q("#gardenSnapshotCount"), gardenStageProgressText: q("#gardenStageProgressText"), gardenStageRemaining: q("#gardenStageRemaining"), gardenRoadmap: q("#gardenRoadmap"), gardenLedgerSummary: q("#gardenLedgerSummary"), gardenPointBreakdown: q("#gardenPointBreakdown"), gardenPointLedger: q("#gardenPointLedger"), gardenAreaProgress: q("#gardenAreaProgress"), gardenTimeline: q("#gardenTimeline"),
-  gardenNameplate: q("#gardenNameplate"), gardenNameplateName: q("#gardenNameplateName"), gardenNameplateMotto: q("#gardenNameplateMotto"), gardenAreaMap: q("#gardenAreaMap"), gardenSignForm: q("#gardenSignForm"), gardenSignName: q("#gardenSignName"), gardenSignMotto: q("#gardenSignMotto"), gardenSignStyle: q("#gardenSignStyle"), gardenYearbookSeason: q("#gardenYearbookSeason"), gardenYearbookHighlight: q("#gardenYearbookHighlight"), gardenYearbookPreview: q("#gardenYearbookPreview"), gardenYearbookRange: q("#gardenYearbookRange"), gardenYearbookTitle: q("#gardenYearbookTitle"), gardenYearbookMemory: q("#gardenYearbookMemory"), gardenYearbookStats: q("#gardenYearbookStats"), saveGardenYearbook: q("#saveGardenYearbook"), gardenYearbookArchive: q("#gardenYearbookArchive"),
+  gardenAreaMap: q("#gardenAreaMap"), gardenYearbookSeason: q("#gardenYearbookSeason"), gardenYearbookHighlight: q("#gardenYearbookHighlight"), gardenYearbookPreview: q("#gardenYearbookPreview"), gardenYearbookRange: q("#gardenYearbookRange"), gardenYearbookTitle: q("#gardenYearbookTitle"), gardenYearbookMemory: q("#gardenYearbookMemory"), gardenYearbookStats: q("#gardenYearbookStats"), saveGardenYearbook: q("#saveGardenYearbook"), gardenYearbookArchive: q("#gardenYearbookArchive"),
   gardenSceneDecoration: q("#gardenSceneDecoration"), gardenDecorationList: q("#gardenDecorationList"),
   gardenTogetherSeason: q("#gardenTogetherSeason"), gardenCompanionDisplay: q("#gardenCompanionDisplay"), gardenCompanionForm: q("#gardenCompanionForm"), gardenCompanionName: q("#gardenCompanionName"), gardenCompanionSpecies: q("#gardenCompanionSpecies"), gardenCompanionStatus: q("#gardenCompanionStatus"), gardenCompanionPlantName: q("#gardenCompanionPlantName"), gardenCompanionMeta: q("#gardenCompanionMeta"), gardenCompanionProgress: q("#gardenCompanionProgress"), gardenCompanionCareStatus: q("#gardenCompanionCareStatus"), gardenCompanionCare: q("#gardenCompanionCare"), gardenQuestWeek: q("#gardenQuestWeek"), gardenQuestProgress: q("#gardenQuestProgress"), gardenQuestList: q("#gardenQuestList"), gardenPostcardWeek: q("#gardenPostcardWeek"), gardenPostcardStage: q("#gardenPostcardStage"), gardenPostcardBotanical: q("#gardenPostcardBotanical"), gardenPostcardTitle: q("#gardenPostcardTitle"), gardenPostcardCopy: q("#gardenPostcardCopy"), gardenPostcardStats: q("#gardenPostcardStats"), saveGardenPostcard: q("#saveGardenPostcard"), gardenPostcardNotice: q("#gardenPostcardNotice"), gardenLetterForm: q("#gardenLetterForm"), gardenLetterText: q("#gardenLetterText"), gardenLetterDate: q("#gardenLetterDate"), gardenLetterCount: q("#gardenLetterCount"), gardenLetterList: q("#gardenLetterList"), gardenAnniversaryForm: q("#gardenAnniversaryForm"), gardenAnniversaryTitle: q("#gardenAnniversaryTitle"), gardenAnniversaryDate: q("#gardenAnniversaryDate"), gardenAnniversaryStyle: q("#gardenAnniversaryStyle"), gardenAnniversaryList: q("#gardenAnniversaryList"),
   gardenMemoryDialog: q("#gardenMemoryDialog"), closeGardenMemoryDialog: q("#closeGardenMemoryDialog"), gardenMemoryImage: q("#gardenMemoryImage"), gardenMemoryType: q("#gardenMemoryType"), gardenMemoryDialogTitle: q("#gardenMemoryDialogTitle"), gardenMemoryMeta: q("#gardenMemoryMeta"), gardenMemoryDialogText: q("#gardenMemoryDialogText"),
@@ -937,18 +936,6 @@ function bindGardenActions() {
   els.toggleGardenBlooms.addEventListener("click", () => {
     gardenBloomsExpanded = !gardenBloomsExpanded;
     renderGardenFlowers();
-  });
-  els.gardenSignForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const name = els.gardenSignName.value.trim();
-    if (!name) return;
-    gardenState().sign = {
-      name,
-      motto: els.gardenSignMotto.value.trim(),
-      style: els.gardenSignStyle.value,
-      updatedAt: new Date().toISOString()
-    };
-    persistAndRender("挂上专属花园门牌");
   });
   els.gardenYearbookSeason.addEventListener("change", () => {
     activeYearbookKey = els.gardenYearbookSeason.value;
@@ -1751,13 +1738,6 @@ function renderGarden() {
     window.lucide?.createIcons();
   }
   els.gardenGateSign.querySelector("span").textContent = gateMode === "open" ? "晨光花房已经打开" : `秘密花房 · 还差 ${Math.max(0, 2000 - points)} 心意值`;
-  const sign = garden.sign || defaults.garden.sign;
-  els.gardenNameplate.dataset.style = sign.style || "rose";
-  els.gardenNameplateName.textContent = sign.name || defaults.garden.sign.name;
-  els.gardenNameplateMotto.textContent = sign.motto || defaults.garden.sign.motto;
-  if (document.activeElement !== els.gardenSignName) els.gardenSignName.value = sign.name || defaults.garden.sign.name;
-  if (document.activeElement !== els.gardenSignMotto) els.gardenSignMotto.value = sign.motto || "";
-  if (document.activeElement !== els.gardenSignStyle) els.gardenSignStyle.value = sign.style || "rose";
   renderGardenAreaMap(points);
   els.gardenWateringStatus.innerHTML = Object.keys(people).map((person) => `<span class="${watered.has(person) ? "is-done" : ""}"><i aria-hidden="true">${watered.has(person) ? "✓" : "○"}</i>${people[person].short}</span>`).join("");
   els.waterGarden.disabled = watered.has(current);
@@ -2491,9 +2471,12 @@ function positionGardenRoadmap() {
 
 function renderGardenDecorations(points) {
   const garden = gardenState();
-  const enabled = gardenDecorations.filter((item) => garden.decorationStates[item.id]?.enabled && gardenDecorationUnlocked(item, garden, points));
+  const layerOrder = { atmosphere: 0, structure: 1, overhead: 2, hanging: 2, path: 3, left: 4, right: 4, foreground: 5 };
+  const enabled = gardenDecorations
+    .filter((item) => garden.decorationStates[item.id]?.enabled && gardenDecorationUnlocked(item, garden, points))
+    .sort((a, b) => (layerOrder[a.slot] || 0) - (layerOrder[b.slot] || 0));
   els.gardenSceneDecoration.dataset.decorationCount = String(enabled.length);
-  els.gardenSceneDecoration.innerHTML = enabled.map((item) => gardenDecorationMarkup(item.id)).join("");
+  els.gardenSceneDecoration.innerHTML = enabled.map((item) => `<span class="garden-decoration-layer" data-decoration-slot="${item.slot}" data-decoration-id="${item.id}">${gardenDecorationMarkup(item.id)}</span>`).join("");
   els.gardenDecorationList.replaceChildren(...gardenDecorations.map((item) => {
     const unlocked = gardenDecorationUnlocked(item, garden, points);
     const active = Boolean(garden.decorationStates[item.id]?.enabled && unlocked);
@@ -2518,7 +2501,6 @@ function gardenSlotName(slot) {
 
 function gardenDecorationMarkup(id) {
   const markup = {
-    plaque: `<span class="garden-decor decor-plaque"><b>LIU ♥ FU</b></span>`,
     mushrooms: `<span class="garden-decor decor-mushrooms"><i></i><i></i><i></i></span>`,
     stones: `<span class="garden-decor decor-stones"><i></i><i></i><i></i><i></i></span>`,
     planters: `<span class="garden-decor decor-planters"><i></i><i></i><i></i></span>`,
