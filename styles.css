@@ -907,21 +907,22 @@ dialog::backdrop { background: rgba(63,49,47,.38); backdrop-filter: blur(4px); }
 .decor-mushrooms { bottom: 44px; left: 3%; transform: scale(.98); transform-origin: bottom left; }
 .decor-planters { right: 3%; bottom: 45px; transform: scale(.92); transform-origin: bottom right; }
 .decor-picnic { bottom: 7px; left: 9%; width: 108px; transform: rotate(-3deg) scale(.83); transform-origin: bottom left; opacity: .92; }
-.decor-wishbottles { top: 155px; bottom: auto; left: 4%; width: 76px; height: 58px; border-top: 2px solid rgba(89,78,65,.42); background: linear-gradient(rgba(89,78,65,.34),rgba(89,78,65,.34)) 9px top / 1px 18px no-repeat,linear-gradient(rgba(89,78,65,.34),rgba(89,78,65,.34)) 38px top / 1px 18px no-repeat,linear-gradient(rgba(89,78,65,.34),rgba(89,78,65,.34)) 67px top / 1px 18px no-repeat; transform: scale(.86); transform-origin: top left; }
+.decor-wishbottles { top: 142px; bottom: auto; left: 4%; width: 82px; height: 63px; border-top: 3px solid rgba(89,78,65,.5); background: linear-gradient(rgba(89,78,65,.4),rgba(89,78,65,.4)) 10px top / 1px 19px no-repeat,linear-gradient(rgba(89,78,65,.4),rgba(89,78,65,.4)) 41px top / 1px 19px no-repeat,linear-gradient(rgba(89,78,65,.4),rgba(89,78,65,.4)) 72px top / 1px 19px no-repeat; transform: scale(.92); transform-origin: top left; }
 .decor-wishbottles i { bottom: 0; }
 .decor-bench { bottom: 49px; left: 2%; width: 76px; transform: scale(.9); transform-origin: bottom left; }
 .decor-mailbox { right: 3%; bottom: 44px; transform: scale(.88); transform-origin: bottom right; }
 .decor-birdhouse { top: auto; right: 3%; bottom: 66px; width: 47px; height: 105px; border: 0; background: linear-gradient(#665144,#665144) center bottom / 6px 59px no-repeat; transform: scale(.86); transform-origin: bottom right; }
-.garden-windchime { top: 83px; right: 19%; transform: scale(.82); transform-origin: top center; }
+.garden-windchime { top: 83px; right: 8%; filter: drop-shadow(0 4px 5px rgba(51,76,70,.18)); transform: scale(.94); transform-origin: top center; }
 .decor-arch { right: 13%; bottom: 29px; width: 74%; height: 252px; opacity: .52; }
-.decor-lanterns { right: 2%; bottom: 25px; left: 2%; transform: scale(.9); transform-origin: bottom center; }
-.decor-lanterns i:first-child { left: 24%; }
-.decor-lanterns i:last-child { right: 24%; }
+.decor-lanterns { right: 2%; bottom: 25px; left: 2%; transform: scale(.96); transform-origin: bottom center; }
+.decor-lanterns i:first-child { left: 18%; }
+.decor-lanterns i:last-child { right: 18%; }
+.decor-lanterns i::before { background: rgba(255,231,157,.96); box-shadow: 0 0 22px rgba(255,224,137,.82); }
 .decor-butterflyhouse { right: 3%; bottom: 42px; transform: scale(.9); transform-origin: bottom right; }
 .decor-swing { bottom: 42px; left: 2%; width: 76px; height: 134px; border-top: 6px solid rgba(106,79,59,.72); transform: scale(.84); transform-origin: bottom left; }
 .decor-fountain { right: 1%; bottom: 37px; transform: scale(.82); transform-origin: bottom right; }
-.decor-pond { right: 2%; bottom: 13px; width: 105px; height: 35px; }
-.decor-bridge { right: 26%; bottom: 7px; left: 26%; height: 44px; opacity: .78; }
+.decor-pond { right: 1%; bottom: 12px; width: 112px; height: 38px; border-color: rgba(216,228,209,.9); filter: saturate(1.12); box-shadow: inset 0 7px rgba(255,255,255,.3),0 6px 13px rgba(40,79,73,.2); }
+.decor-bridge { right: 15%; bottom: 7px; left: 15%; height: 47px; border-top-width: 11px; opacity: .94; background: repeating-linear-gradient(90deg,transparent 0 16px,rgba(120,91,68,.16) 17px 19px); }
 .decor-shelf { right: 2%; bottom: 46px; transform: scale(.86); transform-origin: bottom right; }
 .decor-flowercart { bottom: 39px; left: 1%; transform: scale(.82); transform-origin: bottom left; }
 .decor-moonlamp { top: 42px; right: 18%; width: 46px; height: 94px; border-top: 0; background: linear-gradient(rgba(76,75,70,.46),rgba(76,75,70,.46)) center top / 1px 40px no-repeat; transform: scale(.84); transform-origin: top center; }
@@ -930,9 +931,17 @@ dialog::backdrop { background: rgba(63,49,47,.38); backdrop-filter: blur(4px); }
 .decor-moongate { right: 12%; bottom: 28px; width: 76%; height: 257px; opacity: .5; }
 .decor-pavilion { right: 12%; bottom: 31px; left: 12%; height: 224px; opacity: .5; }
 .decor-seasongate { right: 11%; bottom: 26px; left: 11%; height: 266px; opacity: .5; }
-.decor-stones { right: 27%; bottom: 7px; left: 27%; opacity: .78; }
-.decor-ribbon { top: 105px; left: 22%; width: 56%; border-top-color: rgba(91,132,96,.56); opacity: .68; }
-.decor-ribbon i { width: 20px; height: 10px; background: linear-gradient(135deg,#759a76,#d98a97); }
+.garden-string-lights { top: 65px; left: 11%; display: flex; width: 78%; justify-content: space-between; border-top-color: rgba(73,80,65,.58); opacity: .95; }
+.garden-string-lights i { position: relative; flex: 0 0 10px; width: 10px; height: 13px; margin-top: 3px; border: 2px solid rgba(255,249,213,.72); background: #ffd978; box-shadow: 0 0 17px rgba(255,225,134,.98); }
+.garden-string-lights i::before { position: absolute; top: -8px; left: 3px; width: 2px; height: 7px; border-radius: 2px; background: rgba(72,79,65,.62); content: ""; }
+.decor-stones { right: 3%; bottom: 5px; left: 3%; height: 42px; opacity: .95; }
+.decor-stones i { width: 46px; height: 13px; border: 1px solid rgba(255,255,255,.2); background: rgba(224,220,204,.94); box-shadow: inset 0 3px rgba(255,255,255,.4),0 3px 5px rgba(52,73,55,.1); }
+.decor-stones i:nth-child(1) { left: 1%; bottom: 1px; }
+.decor-stones i:nth-child(2) { left: 18%; bottom: 20px; }
+.decor-stones i:nth-child(3) { right: 1%; bottom: 1px; }
+.decor-stones i:nth-child(4) { right: 18%; bottom: 18px; }
+.decor-ribbon { top: 101px; left: 18%; width: 64%; border-top-color: rgba(91,132,96,.72); opacity: .9; }
+.decor-ribbon i { width: 22px; height: 11px; background: linear-gradient(135deg,#6f9a76,#df8999); box-shadow: 0 2px 4px rgba(56,82,61,.12); }
 .decor-starlight { inset: 49px 10% auto; height: 185px; opacity: .86; }
 
 .garden-feature-icon.letter { position: relative; color: #9d596a; background: linear-gradient(145deg,#fff0ed,#f1dce7); overflow: visible; }

@@ -231,12 +231,12 @@ const gardenDecorations = [
   { id: "stones", name: "月白石径", threshold: 160, slot: "path", icon: "footprints" },
   { id: "planters", name: "彩釉花盆", threshold: 220, slot: "right", icon: "flower-2" },
   { id: "lights", name: "暖光灯串", threshold: 300, slot: "overhead", icon: "lightbulb" },
-  { id: "picnic", name: "双人野餐毯", threshold: 380, slot: "foreground", icon: "sandwich" },
+  { id: "picnic", name: "双人野餐毯", threshold: 380, slot: "left", icon: "sandwich" },
   { id: "ribbon", name: "心意飘带", threshold: 460, slot: "atmosphere", icon: "ribbon" },
   { id: "bench", name: "双人长椅", threshold: 560, slot: "left", icon: "armchair" },
   { id: "mailbox", name: "花园信箱", threshold: 680, slot: "right", icon: "mailbox" },
-  { id: "birdhouse", name: "林间鸟屋", threshold: 800, slot: "hanging", icon: "house" },
-  { id: "windchime", name: "玻璃风铃", threshold: 920, slot: "hanging", icon: "music-2" },
+  { id: "birdhouse", name: "林间鸟屋", threshold: 800, slot: "right", icon: "house" },
+  { id: "windchime", name: "玻璃风铃", threshold: 920, slot: "overhead", icon: "music-2" },
   { id: "arch", name: "蔷薇拱门", threshold: 1080, slot: "structure", icon: "landmark" },
   { id: "lanterns", name: "星光路灯", threshold: 1250, slot: "path", icon: "lamp-wall-up" },
   { id: "butterflyhouse", name: "蝴蝶小屋", threshold: 1400, slot: "right", icon: "origami" },
@@ -250,7 +250,7 @@ const gardenDecorations = [
   { id: "moonlamp", name: "月亮吊灯", threshold: 3000, slot: "overhead", icon: "moon-star" },
   { id: "moongate", name: "月光花门", threshold: 3300, slot: "structure", icon: "circle-arch" },
   { id: "pavilion", name: "双人花亭", threshold: 3600, slot: "structure", icon: "building" },
-  { id: "wishbottles", name: "心愿瓶灯", threshold: 3900, slot: "foreground", icon: "flask-conical" },
+  { id: "wishbottles", name: "心愿瓶灯", threshold: 3900, slot: "hanging", icon: "flask-conical" },
   { id: "seasongate", name: "四季秘境门", threshold: 4300, slot: "structure", icon: "door-open" }
 ];
 const gardenPointCategories = {
@@ -3610,6 +3610,31 @@ function mergeDefaults(saved) {
   if (!merged.wheelOptions.some((item) => item.wheelId === defaultWheel.id) && !saved.wheelOptions) merged.wheelOptions.push(...structuredClone(defaultWheelOptions));
   return applySharedDeletionTombstones(merged);
 }
+function normalizeGardenDecorationStates(states = {}) {
+  const normalized = Object.fromEntries(Object.entries(states).map(([id, value]) => [id, {
+    ...value,
+    enabled: Boolean(value?.enabled)
+  }]));
+  const enabledBySlot = new Map();
+  gardenDecorations.forEach((item, index) => {
+    const state = normalized[item.id];
+    if (!state?.enabled) return;
+    if (!enabledBySlot.has(item.slot)) enabledBySlot.set(item.slot, []);
+    enabledBySlot.get(item.slot).push({ item, state, index });
+  });
+  enabledBySlot.forEach((entries) => {
+    entries.sort((left, right) => {
+      const byTime = String(right.state.updatedAt || "").localeCompare(String(left.state.updatedAt || ""));
+      return byTime || right.index - left.index;
+    });
+    const winnerTime = entries[0]?.state.updatedAt || "";
+    entries.slice(1).forEach(({ item, state }) => {
+      normalized[item.id] = { ...state, enabled: false, updatedAt: winnerTime || state.updatedAt || "" };
+    });
+  });
+  return normalized;
+}
+
 function mergeGarden(savedGarden) {
   const base = structuredClone(defaults).garden;
   const legacy = Number(savedGarden?.version || 1) < 2;
@@ -3646,7 +3671,7 @@ function mergeGarden(savedGarden) {
     snapshots: Array.isArray(savedGarden?.snapshots) ? savedGarden.snapshots : [],
     unlockedAreas: Array.isArray(savedGarden?.unlockedAreas) ? savedGarden.unlockedAreas : [],
     deletedIds: Array.isArray(savedGarden?.deletedIds) ? savedGarden.deletedIds.slice(-200) : [],
-    decorationStates,
+    decorationStates: normalizeGardenDecorationStates(decorationStates),
     featuredDecoration: "none",
     decorationUpdatedAt: savedGarden?.decorationUpdatedAt || "",
     companionPlant: {
@@ -3775,6 +3800,8 @@ function mergeGardenConcurrent(localGarden, remoteGarden) {
     const selected = !localState ? remoteState : (!remoteState ? localState : ((remoteState.updatedAt || "") >= (localState.updatedAt || "") ? remoteState : localState));
     decorationStates[item.id] = { enabled: Boolean(selected.enabled), updatedAt: selected.updatedAt || "", legacy: Boolean(localState?.legacy || remoteState?.legacy) };
   });
+  const normalizedDecorationStates = normalizeGardenDecorationStates(decorationStates);
+  if (JSON.stringify(normalizedDecorationStates) !== JSON.stringify(decorationStates)) gardenNeedsResync = true;
   const localPlant = local.companionPlant || {};
   const remotePlant = remote.companionPlant || {};
   const plantIdentity = (remotePlant.updatedAt || "") >= (localPlant.updatedAt || "") ? remotePlant : localPlant;
@@ -3855,9 +3882,9 @@ function mergeGardenConcurrent(localGarden, remoteGarden) {
     },
     unlockedAreas: [...new Set([...local.unlockedAreas, ...remote.unlockedAreas])],
     deletedIds,
-    decorationStates,
+    decorationStates: normalizedDecorationStates,
     featuredDecoration: "none",
-    decorationUpdatedAt: Object.values(decorationStates).reduce((latest, item) => item.updatedAt > latest ? item.updatedAt : latest, ""),
+    decorationUpdatedAt: Object.values(normalizedDecorationStates).reduce((latest, item) => item.updatedAt > latest ? item.updatedAt : latest, ""),
     companionPlant: { ...localPlant, ...remotePlant, ...plantIdentity, care: plantCare },
     flowerLetters: mergeRecords(local.flowerLetters, remote.flowerLetters),
     weeklyQuests,
