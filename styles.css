@@ -872,7 +872,9 @@ dialog::backdrop { background: rgba(63,49,47,.38); backdrop-filter: blur(4px); }
 .garden-stage[data-stage="seed"] .garden-plant { width: min(282px,74vw); }
 .garden-stage[data-stage="sprout"] .garden-plant { width: min(306px,80vw); }
 .garden-stage[data-stage="seedling"] .garden-plant { width: min(314px,82vw); }
-.garden-companion-scene { right: 2%; bottom: 30px; z-index: 4; width: 80px; }
+.garden-companion-scene { right: 3%; bottom: 214px; z-index: 3; width: 56px; height: 70px; padding: 4px 4px 2px; border: 1px solid rgba(225,235,218,.46); border-radius: 25px 25px 7px 7px; background: linear-gradient(160deg,rgba(238,246,235,.3),rgba(204,222,203,.13)); filter: drop-shadow(0 5px 4px rgba(42,57,43,.11)); }
+.garden-companion-scene::before { position: absolute; right: -5px; bottom: -6px; left: -5px; height: 7px; border-radius: 4px; background: linear-gradient(#dac9aa,#ad9170); box-shadow: 0 4px 6px rgba(54,66,51,.14); content: ""; }
+.garden-companion-scene .companion-plant-svg { filter: drop-shadow(0 4px 3px rgba(40,62,47,.12)); }
 .garden-status-band { padding-right: 4px; padding-left: 4px; }
 
 .garden-area-map { display: grid; grid-template-columns: repeat(5,minmax(74px,1fr)); gap: 6px; margin: 12px -2px 15px; padding: 4px 2px 7px; overflow-x: auto; scrollbar-width: none; }
@@ -904,25 +906,48 @@ dialog::backdrop { background: rgba(63,49,47,.38); backdrop-filter: blur(4px); }
 .garden-decoration-layer[data-decoration-id="picnic"]::before { left: 6%; width: 122px; transform: none; }
 .garden-decoration-layer[data-decoration-id="wishbottles"]::before { display: none; }
 .garden-decoration-layer[data-decoration-slot="structure"] .garden-decor { filter: saturate(.82) drop-shadow(0 5px 4px rgba(39,61,46,.1)); }
+.garden-stage.has-left-decoration .garden-sprout-grove i:nth-child(-n+2),.garden-stage.has-left-decoration .garden-flower-border i:nth-child(-n+2) { opacity: .12; }
+.garden-stage.has-right-decoration .garden-sprout-grove i:nth-child(n+6),.garden-stage.has-right-decoration .garden-flower-border i:nth-child(n+7) { opacity: .12; }
+.garden-stage.has-decor-bridge .garden-fence { opacity: .18; }
+.garden-stage.has-decor-stones .garden-plant { bottom: 39px; }
+.garden-stage.has-decor-stones .decor-picnic { bottom: 46px; }
+.garden-stage.has-decor-stones .decor-mailbox { bottom: 76px; }
+.garden-stage.has-decor-stones .decor-butterflyhouse { bottom: 73px; }
+.garden-stage.has-decor-stones .decor-flowercart { bottom: 56px; }
+.garden-stage.has-decor-stones .decor-pond { bottom: 54px; }
 .decor-mushrooms { bottom: 44px; left: 3%; transform: scale(.98); transform-origin: bottom left; }
 .decor-planters { right: 3%; bottom: 45px; transform: scale(.92); transform-origin: bottom right; }
 .decor-picnic { bottom: 7px; left: 9%; width: 108px; transform: rotate(-3deg) scale(.83); transform-origin: bottom left; opacity: .92; }
 .decor-wishbottles { top: 142px; bottom: auto; left: 4%; width: 82px; height: 63px; border-top: 3px solid rgba(89,78,65,.5); background: linear-gradient(rgba(89,78,65,.4),rgba(89,78,65,.4)) 10px top / 1px 19px no-repeat,linear-gradient(rgba(89,78,65,.4),rgba(89,78,65,.4)) 41px top / 1px 19px no-repeat,linear-gradient(rgba(89,78,65,.4),rgba(89,78,65,.4)) 72px top / 1px 19px no-repeat; transform: scale(.92); transform-origin: top left; }
 .decor-wishbottles i { bottom: 0; }
-.decor-bench { bottom: 49px; left: 2%; width: 76px; transform: scale(.9); transform-origin: bottom left; }
+.decor-bench { bottom: 45px; left: 1%; width: 100px; height: 70px; border: 0; transform: scale(.88); transform-origin: bottom left; }
+.decor-bench::before { top: 2px; left: 4px; width: 92px; height: 32px; border: 4px solid #705545; border-radius: 8px 8px 4px 4px; background: repeating-linear-gradient(to bottom,#bd8865 0 8px,#795848 8px 10px,#ad795d 10px 18px,#795848 18px 20px,#b98262 20px 28px); box-shadow: inset 0 2px rgba(255,255,255,.18); }
+.decor-bench::after { top: 36px; left: 0; width: 100px; height: 14px; border-radius: 4px; background: linear-gradient(#bd8664,#98674f); box-shadow: 0 5px #6d5244,0 9px 10px rgba(52,58,45,.18); }
+.decor-bench i { position: absolute; top: 50px; left: 14px; width: 7px; height: 20px; border-radius: 0 0 3px 3px; background: #674f42; box-shadow: 65px 0 #674f42; }
+.decor-bench i::before { position: absolute; top: -25px; left: -8px; width: 6px; height: 27px; border-radius: 3px; background: #705545; box-shadow: 81px 0 #705545; content: ""; }
 .decor-mailbox { right: 3%; bottom: 44px; transform: scale(.88); transform-origin: bottom right; }
 .decor-birdhouse { top: auto; right: 3%; bottom: 66px; width: 47px; height: 105px; border: 0; background: linear-gradient(#665144,#665144) center bottom / 6px 59px no-repeat; transform: scale(.86); transform-origin: bottom right; }
 .garden-windchime { top: 83px; right: 8%; filter: drop-shadow(0 4px 5px rgba(51,76,70,.18)); transform: scale(.94); transform-origin: top center; }
 .decor-arch { right: 13%; bottom: 29px; width: 74%; height: 252px; opacity: .52; }
-.decor-lanterns { right: 2%; bottom: 25px; left: 2%; transform: scale(.96); transform-origin: bottom center; }
-.decor-lanterns i:first-child { left: 18%; }
-.decor-lanterns i:last-child { right: 18%; }
+.decor-lanterns { right: 2%; bottom: 29px; left: 2%; transform: scale(.82); transform-origin: bottom center; }
+.decor-lanterns i:first-child { left: 31%; }
+.decor-lanterns i:last-child { right: 31%; }
 .decor-lanterns i::before { background: rgba(255,231,157,.96); box-shadow: 0 0 22px rgba(255,224,137,.82); }
 .decor-butterflyhouse { right: 3%; bottom: 42px; transform: scale(.9); transform-origin: bottom right; }
-.decor-swing { bottom: 42px; left: 2%; width: 76px; height: 134px; border-top: 6px solid rgba(106,79,59,.72); transform: scale(.84); transform-origin: bottom left; }
-.decor-fountain { right: 1%; bottom: 37px; transform: scale(.82); transform-origin: bottom right; }
+.decor-swing { bottom: 39px; left: 1%; width: 98px; height: 150px; border: 0; transform: scale(.88); transform-origin: bottom left; }
+.decor-swing::before { position: absolute; inset: 0 5px 5px; border: 6px solid rgba(105,80,61,.82); border-bottom: 0; border-radius: 48px 48px 0 0; background: radial-gradient(circle at 12% 11%,#dc8a96 0 5px,transparent 6px),radial-gradient(circle at 40% 2%,#e7bd6c 0 5px,transparent 6px),radial-gradient(circle at 76% 8%,#a89ace 0 5px,transparent 6px); content: ""; }
+.decor-swing::after { position: absolute; top: 28px; bottom: 20px; left: 29px; width: 2px; background: #d8c7a5; box-shadow: 39px 0 #d8c7a5; content: ""; }
+.decor-swing i { bottom: 12px; left: 21px; z-index: 1; width: 58px; height: 13px; border: 3px solid #704f42; border-radius: 5px; background: linear-gradient(#c48a66,#9c6852); box-shadow: 0 5px 8px rgba(53,47,38,.18); }
+.decor-swing i::before { position: absolute; top: -5px; left: 7px; width: 7px; height: 7px; border-radius: 50%; background: #e8bd70; box-shadow: 17px 2px #d98998,34px 0 #a79acb; content: ""; }
+.decor-fountain { right: 1%; bottom: 40px; width: 92px; height: 94px; filter: drop-shadow(0 6px 5px rgba(48,74,69,.16)); transform: scale(.94); transform-origin: bottom right; }
+.decor-fountain::before { width: 92px; height: 27px; border: 3px solid rgba(224,235,226,.6); background: linear-gradient(#cbded7,#8eb7ae); box-shadow: inset 0 -7px #769f98; }
+.decor-fountain i { bottom: 20px; left: 37px; width: 18px; height: 48px; background: linear-gradient(90deg,#9fbdb4,#d4e1da,#8faea6); }
+.decor-fountain b { bottom: 55px; left: 16px; width: 60px; height: 25px; border-bottom-width: 8px; }
+.decor-fountain b::before { position: absolute; bottom: 9px; left: 27px; width: 5px; height: 31px; border-radius: 50% 50% 4px 4px; background: linear-gradient(rgba(224,247,242,.95),rgba(143,198,191,.5)); box-shadow: -10px 9px 0 -2px rgba(189,230,224,.68),10px 9px 0 -2px rgba(189,230,224,.68),0 0 12px rgba(207,239,233,.65); content: ""; }
 .decor-pond { right: 1%; bottom: 12px; width: 112px; height: 38px; border-color: rgba(216,228,209,.9); filter: saturate(1.12); box-shadow: inset 0 7px rgba(255,255,255,.3),0 6px 13px rgba(40,79,73,.2); }
-.decor-bridge { right: 15%; bottom: 7px; left: 15%; height: 47px; border-top-width: 11px; opacity: .94; background: repeating-linear-gradient(90deg,transparent 0 16px,rgba(120,91,68,.16) 17px 19px); }
+.decor-bridge { right: 5%; bottom: 124px; left: 5%; height: 78px; border: 0; border-radius: 50% 50% 9px 9px; opacity: .56; background: repeating-linear-gradient(90deg,#d9c6a6 0 17px,#b99a78 17px 20px); box-shadow: inset 0 10px rgba(255,255,255,.24),0 7px 10px rgba(63,63,49,.1); clip-path: polygon(0 53%,8% 36%,18% 22%,30% 11%,50% 4%,70% 11%,82% 22%,92% 36%,100% 53%,100% 70%,92% 57%,82% 46%,70% 38%,50% 33%,30% 38%,18% 46%,8% 57%,0 70%); }
+.decor-bridge i { bottom: 0; width: 6px; height: 45px; border-radius: 3px; background: #8f7058; }
+.decor-bridge i:nth-child(1) { left: 5%; }.decor-bridge i:nth-child(2) { left: calc(50% - 2px); }.decor-bridge i:nth-child(3) { right: 5%; }
 .decor-shelf { right: 2%; bottom: 46px; transform: scale(.86); transform-origin: bottom right; }
 .decor-flowercart { bottom: 39px; left: 1%; transform: scale(.82); transform-origin: bottom left; }
 .decor-moonlamp { top: 42px; right: 18%; width: 46px; height: 94px; border-top: 0; background: linear-gradient(rgba(76,75,70,.46),rgba(76,75,70,.46)) center top / 1px 40px no-repeat; transform: scale(.84); transform-origin: top center; }
@@ -934,15 +959,20 @@ dialog::backdrop { background: rgba(63,49,47,.38); backdrop-filter: blur(4px); }
 .garden-string-lights { top: 65px; left: 11%; display: flex; width: 78%; justify-content: space-between; border-top-color: rgba(73,80,65,.58); opacity: .95; }
 .garden-string-lights i { position: relative; flex: 0 0 10px; width: 10px; height: 13px; margin-top: 3px; border: 2px solid rgba(255,249,213,.72); background: #ffd978; box-shadow: 0 0 17px rgba(255,225,134,.98); }
 .garden-string-lights i::before { position: absolute; top: -8px; left: 3px; width: 2px; height: 7px; border-radius: 2px; background: rgba(72,79,65,.62); content: ""; }
-.decor-stones { right: 3%; bottom: 5px; left: 3%; height: 42px; opacity: .95; }
-.decor-stones i { width: 46px; height: 13px; border: 1px solid rgba(255,255,255,.2); background: rgba(224,220,204,.94); box-shadow: inset 0 3px rgba(255,255,255,.4),0 3px 5px rgba(52,73,55,.1); }
-.decor-stones i:nth-child(1) { left: 1%; bottom: 1px; }
-.decor-stones i:nth-child(2) { left: 18%; bottom: 20px; }
-.decor-stones i:nth-child(3) { right: 1%; bottom: 1px; }
-.decor-stones i:nth-child(4) { right: 18%; bottom: 18px; }
+.decor-stones { right: 5%; bottom: 4px; left: 5%; height: 34px; opacity: 1; }
+.decor-stones::before { position: absolute; right: 2%; bottom: -2px; left: 2%; height: 31px; border-radius: 50%; background: radial-gradient(ellipse,rgba(213,225,211,.2),transparent 68%); content: ""; }
+.decor-stones i { position: absolute; bottom: 3px; width: 43px; height: 15px; border: 2px solid rgba(241,246,237,.72); border-radius: 50%; background: linear-gradient(155deg,#f2f1e8,#cfd6ca); box-shadow: inset 0 3px rgba(255,255,255,.72),0 4px 6px rgba(43,66,49,.16); }
+.decor-stones i:nth-child(1) { left: 1%; transform: rotate(-5deg) scale(.88); }
+.decor-stones i:nth-child(2) { left: 18%; bottom: 8px; transform: rotate(3deg) scale(.78); }
+.decor-stones i:nth-child(3) { left: 35%; bottom: 4px; transform: rotate(-2deg) scale(.68); }
+.decor-stones i:nth-child(4) { right: 35%; bottom: 4px; transform: rotate(2deg) scale(.68); }
+.decor-stones i:nth-child(5) { right: 18%; bottom: 8px; transform: rotate(-3deg) scale(.78); }
+.decor-stones i:nth-child(6) { right: 1%; transform: rotate(5deg) scale(.88); }
 .decor-ribbon { top: 101px; left: 18%; width: 64%; border-top-color: rgba(91,132,96,.72); opacity: .9; }
 .decor-ribbon i { width: 22px; height: 11px; background: linear-gradient(135deg,#6f9a76,#df8999); box-shadow: 0 2px 4px rgba(56,82,61,.12); }
-.decor-starlight { inset: 49px 10% auto; height: 185px; opacity: .86; }
+.decor-starlight { inset: 53px 7% auto; height: 202px; border: 1px dashed rgba(255,239,177,.28); border-bottom: 0; border-radius: 50% 50% 0 0; opacity: 1; background: radial-gradient(circle at 18% 28%,rgba(255,241,181,.5) 0 2px,transparent 3px),radial-gradient(circle at 73% 20%,rgba(218,211,255,.52) 0 2px,transparent 3px),radial-gradient(circle at 45% 52%,rgba(255,214,221,.46) 0 2px,transparent 3px); }
+.decor-starlight i { width: 7px; height: 7px; background: #fff1ad; box-shadow: 0 0 13px #fff1ad,22px 19px 0 -2px #f7cfd6,-17px 39px 0 -2px #d9d2ff,39px 61px 0 -2px #fff1ad; }
+.decor-pavilion { right: 8%; bottom: 35px; left: 8%; height: 294px; opacity: .5; }
 
 .garden-feature-icon.letter { position: relative; color: #9d596a; background: linear-gradient(145deg,#fff0ed,#f1dce7); overflow: visible; }
 .garden-feature-icon.letter::after { position: absolute; right: -3px; bottom: -2px; width: 16px; height: 16px; border: 3px solid #d88091; border-radius: 50%; background: #f2cf79; box-shadow: -5px 1px #e79aaa,5px 1px #a79ac9,0 -5px #f0b7a7; content: ""; transform: scale(.62); }

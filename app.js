@@ -243,7 +243,7 @@ const gardenDecorations = [
   { id: "swing", name: "花藤秋千", threshold: 1600, slot: "left", icon: "panel-top" },
   { id: "fountain", name: "晨露喷泉", threshold: 1800, slot: "right", icon: "waves" },
   { id: "pond", name: "月影小池", threshold: 2000, slot: "right", icon: "circle-dot-dashed" },
-  { id: "bridge", name: "白木小桥", threshold: 2200, slot: "path", icon: "route" },
+  { id: "bridge", name: "白木小桥", threshold: 2200, slot: "structure", icon: "route" },
   { id: "shelf", name: "四季花架", threshold: 2400, slot: "structure", icon: "library-big" },
   { id: "flowercart", name: "流动花车", threshold: 2600, slot: "left", icon: "shopping-basket" },
   { id: "starlight", name: "庭院星幕", threshold: 2800, slot: "atmosphere", icon: "sparkles" },
@@ -2475,6 +2475,12 @@ function renderGardenDecorations(points) {
   const enabled = gardenDecorations
     .filter((item) => garden.decorationStates[item.id]?.enabled && gardenDecorationUnlocked(item, garden, points))
     .sort((a, b) => (layerOrder[a.slot] || 0) - (layerOrder[b.slot] || 0));
+  ["left", "right", "path", "structure", "overhead", "hanging", "atmosphere"].forEach((slot) => {
+    els.gardenStage.classList.toggle(`has-${slot}-decoration`, enabled.some((item) => item.slot === slot));
+  });
+  ["stones", "bridge", "starlight", "pavilion"].forEach((id) => {
+    els.gardenStage.classList.toggle(`has-decor-${id}`, enabled.some((item) => item.id === id));
+  });
   els.gardenSceneDecoration.dataset.decorationCount = String(enabled.length);
   els.gardenSceneDecoration.innerHTML = enabled.map((item) => `<span class="garden-decoration-layer" data-decoration-slot="${item.slot}" data-decoration-id="${item.id}">${gardenDecorationMarkup(item.id)}</span>`).join("");
   els.gardenDecorationList.replaceChildren(...gardenDecorations.map((item) => {
@@ -2502,7 +2508,7 @@ function gardenSlotName(slot) {
 function gardenDecorationMarkup(id) {
   const markup = {
     mushrooms: `<span class="garden-decor decor-mushrooms"><i></i><i></i><i></i></span>`,
-    stones: `<span class="garden-decor decor-stones"><i></i><i></i><i></i><i></i></span>`,
+    stones: `<span class="garden-decor decor-stones"><i></i><i></i><i></i><i></i><i></i><i></i></span>`,
     planters: `<span class="garden-decor decor-planters"><i></i><i></i><i></i></span>`,
     lights: `<span class="garden-decor garden-string-lights"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>`,
     picnic: `<span class="garden-decor decor-picnic"><i></i><b></b></span>`,
