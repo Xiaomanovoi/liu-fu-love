@@ -5,6 +5,7 @@
   const sync = {
     client: null, user: null, coupleId: null, role: null, channel: null,
     timer: null, voiceRefreshTimer: null, refreshPromise: null, forceRefreshQueued: false,
+    hydrationRetryTimer: null, hydrationRetryCount: 0,
     remoteReloadTimer: null, remotePhotosQueued: false, photosPromise: null,
     pendingState: null, saveInFlight: false, lastForegroundRefresh: 0,
     hydrated: false, photosHydrated: false, mediaSplitSupported: false, applyingRemote: false,
@@ -54,7 +55,7 @@
   }
 
   function runQuery(query, label) {
-    return withTimeout(query, 10000, label);
+    return withTimeout(query, 20000, label);
   }
 
   function runPhotoQuery(query, label) {
@@ -273,9 +274,12 @@
     if (sync.channel) sync.client.removeChannel(sync.channel);
     clearTimeout(sync.timer);
     clearTimeout(sync.remoteReloadTimer);
+    clearTimeout(sync.hydrationRetryTimer);
     clearInterval(sync.voiceRefreshTimer);
     sync.timer = null;
     sync.remoteReloadTimer = null;
+    sync.hydrationRetryTimer = null;
+    sync.hydrationRetryCount = 0;
     sync.remotePhotosQueued = false;
     sync.photosPromise = null;
     sync.pendingState = null;
@@ -355,7 +359,10 @@
       updateUi("connected", "已实时同步");
     } catch (loadError) {
       const detail = syncErrorMessage(loadError);
-      updateUi("connected", detail ? `刷新失败${detail}` : "刷新失败，请稍后重试");
+      sync.hydrated = true;
+      updateUi("connected", detail ? `读取较慢${detail}，新记录会继续自动保存` : "云端读取较慢，新记录会继续自动保存");
+      if (sync.pendingState && !sync.timer) sync.timer = setTimeout(flushSave, 0);
+      scheduleHydrationRetry();
     }
     Promise.allSettled([loadInviteCode(), refreshMissStats(), refreshVoiceMessages()]);
     clearInterval(sync.voiceRefreshTimer);
@@ -479,7 +486,32 @@
     }).catch((error) => console.warn("Private state refresh failed", error));
     if (shared.media) applyRemoteMedia(shared.media);
     else loadRemotePhotos(refreshPhotos).catch((error) => console.warn("Photo refresh failed", error));
+    clearTimeout(sync.hydrationRetryTimer);
+    sync.hydrationRetryTimer = null;
+    sync.hydrationRetryCount = 0;
     if (sync.pendingState && !sync.timer) sync.timer = setTimeout(flushSave, 0);
+  }
+
+  function scheduleHydrationRetry() {
+    if (sync.hydrationRetryTimer || !sync.client || !sync.user || !sync.coupleId) return;
+    const delay = Math.min(30000, 2000 * (2 ** Math.min(sync.hydrationRetryCount, 4)));
+    sync.hydrationRetryCount += 1;
+    sync.hydrationRetryTimer = window.setTimeout(async () => {
+      sync.hydrationRetryTimer = null;
+      if (sync.pendingState || sync.saveInFlight) {
+        scheduleHydrationRetry();
+        return;
+      }
+      try {
+        updateUi("connected", "正在重新连接");
+        await loadRemoteState();
+        updateUi("connected", "已实时同步");
+      } catch (error) {
+        console.warn("Shared state hydration retry failed", error);
+        updateUi("connected", "网络较慢，仍在自动重试");
+        scheduleHydrationRetry();
+      }
+    }, delay);
   }
 
   function queueRemoteReload(refreshPhotos = false) {

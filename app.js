@@ -516,7 +516,8 @@ function bindActions() {
     event.preventDefault();
     const text = els.messageText.value.trim();
     if (!text) return;
-    state.messages.unshift({ id: uid(), person: state.writer, text, date: todayString(), updatedAt: new Date().toISOString() });
+    const createdAt = new Date().toISOString();
+    state.messages.unshift({ id: uid(), person: state.writer, text, date: todayString(), createdAt, updatedAt: createdAt });
     els.messageForm.reset();
     persistAndRender();
   });
@@ -591,9 +592,10 @@ function bindActions() {
     event.preventDefault();
     const text = els.noteText.value.trim();
     if (!text) return;
+    const createdAtTime = new Date().toISOString();
     state.loveNotes.unshift({
       id: uid(), from: currentPerson(), to: els.noteReceiver.value,
-      text, unlockDate: els.noteUnlockDate.value || todayString(), createdAt: todayString(), opened: false, updatedAt: new Date().toISOString()
+      text, unlockDate: els.noteUnlockDate.value || todayString(), createdAt: todayString(), createdAtTime, opened: false, updatedAt: createdAtTime
     });
     els.noteForm.reset();
     setFormDates();
@@ -604,9 +606,10 @@ function bindActions() {
     const content = els.studyContent.value.trim();
     const minutes = Number(els.studyMinutes.value);
     if (!content || !minutes || minutes < 1 || minutes > 1440) return;
+    const createdAt = new Date().toISOString();
     state.studyLogs.unshift({
       id: uid(), person: currentPerson(), content, minutes,
-      date: els.studyDate.value || todayString(), note: els.studyNote.value.trim(), updatedAt: new Date().toISOString()
+      date: els.studyDate.value || todayString(), note: els.studyNote.value.trim(), createdAt, updatedAt: createdAt
     });
     els.studyForm.reset();
     setFormDates();
@@ -624,7 +627,8 @@ function bindActions() {
     try {
       const file = els.gamePhotoInput.files[0];
       const image = file ? await shrinkImage(file) : "";
-      state.gameRecords.unshift({ id: uid(), date, game, achievement, image, updatedAt: new Date().toISOString() });
+      const createdAt = new Date().toISOString();
+      state.gameRecords.unshift({ id: uid(), date, game, achievement, image, createdAt, updatedAt: createdAt });
       els.gameForm.reset();
       clearGamePhotoPreview();
       setFormDates();
@@ -646,7 +650,8 @@ function bindActions() {
     const title = els.meetingTitle.value.trim();
     const date = els.meetingDate.value;
     if (!title || !date) return;
-    state.meetings.unshift({ id: uid(), title, date, place: els.meetingPlace.value.trim(), note: els.meetingNote.value.trim(), planned: date >= todayString(), updatedAt: new Date().toISOString() });
+    const createdAt = new Date().toISOString();
+    state.meetings.unshift({ id: uid(), title, date, place: els.meetingPlace.value.trim(), note: els.meetingNote.value.trim(), planned: date >= todayString(), createdAt, updatedAt: createdAt });
     els.meetingForm.reset();
     persistAndRender();
   });
@@ -655,7 +660,8 @@ function bindActions() {
     const file = els.photoInput.files[0];
     if (!file) return;
     const src = await shrinkImage(file);
-    state.photos.unshift({ id: uid(), src, caption: els.photoCaption.value.trim() || "我们的一个瞬间", date: todayString(), person: state.writer, updatedAt: new Date().toISOString() });
+    const createdAt = new Date().toISOString();
+    state.photos.unshift({ id: uid(), src, caption: els.photoCaption.value.trim() || "我们的一个瞬间", date: todayString(), person: state.writer, createdAt, updatedAt: createdAt });
     els.albumForm.reset();
     clearPhotoPreview();
     persistAndRender();
@@ -713,7 +719,8 @@ function bindActions() {
     event.preventDefault();
     const value = Number(els.weightInput.value);
     if (!value || value < 20 || value > 300) return;
-    privateSpace().health.weights.unshift({ id: uid(), value, date: els.weightDate.value || todayString(), updatedAt: new Date().toISOString() });
+    const createdAt = new Date().toISOString();
+    privateSpace().health.weights.unshift({ id: uid(), value, date: els.weightDate.value || todayString(), createdAt, updatedAt: createdAt });
     els.weightForm.reset();
     els.weightDate.value = todayString();
     persistAndRender();
@@ -725,7 +732,8 @@ function bindActions() {
     const length = Number(els.cycleLength.value);
     if (!start || (end && end < start) || !length || length < 20 || length > 45) return;
     const cycles = privateSpace().health.cycles;
-    cycles.unshift({ id: uid(), start, end, length, updatedAt: new Date().toISOString() });
+    const createdAt = new Date().toISOString();
+    cycles.unshift({ id: uid(), start, end, length, createdAt, updatedAt: createdAt });
     els.cycleForm.reset();
     els.cycleLength.value = "28";
     persistAndRender();
@@ -2841,7 +2849,7 @@ function renderWheelHistory() {
 }
 
 function renderMessages() {
-  const orderedMessages = sortByUpdatedDesc(state.messages || []);
+  const orderedMessages = sortByDateDesc(state.messages || []);
   const messages = visibleHistoryItems("messages", orderedMessages);
   if (!state.messages.length) return renderEmpty(els.messageList, "第一条留言，留给此刻最想说的话。");
   els.messageList.replaceChildren(...messages.map((item) => {
@@ -2980,7 +2988,7 @@ function renderAchievements() {
 }
 
 function renderLoveNotes() {
-  const notes = state.loveNotes || [];
+  const notes = sortByDateDesc(state.loveNotes || [], "createdAt");
   const person = currentPerson();
   const visibleNotes = visibleHistoryItems("notes", notes, {
     alwaysVisible: (item) => item.to === person && item.unlockDate <= todayString() && !item.opened,
@@ -3056,7 +3064,7 @@ function renderGameRecords() {
 
 function renderMeetings() {
   if (!state.meetings.length) return renderEmpty(els.meetingList, "第一次见面，值得从这里开始收藏。");
-  const meetings = [...state.meetings].sort((a, b) => (b.date || "").localeCompare(a.date || ""));
+  const meetings = sortByDateDesc(state.meetings || []);
   els.meetingList.replaceChildren(...meetings.map((item) => {
     const node = document.createElement("article");
     node.className = "meeting-card";
@@ -3072,7 +3080,7 @@ function renderMeetings() {
 
 function renderAlbum() {
   if (!state.photos.length) return renderEmpty(els.albumGrid, "第一张合照，留给你们最喜欢的那个瞬间。");
-  els.albumGrid.replaceChildren(...state.photos.map((photo) => {
+  els.albumGrid.replaceChildren(...sortByDateDesc(state.photos || []).map((photo) => {
     const node = document.createElement("article");
     node.className = "photo-card";
     node.innerHTML = `<img src="${photo.src}" alt="共同相册照片"><button class="delete-button photo-delete" data-delete-photo="${photo.id}" type="button" aria-label="删除这张照片">×</button><div class="photo-copy"><p>${escapeHTML(photo.caption)}</p><small>${formatDate(parseDate(photo.date))} · ${people[photo.person].name}</small></div>`;
@@ -3981,14 +3989,17 @@ function shortGardenLabel(value, max = 18) {
 function todayString() { const now = new Date(); return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`; }
 function uid() { return window.crypto?.randomUUID?.() || `id-${Date.now()}-${Math.random().toString(16).slice(2)}`; }
 function pickRandom(items) { return items[Math.floor(Math.random() * items.length)] || ""; }
-function sortByDateDesc(items, key = "date") { return [...items].sort((a, b) => (b[key] || "").localeCompare(a[key] || "")); }
-function sortByUpdatedDesc(items) {
+function sortByDateDesc(items, key = "date") {
   const timestamp = (item) => {
-    const value = item?.updatedAt || item?.createdAt || (item?.date ? `${item.date}T00:00:00` : "");
+    const fullCreatedAt = String(item?.createdAt || "").includes("T") ? item.createdAt : "";
+    const value = item?.createdAtTime || fullCreatedAt || item?.updatedAt || "";
     const parsed = Date.parse(value);
     return Number.isFinite(parsed) ? parsed : 0;
   };
-  return [...items].sort((a, b) => timestamp(b) - timestamp(a) || String(b?.id || "").localeCompare(String(a?.id || "")));
+  return [...items].sort((a, b) => {
+    const dateOrder = String(b?.[key] || "").slice(0, 10).localeCompare(String(a?.[key] || "").slice(0, 10));
+    return dateOrder || timestamp(b) - timestamp(a);
+  });
 }
 function escapeHTML(value) { return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;"); }
 function syncFeatureError(error, feature) {
