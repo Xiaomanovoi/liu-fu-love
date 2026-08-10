@@ -21,6 +21,7 @@ const files = {
   "/questions-extra.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("questions-extra.js"))} },
   "/supabase-config.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("supabase-config.js"))} },
   "/assets/garden-glasshouse.svg": { type: "image/svg+xml; charset=utf-8", body: ${JSON.stringify(readText("assets/garden-glasshouse.svg"))} },
+  "/assets/vendor/supabase.min.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("assets/vendor/supabase.min.js"))} },
   "/assets/hero-bg.jpg": { type: "image/jpeg", base64: "${readBase64("assets/hero-bg.jpg")}" }
 };
 

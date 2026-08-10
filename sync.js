@@ -30,6 +30,29 @@
     ]).finally(() => window.clearTimeout(timer));
   }
 
+  function authRedirectUrl() {
+    const url = new URL(window.location.href);
+    url.search = "";
+    url.hash = "";
+    return url.href;
+  }
+
+  async function recoverSessionFromUrl() {
+    const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const authError = params.get("error_description") || params.get("error");
+    if (authError) throw new Error(authError);
+    const accessToken = params.get("access_token");
+    const refreshToken = params.get("refresh_token");
+    if (!accessToken || !refreshToken) return false;
+    const { error } = await sync.client.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    });
+    if (error) throw error;
+    window.history.replaceState({}, document.title, authRedirectUrl());
+    return true;
+  }
+
   function runQuery(query, label) {
     return withTimeout(query, 10000, label);
   }
@@ -127,7 +150,7 @@
       try {
         const { error } = await sync.client.auth.signInWithOtp({
           email,
-          options: { emailRedirectTo: window.location.origin + window.location.pathname }
+          options: { emailRedirectTo: authRedirectUrl() }
         });
         result.textContent = error ? loginLinkError(error) : "登录链接已发送。要在系统浏览器登录，请长按复制邮件链接，再粘贴到下方入口。";
       } catch (error) {
@@ -434,8 +457,6 @@
     const shared = await readSharedCore();
     const sharedData = shared.data || {};
     sync.lastSharedState = structuredClone(sharedData);
-    const firstHydration = !sync.hydrated;
-    if (firstHydration) sync.pendingState = null;
     sync.applyingRemote = true;
     try {
       emit("love-sync-remote", {
@@ -464,13 +485,18 @@
   function queueRemoteReload(refreshPhotos = false) {
     sync.remotePhotosQueued ||= refreshPhotos;
     clearTimeout(sync.remoteReloadTimer);
-    sync.remoteReloadTimer = window.setTimeout(() => {
+    const reloadWhenSettled = () => {
+      if (sync.pendingState || sync.saveInFlight || !sync.hydrated) {
+        sync.remoteReloadTimer = window.setTimeout(reloadWhenSettled, 350);
+        return;
+      }
       const shouldRefreshPhotos = sync.remotePhotosQueued;
       sync.remotePhotosQueued = false;
       loadRemoteState({ refreshPhotos: shouldRefreshPhotos }).catch((error) => {
         console.warn("Shared state refresh failed", error);
       });
-    }, 120);
+    };
+    sync.remoteReloadTimer = window.setTimeout(reloadWhenSettled, 120);
   }
 
   function broadcastSharedChange(mediaChanged = false) {
@@ -649,12 +675,12 @@
       updateUi("pairing", "尚未进入双人空间，本次记录仅保存在当前浏览器");
       return;
     }
+    sync.pendingState = structuredClone(state);
+    clearTimeout(sync.timer);
     if (!sync.hydrated && !sync.applyingRemote) {
       updateUi("connected", "正在加载原有数据");
       return;
     }
-    sync.pendingState = state;
-    clearTimeout(sync.timer);
     if (sync.hydrated) sync.timer = setTimeout(flushSave, 80);
   }
 
@@ -829,10 +855,6 @@
         gameImages: sync.photosHydrated ? gameImages : null,
         privateData
       };
-      if (sync.lastSubmittedState && sameState(submittedState, sync.lastSubmittedState)) {
-        updateUi("connected", "已实时同步");
-        return;
-      }
       if (!sharedDirty && !mediaChanged && !privateDirty) {
         updateUi("connected", "已实时同步");
         return;
@@ -905,12 +927,17 @@
   function bindLifecycleFlush() {
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") flushSave();
-      else refreshVisibleData();
+      else if (sync.user) refreshVisibleData();
+      else if (sync.client) refreshSession(true);
+    });
+    window.addEventListener("pageshow", () => {
+      if (sync.client) refreshSession(true);
     });
     window.addEventListener("pagehide", flushSave);
     window.addEventListener("online", () => {
       flushSave();
-      refreshVisibleData();
+      if (sync.user) refreshVisibleData();
+      else if (sync.client) refreshSession(true);
     });
   }
 
@@ -923,9 +950,20 @@
         return;
       }
       sync.client = window.supabase.createClient(config.url, config.publishableKey, {
-        auth: { persistSession: true, detectSessionInUrl: true, autoRefreshToken: true }
+        auth: {
+          persistSession: true,
+          detectSessionInUrl: false,
+          autoRefreshToken: true,
+          flowType: "implicit"
+        }
       });
       sync.client.auth.onAuthStateChange(() => window.setTimeout(refreshSession, 0));
+      try {
+        await recoverSessionFromUrl();
+      } catch (error) {
+        const detail = syncErrorMessage(error);
+        q("#inviteResult").textContent = detail ? `登录链接失效${detail}` : "登录链接失效，请重新发送后再试。";
+      }
       await refreshSession();
     },
     scheduleSave,
