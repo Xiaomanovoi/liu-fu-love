@@ -91,7 +91,8 @@
     if (!userId) return;
     const cache = readFeatureCache();
     cache[userId] = { ...(cache[userId] || {}), ...patch };
-    localStorage.setItem(featureCacheKey, JSON.stringify(cache));
+    try { localStorage.setItem(featureCacheKey, JSON.stringify(cache)); }
+    catch (error) { console.warn("Feature cache write skipped", error); }
   }
 
   function emitCachedFeatures(userId) {
@@ -111,7 +112,8 @@
     if (!userId) return;
     const cache = readFeatureCache();
     delete cache[userId];
-    localStorage.setItem(featureCacheKey, JSON.stringify(cache));
+    try { localStorage.setItem(featureCacheKey, JSON.stringify(cache)); }
+    catch (error) { console.warn("Feature cache cleanup skipped", error); }
   }
 
   function updateUi(mode, message) {

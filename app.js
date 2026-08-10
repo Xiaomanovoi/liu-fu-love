@@ -1,5 +1,6 @@
 const storageKey = "love-tool-liu-fu-v2";
 const recoveryBackupKey = "love-tool-liu-fu-shared-backup-v1";
+const syncFeatureCacheKey = "love-sync-feature-cache-v1";
 const people = {
   liu: { name: "刘向强", short: "向强", color: "rose" },
   fu: { name: "付嘉颖", short: "嘉颖", color: "fu" }
@@ -419,7 +420,7 @@ function init() {
   bindSyncEvents();
   setFormDates();
   backupSharedState(state, "页面启动");
-  if (refreshGardenProgress("花园开始生长")) localStorage.setItem(storageKey, JSON.stringify(state));
+  if (refreshGardenProgress("花园开始生长")) writeActiveStateToLocalStorage(state);
   render();
   window.lucide?.createIcons();
   window.LoveSync?.initialize();
@@ -1008,6 +1009,12 @@ function restoreFocusedDraft(draft) {
 }
 
 function bindSyncEvents() {
+  window.addEventListener("love-local-storage-error", () => {
+    const status = q("#syncStatus");
+    const connectedText = q("#syncConnectedText");
+    if (status) status.textContent = "本机缓存空间不足，本次记录仍会继续同步到云端";
+    if (connectedText) connectedText.textContent = "已自动清理可重建缓存；请保持页面打开，等待显示已同步。";
+  });
   window.addEventListener("love-sync-status", (event) => {
     const { connected, role, needsPairing } = event.detail;
     els.pairingNotice.hidden = !needsPairing;
@@ -1478,8 +1485,8 @@ function commitExternalGardenGrowth(reason) {
   const changed = refreshGardenProgress(reason);
   renderGarden();
   if (!changed) return;
-  localStorage.setItem(storageKey, JSON.stringify(state));
   window.LoveSync?.scheduleSave(state);
+  writeActiveStateToLocalStorage(state);
 }
 
 function gardenWeekKey(date = new Date()) {
@@ -3476,12 +3483,62 @@ function commitSharedRecordDeletion(field, id, removeRecord, reason = "删除共
 
 function persistAndRender(gardenReason = "共同生活") {
   refreshGardenProgress(gardenReason);
-  backupSharedState(state, "本机记录更新");
-  localStorage.setItem(storageKey, JSON.stringify(state));
-  render();
-  window.LoveSync?.scheduleSave(state);
+  try {
+    window.LoveSync?.scheduleSave(state);
+  } catch (error) {
+    console.error("Unable to queue cloud save", error);
+  }
+  const locallySaved = writeActiveStateToLocalStorage(state);
+  try {
+    render();
+  } finally {
+    if (locallySaved) backupSharedState(state, "本机记录更新");
+  }
 }
-function saveLocalAndRender() { refreshGardenProgress("同步新的共同回忆"); backupSharedState(state, "同步前快照"); localStorage.setItem(storageKey, JSON.stringify(state)); render(); }
+
+function saveLocalAndRender() {
+  refreshGardenProgress("同步新的共同回忆");
+  const locallySaved = writeActiveStateToLocalStorage(state);
+  try {
+    render();
+  } finally {
+    if (locallySaved) backupSharedState(state, "同步前快照");
+  }
+}
+
+function reportLocalStorageFailure(error) {
+  console.warn("Local state cache could not be updated", error);
+  window.dispatchEvent(new CustomEvent("love-local-storage-error", {
+    detail: { message: error?.message || String(error || "unknown error") }
+  }));
+}
+
+function writeActiveStateToLocalStorage(value) {
+  let serialized;
+  try {
+    serialized = JSON.stringify(value);
+  } catch (error) {
+    reportLocalStorageFailure(error);
+    return false;
+  }
+
+  try {
+    localStorage.setItem(storageKey, serialized);
+    return true;
+  } catch (firstError) {
+    // These two caches can be rebuilt from the active state or the cloud.
+    [recoveryBackupKey, syncFeatureCacheKey].forEach((key) => {
+      try { localStorage.removeItem(key); } catch { /* Storage may be disabled entirely. */ }
+    });
+    try {
+      localStorage.setItem(storageKey, serialized);
+      return true;
+    } catch (retryError) {
+      reportLocalStorageFailure(retryError || firstError);
+      return false;
+    }
+  }
+}
 
 function sharedStateScore(value) {
   if (!value || typeof value !== "object") return 0;
@@ -3506,16 +3563,26 @@ function sharedOnly(value) {
   return structuredClone(shared);
 }
 
+function compactSharedBackup(value) {
+  const data = sharedOnly(value);
+  delete data.photos;
+  if (Array.isArray(data.gameRecords)) {
+    data.gameRecords = data.gameRecords.map(({ image, ...record }) => record);
+  }
+  return data;
+}
+
 function readSharedBackup() {
   try { return JSON.parse(localStorage.getItem(recoveryBackupKey))?.data || null; }
   catch { return null; }
 }
 
 function backupSharedState(value, reason) {
-  const data = sharedOnly(value);
+  const data = compactSharedBackup(value);
   const score = sharedStateScore(data);
   if (score < 7) return;
-  const existing = readSharedBackup();
+  const storedBackup = readSharedBackup();
+  const existing = storedBackup ? compactSharedBackup(storedBackup) : null;
   if (existing && sharedStateScore(existing) > score) {
     const protectedBackup = applySharedDeletionTombstones({
       ...existing,
@@ -3551,7 +3618,12 @@ function mergeRecoverySharedState(localState, remoteShared) {
     const records = new Map();
     [...(remoteItems || []), ...(localItems || [])].forEach((item) => {
       if (!item?.id || deleted.has(item.id)) return;
-      records.set(item.id, item);
+      const existing = records.get(item.id) || {};
+      records.set(item.id, {
+        ...existing,
+        ...item,
+        ...(existing.image && !item.image ? { image: existing.image } : {})
+      });
     });
     return [...records.values()];
   };
