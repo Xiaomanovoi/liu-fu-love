@@ -134,6 +134,39 @@
   }
 
   function bindUi() {
+    q("#syncPasswordForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const email = q("#syncPasswordEmail").value.trim();
+      const password = q("#syncPassword").value;
+      const result = q("#inviteResult");
+      if (!email || password.length < 8) {
+        result.textContent = "请输入邮箱和至少 8 位的登录密码。";
+        return;
+      }
+      if (!sync.client) {
+        result.textContent = "同步服务还在加载，请稍等片刻后再试。";
+        return;
+      }
+      const button = event.currentTarget.querySelector("button");
+      button.disabled = true;
+      button.textContent = "登录中...";
+      result.textContent = "正在安全登录...";
+      try {
+        const { error } = await sync.client.auth.signInWithPassword({ email, password });
+        if (error) {
+          result.textContent = passwordLoginError(error);
+          return;
+        }
+        q("#syncPassword").value = "";
+        result.textContent = "登录成功，正在读取你们的空间...";
+        await refreshSession(true);
+      } catch {
+        result.textContent = "登录失败：网络连接异常，请检查网络后重试。";
+      } finally {
+        button.disabled = false;
+        button.textContent = "密码登录";
+      }
+    });
     q("#syncEmailForm").addEventListener("submit", async (event) => {
       event.preventDefault();
       const email = q("#syncEmail").value.trim();
@@ -182,10 +215,41 @@
     q("#createPair").addEventListener("click", createPair);
     q("#joinPairForm").addEventListener("submit", joinPair);
     q("#copyInviteCode").addEventListener("click", copyInviteCode);
+    q("#syncSetPasswordForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const password = q("#syncNewPassword").value;
+      const confirmation = q("#syncConfirmPassword").value;
+      const result = q("#syncPasswordResult");
+      if (password.length < 8) {
+        result.textContent = "密码至少需要 8 位。";
+        return;
+      }
+      if (password !== confirmation) {
+        result.textContent = "两次输入的密码不一致。";
+        return;
+      }
+      const button = event.currentTarget.querySelector("button");
+      button.disabled = true;
+      button.textContent = "保存中...";
+      try {
+        const { error } = await sync.client.auth.updateUser({ password });
+        if (error) {
+          result.textContent = passwordUpdateError(error);
+          return;
+        }
+        event.currentTarget.reset();
+        result.textContent = "密码已保存，可用于其他浏览器和主屏幕应用登录。";
+      } catch {
+        result.textContent = "保存失败：网络连接异常，请稍后重试。";
+      } finally {
+        button.disabled = false;
+        button.textContent = "保存密码";
+      }
+    });
     q("#syncSignOut").addEventListener("click", async () => {
       const userId = sync.user?.id;
       await flushSave();
-      await sync.client.auth.signOut();
+      await sync.client.auth.signOut({ scope: "local" });
       clearFeatureCache(userId);
       resetConnection();
       updateUi("signed-out", "请登录");
@@ -229,6 +293,20 @@
       return "发送失败：登录回跳地址未配置正确。请检查 Supabase 的 URL Configuration。";
     }
     return detail ? `发送失败：${detail}` : "发送失败，请检查网络和 Supabase 邮箱登录设置。";
+  }
+
+  function passwordLoginError(error) {
+    const detail = [error?.message, error?.details].filter(Boolean).join(" ");
+    if (/invalid login credentials|invalid.*password/i.test(detail)) return "邮箱或密码不正确；尚未设置密码时，请先使用邮件链接登录。";
+    if (/rate limit|too many/i.test(detail)) return "尝试次数较多，请稍后再试。";
+    return detail ? `登录失败：${detail}` : "登录失败，请检查邮箱和密码。";
+  }
+
+  function passwordUpdateError(error) {
+    const detail = [error?.message, error?.details].filter(Boolean).join(" ");
+    if (/weak password|password.*short|at least/i.test(detail)) return "密码强度不足，请使用至少 8 位且不易猜到的密码。";
+    if (/reauth|nonce|recent/i.test(detail)) return "当前登录时间较久，请先通过邮件链接重新登录，再设置密码。";
+    return detail ? `保存失败：${detail}` : "密码保存失败，请稍后重试。";
   }
 
   function pairingError(action, error) {

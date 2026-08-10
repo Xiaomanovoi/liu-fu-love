@@ -1,7 +1,8 @@
 {
   "type": "module",
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "test:pwa": "node tests/pwa-static.mjs"
   },
   "dependencies": {},
   "devDependencies": {}

@@ -4,7 +4,7 @@ mkdirSync("dist/assets", { recursive: true });
 mkdirSync("dist/server", { recursive: true });
 mkdirSync("dist/.openai", { recursive: true });
 
-for (const name of ["index.html", "styles.css", "app.js", "sync.js", "questions-extra.js", "supabase-config.js"]) {
+for (const name of ["index.html", "styles.css", "app.js", "sync.js", "questions-extra.js", "supabase-config.js", "manifest.webmanifest", "pwa.js", "sw.js"]) {
   cpSync(name, `dist/${name}`);
 }
 
@@ -20,8 +20,16 @@ const files = {
   "/sync.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("sync.js"))} },
   "/questions-extra.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("questions-extra.js"))} },
   "/supabase-config.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("supabase-config.js"))} },
+  "/manifest.webmanifest": { type: "application/manifest+json; charset=utf-8", body: ${JSON.stringify(readText("manifest.webmanifest"))} },
+  "/pwa.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("pwa.js"))} },
+  "/sw.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("sw.js"))} },
   "/assets/garden-glasshouse.svg": { type: "image/svg+xml; charset=utf-8", body: ${JSON.stringify(readText("assets/garden-glasshouse.svg"))} },
   "/assets/vendor/supabase.min.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("assets/vendor/supabase.min.js"))} },
+  "/assets/pwa/icon-32.png": { type: "image/png", base64: "${readBase64("assets/pwa/icon-32.png")}" },
+  "/assets/pwa/apple-touch-icon.png": { type: "image/png", base64: "${readBase64("assets/pwa/apple-touch-icon.png")}" },
+  "/assets/pwa/icon-192.png": { type: "image/png", base64: "${readBase64("assets/pwa/icon-192.png")}" },
+  "/assets/pwa/icon-512.png": { type: "image/png", base64: "${readBase64("assets/pwa/icon-512.png")}" },
+  "/assets/pwa/icon-maskable-512.png": { type: "image/png", base64: "${readBase64("assets/pwa/icon-maskable-512.png")}" },
   "/assets/hero-bg.jpg": { type: "image/jpeg", base64: "${readBase64("assets/hero-bg.jpg")}" }
 };
 
