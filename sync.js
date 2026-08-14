@@ -12,6 +12,8 @@
     lastSharedState: null, lastPhotosState: null, lastGameImagesState: null, lastPrivateState: null,
     lastSubmittedState: null
   };
+  let starSummaryPromise = null;
+  const starSnapshotPromises = new Map();
 
   function emit(name, detail) {
     window.dispatchEvent(new CustomEvent(name, { detail }));
@@ -106,6 +108,7 @@
         : cached.voiceMessages.map((message) => ({ ...message, signedUrl: "" }));
       emit("love-voice-messages", messages);
     }
+    if (cached.starBottleSummary) emit("love-star-bottle-summary", cached.starBottleSummary);
     if (cached.starBottleSnapshot) emit("love-star-bottle-snapshot", cached.starBottleSnapshot);
   }
 
@@ -378,6 +381,8 @@
     sync.lastGameImagesState = null;
     sync.lastPrivateState = null;
     sync.lastSubmittedState = null;
+    starSummaryPromise = null;
+    starSnapshotPromises.clear();
     q("#connectedInvite").hidden = true;
   }
 
@@ -445,7 +450,7 @@
       if (sync.pendingState && !sync.timer) sync.timer = setTimeout(flushSave, 0);
       scheduleHydrationRetry();
     }
-    Promise.allSettled([loadInviteCode(), refreshMissStats(), refreshVoiceMessages(), refreshStarBottle()]);
+    Promise.allSettled([loadInviteCode(), refreshMissStats(), refreshVoiceMessages(), refreshStarBottleSummary()]);
     clearInterval(sync.voiceRefreshTimer);
     sync.voiceRefreshTimer = setInterval(refreshVoiceMessages, 45 * 60 * 1000);
   }
@@ -768,6 +773,34 @@
     }).catch((error) => console.warn("Star bottle broadcast failed", error));
   }
 
+  async function refreshStarBottleSummary() {
+    if (!sync.client || !sync.coupleId || !sync.user) return null;
+    if (starSummaryPromise) return starSummaryPromise;
+    const requestedUserId = sync.user.id;
+    starSummaryPromise = (async () => {
+      let result = await runQuery(sync.client.rpc("get_love_star_summary"), "读取星语瓶摘要");
+      if (result.error && isMissingRpcError(result.error)) {
+        result = await runQuery(sync.client.rpc("get_love_star_snapshot", {
+          p_history_recipient: null,
+          p_history_limit: 5,
+          p_history_offset: 0,
+          p_pending_limit: 5,
+          p_pending_offset: 0
+        }), "读取星语瓶摘要");
+      }
+      if (result.error) {
+        featureError("stars", result.error);
+        throw result.error;
+      }
+      const data = result.data || {};
+      if (sync.user?.id !== requestedUserId) return data;
+      writeFeatureCache(requestedUserId, { starBottleSummary: data });
+      emit("love-star-bottle-summary", data);
+      return data;
+    })().finally(() => { starSummaryPromise = null; });
+    return starSummaryPromise;
+  }
+
   async function refreshStarBottle(options = {}) {
     if (!sync.client || !sync.coupleId || !sync.user) return null;
     const historyRecipient = options.historyRecipient === "liu" || options.historyRecipient === "fu"
@@ -775,36 +808,57 @@
       : null;
     const historyLimit = Math.max(1, Math.min(5000, Number(options.historyLimit || 5)));
     const pendingLimit = Math.max(1, Math.min(5000, Number(options.pendingLimit || 5)));
-    const { data, error } = await runQuery(sync.client.rpc("get_love_star_snapshot", {
-      p_history_recipient: historyRecipient,
-      p_history_limit: historyLimit,
-      p_history_offset: 0,
-      p_pending_limit: pendingLimit,
-      p_pending_offset: 0
-    }), "读取星语瓶");
-    if (error) {
-      featureError("stars", error);
-      throw error;
-    }
-    if (historyRecipient === null && historyLimit === 5 && pendingLimit === 5) {
-      writeFeatureCache(sync.user.id, { starBottleSnapshot: data || {} });
-    }
-    emit("love-star-bottle-snapshot", data || {});
-    return data || {};
+    const key = `${historyRecipient || "all"}:${historyLimit}:${pendingLimit}`;
+    if (starSnapshotPromises.has(key)) return starSnapshotPromises.get(key);
+    const requestedUserId = sync.user.id;
+    const promise = (async () => {
+      const { data, error } = await runQuery(sync.client.rpc("get_love_star_snapshot", {
+        p_history_recipient: historyRecipient,
+        p_history_limit: historyLimit,
+        p_history_offset: 0,
+        p_pending_limit: pendingLimit,
+        p_pending_offset: 0
+      }), "读取星语瓶");
+      if (error) {
+        featureError("stars", error);
+        throw error;
+      }
+      if (sync.user?.id !== requestedUserId) return data || {};
+      if (historyRecipient === null && historyLimit === 5 && pendingLimit === 5) {
+        writeFeatureCache(requestedUserId, { starBottleSnapshot: data || {}, starBottleSummary: data || {} });
+      }
+      emit("love-star-bottle-snapshot", data || {});
+      return data || {};
+    })().finally(() => starSnapshotPromises.delete(key));
+    starSnapshotPromises.set(key, promise);
+    return promise;
   }
 
-  async function runStarMutation(functionName, parameters, label) {
+  async function runStarMutation(functionName, parameters, label, reportError = true) {
     if (!sync.client || !sync.coupleId || !sync.user) throw new Error("not connected");
     const { data, error } = await runQuery(sync.client.rpc(functionName, parameters), label);
     if (error) {
-      featureError("stars", error);
+      if (reportError) featureError("stars", error);
       throw error;
     }
     broadcastStarBottleChange();
     return data;
   }
 
-  function createStarNote(content) {
+  async function createStarNote(content, clientToken) {
+    if (clientToken) {
+      try {
+        return await runStarMutation("create_love_star_v2", {
+          p_content: content,
+          p_client_token: clientToken
+        }, "存入星星", false);
+      } catch (error) {
+        if (!isMissingRpcError(error)) {
+          featureError("stars", error);
+          throw error;
+        }
+      }
+    }
     return runStarMutation("create_love_star", { p_content: content }, "存入星星");
   }
 
@@ -814,6 +868,10 @@
 
   function deleteStarNote(id) {
     return runStarMutation("delete_love_star", { p_note_id: id }, "删除星星");
+  }
+
+  function deleteStarNoteByToken(clientToken) {
+    return runStarMutation("delete_love_star_by_token", { p_client_token: clientToken }, "撤销待送达星星");
   }
 
   function openStarNote() {
@@ -1103,7 +1161,7 @@
       const detail = syncErrorMessage(error);
       updateUi("connected", detail ? `刷新失败${detail}` : "刷新失败，请稍后重试");
     }
-    Promise.allSettled([refreshMissStats(), refreshVoiceMessages(), refreshStarBottle()]);
+    Promise.allSettled([refreshMissStats(), refreshVoiceMessages(), refreshStarBottleSummary()]);
   }
 
   function bindLifecycleFlush() {
@@ -1154,10 +1212,12 @@
     refreshMissStats,
     uploadVoice,
     deleteVoice,
+    refreshStarBottleSummary,
     refreshStarBottle,
     createStarNote,
     updateStarNote,
     deleteStarNote,
+    deleteStarNoteByToken,
     openStarNote,
     deleteSharedRecord,
     refreshVoiceMessages,

@@ -4,7 +4,7 @@
 
 ## 星语瓶升级
 
-已有双人空间只需在 Supabase Dashboard 的 SQL Editor 中完整执行一次 `supabase-star-bottle.sql`。该脚本只新增独立的星语瓶表和受权限保护的接口，不修改 `love_shared_state`、私人记录、照片或语音数据。
+已有双人空间只需在 Supabase Dashboard 的 SQL Editor 中完整执行一次 `supabase-star-bottle.sql`。后续星语瓶性能升级也可安全地重新执行同一文件，用于补充摘要接口和防重复令牌；脚本只新增或替换星语瓶自己的安全接口，不修改 `love_shared_state`、私人记录、照片或语音数据。
 
 ## 1. 创建项目
 

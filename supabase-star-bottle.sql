@@ -19,6 +19,13 @@ create table if not exists public.love_star_notes (
   check (sender_role <> recipient_role)
 );
 
+alter table public.love_star_notes
+add column if not exists client_token text;
+
+create unique index if not exists love_star_notes_client_token_idx
+on public.love_star_notes(sender_id, client_token)
+where client_token is not null;
+
 create index if not exists love_star_notes_unopened_idx
 on public.love_star_notes(couple_id, recipient_role, created_at)
 where opened_at is null and deleted_at is null;
@@ -104,7 +111,7 @@ begin
   select coalesce(jsonb_agg(to_jsonb(pending_row) order by pending_row.created_at desc), '[]'::jsonb)
   into v_pending
   from (
-    select id, sender_role, recipient_role, content, created_at, updated_at
+    select id, sender_role, recipient_role, content, created_at, updated_at, client_token
     from public.love_star_notes
     where couple_id = v_couple_id
       and sender_id = auth.uid()
@@ -149,6 +156,71 @@ begin
 end;
 $$;
 
+create or replace function public.get_love_star_summary()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_couple_id uuid;
+  v_role text;
+  v_counts jsonb;
+  v_opened_today boolean;
+  v_pending_total integer;
+  v_history_total integer;
+begin
+  if auth.uid() is null then raise exception 'Please sign in first'; end if;
+
+  select couple_id, role into v_couple_id, v_role
+  from public.love_members
+  where user_id = auth.uid()
+  limit 1;
+  if v_couple_id is null then raise exception 'Please join a love space first'; end if;
+
+  select jsonb_build_object(
+    'liu', count(*) filter (where recipient_role = 'liu'),
+    'fu', count(*) filter (where recipient_role = 'fu')
+  ) into v_counts
+  from public.love_star_notes
+  where couple_id = v_couple_id
+    and opened_at is null
+    and deleted_at is null;
+
+  select exists (
+    select 1
+    from public.love_star_notes
+    where couple_id = v_couple_id
+      and recipient_role = v_role
+      and opened_at is not null
+      and (opened_at at time zone 'Asia/Shanghai')::date = (now() at time zone 'Asia/Shanghai')::date
+  ) into v_opened_today;
+
+  select count(*) into v_pending_total
+  from public.love_star_notes
+  where couple_id = v_couple_id
+    and sender_id = auth.uid()
+    and opened_at is null
+    and deleted_at is null;
+
+  select count(*) into v_history_total
+  from public.love_star_notes
+  where couple_id = v_couple_id
+    and opened_at is not null
+    and deleted_at is null;
+
+  return jsonb_build_object(
+    'role', v_role,
+    'counts', coalesce(v_counts, jsonb_build_object('liu', 0, 'fu', 0)),
+    'opened_today', v_opened_today,
+    'pending_total', v_pending_total,
+    'history_total', v_history_total,
+    'server_date', (now() at time zone 'Asia/Shanghai')::date
+  );
+end;
+$$;
+
 create or replace function public.create_love_star(p_content text)
 returns jsonb
 language plpgsql
@@ -184,6 +256,120 @@ begin
     'created_at', v_note.created_at,
     'updated_at', v_note.updated_at
   );
+end;
+$$;
+
+create or replace function public.create_love_star_v2(p_content text, p_client_token text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_couple_id uuid;
+  v_role text;
+  v_recipient text;
+  v_note public.love_star_notes%rowtype;
+  v_counts jsonb;
+begin
+  if auth.uid() is null then raise exception 'Please sign in first'; end if;
+  if char_length(btrim(coalesce(p_content, ''))) not between 1 and 500 then
+    raise exception 'Star content must contain 1 to 500 characters';
+  end if;
+  if char_length(btrim(coalesce(p_client_token, ''))) not between 8 and 100 then
+    raise exception 'Invalid star client token';
+  end if;
+
+  select couple_id, role into v_couple_id, v_role
+  from public.love_members
+  where user_id = auth.uid()
+  limit 1;
+  if v_couple_id is null then raise exception 'Please join a love space first'; end if;
+  v_recipient := case when v_role = 'liu' then 'fu' else 'liu' end;
+
+  select * into v_note
+  from public.love_star_notes
+  where sender_id = auth.uid()
+    and client_token = btrim(p_client_token)
+  limit 1;
+
+  if v_note.id is not null
+    and v_note.opened_at is null
+    and v_note.deleted_at is null
+    and v_note.content is distinct from btrim(p_content) then
+    update public.love_star_notes
+    set content = btrim(p_content), updated_at = now()
+    where id = v_note.id
+    returning * into v_note;
+  end if;
+
+  if v_note.id is null then
+    insert into public.love_star_notes(
+      couple_id, sender_id, sender_role, recipient_role, content, client_token
+    ) values (
+      v_couple_id, auth.uid(), v_role, v_recipient, btrim(p_content), btrim(p_client_token)
+    )
+    on conflict (sender_id, client_token) where client_token is not null do nothing
+    returning * into v_note;
+
+    if v_note.id is null then
+      select * into v_note
+      from public.love_star_notes
+      where sender_id = auth.uid()
+        and client_token = btrim(p_client_token)
+      limit 1;
+    end if;
+  end if;
+
+  select jsonb_build_object(
+    'liu', count(*) filter (where recipient_role = 'liu'),
+    'fu', count(*) filter (where recipient_role = 'fu')
+  ) into v_counts
+  from public.love_star_notes
+  where couple_id = v_couple_id
+    and opened_at is null
+    and deleted_at is null;
+
+  return jsonb_build_object(
+    'note', jsonb_build_object(
+      'id', v_note.id,
+      'sender_role', v_note.sender_role,
+      'recipient_role', v_note.recipient_role,
+      'content', v_note.content,
+      'created_at', v_note.created_at,
+      'updated_at', v_note.updated_at,
+      'client_token', v_note.client_token,
+      'opened_at', v_note.opened_at,
+      'deleted_at', v_note.deleted_at
+    ),
+    'counts', coalesce(v_counts, jsonb_build_object('liu', 0, 'fu', 0))
+  );
+end;
+$$;
+
+create or replace function public.delete_love_star_by_token(p_client_token text)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_note public.love_star_notes%rowtype;
+begin
+  if auth.uid() is null then raise exception 'Please sign in first'; end if;
+  if char_length(btrim(coalesce(p_client_token, ''))) not between 8 and 100 then
+    raise exception 'Invalid star client token';
+  end if;
+
+  update public.love_star_notes
+  set deleted_at = now(), deleted_by = auth.uid()
+  where sender_id = auth.uid()
+    and client_token = btrim(p_client_token)
+    and opened_at is null
+    and deleted_at is null
+  returning * into v_note;
+
+  return jsonb_build_object('deleted', v_note.id is not null, 'id', v_note.id);
 end;
 $$;
 
@@ -300,13 +486,19 @@ end;
 $$;
 
 revoke all on function public.get_love_star_snapshot(text, integer, integer, integer, integer) from public;
+revoke all on function public.get_love_star_summary() from public;
 revoke all on function public.create_love_star(text) from public;
+revoke all on function public.create_love_star_v2(text, text) from public;
+revoke all on function public.delete_love_star_by_token(text) from public;
 revoke all on function public.update_love_star(uuid, text) from public;
 revoke all on function public.delete_love_star(uuid) from public;
 revoke all on function public.open_love_star() from public;
 
 grant execute on function public.get_love_star_snapshot(text, integer, integer, integer, integer) to authenticated;
+grant execute on function public.get_love_star_summary() to authenticated;
 grant execute on function public.create_love_star(text) to authenticated;
+grant execute on function public.create_love_star_v2(text, text) to authenticated;
+grant execute on function public.delete_love_star_by_token(text) to authenticated;
 grant execute on function public.update_love_star(uuid, text) to authenticated;
 grant execute on function public.delete_love_star(uuid) to authenticated;
 grant execute on function public.open_love_star() to authenticated;

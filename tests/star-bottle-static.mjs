@@ -29,7 +29,7 @@ assert.match(build, /star-bottle\.css/);
 assert.match(build, /star-bottle\.js/);
 
 for (const rpc of [
-  "get_love_star_snapshot", "create_love_star", "update_love_star",
+  "get_love_star_snapshot", "get_love_star_summary", "create_love_star", "create_love_star_v2", "delete_love_star_by_token", "update_love_star",
   "delete_love_star", "open_love_star"
 ]) {
   assert.match(sync, new RegExp(`(?:rpc|runStarMutation)\\(\\"${rpc}\\"`), `sync.js missing ${rpc}`);
@@ -48,15 +48,27 @@ assert.match(sql, /order by random\(\)/i);
 assert.match(sql, /for update skip locked/i);
 assert.match(sql, /Asia\/Shanghai/);
 assert.match(sql, /sender_id = auth\.uid\(\) as can_delete/);
+assert.match(sql, /client_token/);
+assert.match(sql, /unique index if not exists love_star_notes_client_token_idx/i);
+assert.match(sql, /on conflict \(sender_id, client_token\)/i);
+assert.doesNotMatch(sql, /\b(drop table|truncate table|delete from)\s+public\.love_star_notes/i);
 assert.doesNotMatch(sql, /grant\s+(select|insert|update|delete)\s+on\s+public\.love_star_notes/i);
 
 assert.doesNotMatch(bottle, /setInterval\s*\(/);
 assert.doesNotMatch(bottle, /requestAnimationFrame\s*\(/);
 assert.match(bottle, /localStorage\.setItem/);
+assert.match(bottle, /love-star-bottle-outbox-v2/);
+assert.match(bottle, /createClientToken/);
+assert.match(bottle, /flushOutbox/);
+assert.match(bottle, /interactionLocked/);
+assert.match(bottle, /Math\.min\(count, 60\)/);
+assert.match(bottle, /Math\.min\(1\.5, window\.devicePixelRatio/);
+assert.match(bottle, /lastDrawKey/);
 assert.match(bottle, /window\.confirm/);
 assert.match(bottle, /historyLimit = 5/);
 assert.match(bottle, /pendingLimit = 5/);
 assert.match(css, /prefers-reduced-motion/);
 assert.match(css, /star-bottle-open\[hidden\]/);
+assert.doesNotMatch(html, /data-star-history-filter=["']month["']/i);
 
 console.log("Star bottle static safety checks passed.");

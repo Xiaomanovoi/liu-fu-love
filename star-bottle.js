@@ -4,6 +4,7 @@
     fu: { name: "付嘉颖", short: "嘉颖" }
   };
   const draftKey = "love-star-bottle-draft-v1";
+  const outboxKey = "love-star-bottle-outbox-v2";
   const q = (selector) => document.querySelector(selector);
   const qa = (selector) => [...document.querySelectorAll(selector)];
   const emptySnapshot = () => ({
@@ -40,9 +41,17 @@
   let pendingLimit = 5;
   let snapshot = emptySnapshot();
   let loadSequence = 0;
+  let summarySequence = 0;
+  let pendingLoaded = false;
+  let historyLoaded = false;
+  let remoteRefreshTimer = null;
+  let deferredRefresh = false;
+  let outboxFlushPromise = null;
+  let lastDrawKey = "";
 
   bind();
   restoreDraft();
+  hydrateOutbox();
   render();
 
   function bind() {
@@ -64,6 +73,11 @@
     els.confirmOpen.addEventListener("click", openTodayStar);
     els.closeReveal.addEventListener("click", () => els.revealDialog.close());
     els.cancelEdit.addEventListener("click", () => els.editDialog.close());
+    [els.openDialog, els.revealDialog, els.editDialog].forEach((dialog) => {
+      dialog.addEventListener("close", flushDeferredRefresh);
+    });
+    els.text.addEventListener("blur", flushDeferredRefresh);
+    els.editText.addEventListener("blur", flushDeferredRefresh);
     els.editForm.addEventListener("submit", updateStar);
     els.pendingList.addEventListener("click", handleRecordAction);
     els.historyList.addEventListener("click", handleRecordAction);
@@ -81,28 +95,44 @@
       renderHistoryFilters();
       loadSnapshot();
     }));
+    els.pending.addEventListener("toggle", () => {
+      if (!els.pending.open) return;
+      renderPending();
+      if (!pendingLoaded) loadSnapshot();
+    });
+    els.history.addEventListener("toggle", () => {
+      if (!els.history.open) return;
+      renderHistoryFilters();
+      renderHistory();
+      if (!historyLoaded) loadSnapshot();
+    });
     window.addEventListener("love-star-bottle-open", () => {
       if (role) recipient = role;
       render();
       drawBottle();
-      loadSnapshot();
+      loadSummary();
+      if (els.pending.open || els.history.open) loadSnapshot(true);
+      flushOutbox();
     });
+    window.addEventListener("love-star-bottle-summary", (event) => applySummary(event.detail));
     window.addEventListener("love-star-bottle-snapshot", (event) => applySnapshot(event.detail));
-    window.addEventListener("love-star-bottle-changed", () => loadSnapshot(true));
+    window.addEventListener("love-star-bottle-changed", queueRemoteRefresh);
     window.addEventListener("love-sync-status", (event) => {
       const detail = event.detail || {};
       connected = Boolean(detail.connected);
+      if (!connected) snapshot = emptySnapshot();
       if (detail.role) {
         const roleChanged = role !== detail.role;
         role = detail.role;
         if (roleChanged) {
           recipient = role;
           restoreDraft();
+          hydrateOutbox();
         }
       }
-      if (!connected) snapshot = emptySnapshot();
       render();
       drawBottle();
+      if (connected) flushOutbox();
     });
     window.addEventListener("love-sync-feature-error", (event) => {
       if (event.detail?.feature !== "stars") return;
@@ -111,7 +141,14 @@
     let resizeTimer;
     window.addEventListener("resize", () => {
       window.clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(drawBottle, 120);
+      resizeTimer = window.setTimeout(() => {
+        lastDrawKey = "";
+        drawBottle();
+      }, 140);
+    });
+    window.addEventListener("online", () => {
+      flushOutbox();
+      queueRemoteRefresh();
     });
   }
 
@@ -134,16 +171,49 @@
     if (next.role) role = next.role;
     snapshot.counts = next.counts;
     snapshot.openedToday = next.openedToday;
-    snapshot.pending = next.pending;
-    snapshot.pendingTotal = next.pendingTotal;
+    const pendingMerge = mergeOutboxNotes(next.pending);
+    snapshot.pending = pendingMerge.notes;
+    snapshot.pendingTotal = next.pendingTotal + pendingMerge.unmatched;
+    pendingLoaded = true;
     const expectedFilter = historyFilter === "all" ? null : historyFilter;
     if ((next.historyRecipient || null) === expectedFilter) {
       snapshot.history = next.history;
       snapshot.historyTotal = next.historyTotal;
       snapshot.historyRecipient = next.historyRecipient;
+      historyLoaded = true;
     }
     render();
     drawBottle();
+  }
+
+  function applySummary(value) {
+    if (!value || typeof value !== "object") return;
+    const counts = value.counts || {};
+    const queued = readOutbox().filter((item) => item.role === role && item.status !== "cancelled");
+    const outgoing = outgoingRecipient();
+    const serverCounts = { liu: Number(counts.liu || 0), fu: Number(counts.fu || 0) };
+    if (queued.length && outgoing) serverCounts[outgoing] = Math.max(serverCounts[outgoing], snapshot.counts[outgoing] || 0);
+    snapshot.counts = serverCounts;
+    snapshot.openedToday = Boolean(value.opened_today ?? value.openedToday);
+    snapshot.pendingTotal = Math.max(Number(value.pending_total ?? value.pendingTotal ?? 0), queued.length);
+    snapshot.historyTotal = Number(value.history_total ?? value.historyTotal ?? 0);
+    if (value.role) role = value.role;
+    render();
+    drawBottle();
+  }
+
+  async function loadSummary(silent = false) {
+    if (!connected || !window.LoveSync?.refreshStarBottleSummary) return;
+    const sequence = ++summarySequence;
+    if (!silent) setNotice("正在核对瓶中的星星……");
+    try {
+      const data = await window.LoveSync.refreshStarBottleSummary();
+      if (sequence !== summarySequence || !data) return;
+      applySummary(data);
+      if (!silent) setNotice("");
+    } catch (error) {
+      if (sequence === summarySequence && !silent) setNotice(errorMessage(error), true);
+    }
   }
 
   async function loadSnapshot(silent = false) {
@@ -168,6 +238,29 @@
     }
   }
 
+  function queueRemoteRefresh() {
+    window.clearTimeout(remoteRefreshTimer);
+    remoteRefreshTimer = window.setTimeout(() => {
+      if (interactionLocked()) {
+        deferredRefresh = true;
+        return;
+      }
+      loadSummary(true);
+      if (els.pending.open || els.history.open) loadSnapshot(true);
+    }, 500);
+  }
+
+  function flushDeferredRefresh() {
+    if (!deferredRefresh || interactionLocked()) return;
+    deferredRefresh = false;
+    queueRemoteRefresh();
+  }
+
+  function interactionLocked() {
+    const active = document.activeElement;
+    return active === els.text || active === els.editText || els.openDialog.open || els.revealDialog.open || els.editDialog.open;
+  }
+
   function isIncoming() {
     return Boolean(role && recipient === role);
   }
@@ -185,7 +278,10 @@
     els.paperTag.textContent = `给${people[recipient].short}`;
     els.relation.textContent = recipient === "fu" ? "向强写给嘉颖" : "嘉颖写给向强";
     els.count.textContent = selectedCount;
-    els.stageStatus.textContent = selectedCount ? "星星正在瓶中安静等待" : "瓶子里还没有星星";
+    const queuedCount = readOutbox().filter((item) => item.role === role && item.recipient === recipient && item.status !== "cancelled").length;
+    els.stageStatus.textContent = queuedCount
+      ? `${queuedCount} 颗正在等待送达`
+      : selectedCount ? "星星正在瓶中安静等待" : "瓶子里还没有星星";
     els.compose.hidden = !role || isIncoming();
     els.open.hidden = !role || !isIncoming();
     els.pending.hidden = !role || isIncoming();
@@ -204,9 +300,11 @@
       els.dayChip.textContent = "等待对方开启";
     }
     renderOpenState(selectedCount);
-    renderPending();
-    renderHistoryFilters();
-    renderHistory();
+    if (els.pending.open) renderPending();
+    if (els.history.open) {
+      renderHistoryFilters();
+      renderHistory();
+    }
     updateCharacterCount();
   }
 
@@ -229,12 +327,14 @@
 
   function renderPending() {
     els.pendingList.replaceChildren();
-    if (!snapshot.pending.length) {
+    if (!pendingLoaded && !readOutbox().some((item) => item.role === role)) {
+      els.pendingList.append(emptyElement("展开后读取等待中的星星。"));
+    } else if (!snapshot.pending.length) {
       els.pendingList.append(emptyElement("还没有等待开启的星星。"));
     } else {
       snapshot.pending.forEach((note) => els.pendingList.append(recordElement(note, "pending")));
     }
-    els.pendingMore.hidden = snapshot.pending.length >= snapshot.pendingTotal;
+    els.pendingMore.hidden = !pendingLoaded || snapshot.pending.length >= snapshot.pendingTotal;
     els.pendingMore.textContent = `查看更多（还有 ${Math.max(0, snapshot.pendingTotal - snapshot.pending.length)} 颗）`;
   }
 
@@ -244,12 +344,14 @@
 
   function renderHistory() {
     els.historyList.replaceChildren();
-    if (!snapshot.history.length) {
+    if (!historyLoaded) {
+      els.historyList.append(emptyElement("展开后读取已经开启的星光。"));
+    } else if (!snapshot.history.length) {
       els.historyList.append(emptyElement("还没有开启过的星光。"));
     } else {
       snapshot.history.forEach((note) => els.historyList.append(recordElement(note, "history")));
     }
-    els.historyMore.hidden = snapshot.history.length >= snapshot.historyTotal;
+    els.historyMore.hidden = !historyLoaded || snapshot.history.length >= snapshot.historyTotal;
     els.historyMore.textContent = `查看更多（还有 ${Math.max(0, snapshot.historyTotal - snapshot.history.length)} 条）`;
     refreshIcons();
   }
@@ -257,6 +359,7 @@
   function recordElement(note, type) {
     const article = document.createElement("article");
     article.className = "star-bottle-record";
+    if (note.delivery_status) article.classList.add("is-delivering");
     article.dataset.recipient = note.recipient_role;
     const content = document.createElement("p");
     content.textContent = note.content || "";
@@ -278,11 +381,17 @@
       edited.textContent = "已修改";
       meta.append(edited);
     }
+    if (note.delivery_status) {
+      const delivery = document.createElement("span");
+      delivery.className = "star-bottle-delivery-state";
+      delivery.textContent = note.delivery_status === "sending" ? "正在送达" : "等待网络自动送达";
+      meta.append(delivery);
+    }
     article.append(meta);
     const actions = document.createElement("div");
     actions.className = "star-bottle-record-actions";
-    if (type === "pending") actions.append(actionButton("edit", note.id, "pencil", "编辑这颗星"));
-    if (type === "pending" || note.can_delete) actions.append(actionButton("delete", note.id, "trash-2", "删除这颗星", true));
+    if (type === "pending" && note.delivery_status !== "sending") actions.append(actionButton("edit", note.id, "pencil", "编辑这颗星"));
+    if ((type === "pending" && note.delivery_status !== "sending") || note.can_delete) actions.append(actionButton("delete", note.id, "trash-2", "删除这颗星", true));
     if (actions.childElementCount) article.append(actions);
     return article;
   }
@@ -314,21 +423,29 @@
       els.text.focus();
       return;
     }
-    const button = els.form.querySelector("button[type=submit]");
-    setButtonBusy(button, true, "正在折成星星……");
-    try {
-      await window.LoveSync.createStarNote(content);
-      els.text.value = "";
-      clearDraft();
-      updateCharacterCount();
-      playDropAnimation();
-      setNotice("这段话已经变成一颗星，安静地落进瓶子里。 ");
-      await loadSnapshot(true);
-    } catch (error) {
-      setNotice(errorMessage(error), true);
-    } finally {
-      setButtonBusy(button, false, "藏入一颗星");
+    if (!role) {
+      setNotice("登录并进入双人空间后才能存入星星。", true);
+      return;
     }
+    const canSendNow = connected && navigator.onLine;
+    const entry = {
+      token: createClientToken(),
+      content,
+      role,
+      recipient: outgoingRecipient(),
+      createdAt: new Date().toISOString(),
+      status: canSendNow ? "sending" : "queued",
+      attempts: 0
+    };
+    if (!saveOutboxEntry(entry)) return;
+    addOptimisticStar(entry);
+    els.text.value = "";
+    clearDraft();
+    updateCharacterCount();
+    playDropAnimation();
+    navigator.vibrate?.(28);
+    setNotice(canSendNow ? "星星已经落进瓶子，正在送达对方。" : "星星已安全保存在本机，联网后会自动送达。 ");
+    if (canSendNow) sendQueuedStar(entry);
   }
 
   function canOpenToday() {
@@ -346,13 +463,19 @@
       els.openDialog.close();
       const note = result?.note || result;
       if (!note?.content) throw new Error("星星内容读取失败，请刷新后重试");
+      snapshot.counts[recipient] = Math.max(0, (snapshot.counts[recipient] || 0) - 1);
+      snapshot.openedToday = true;
+      snapshot.historyTotal += 1;
+      if (historyLoaded) snapshot.history = [{ ...note, can_delete: false }, ...snapshot.history];
+      render();
+      drawBottle();
       playOpenAnimation();
+      navigator.vibrate?.([22, 35, 22]);
       window.setTimeout(() => showReveal(note), reducedMotion() ? 0 : 420);
-      await loadSnapshot(true);
     } catch (error) {
       els.openDialog.close();
       setNotice(errorMessage(error), true);
-      await loadSnapshot(true);
+      queueRemoteRefresh();
     } finally {
       setButtonBusy(els.confirmOpen, false, "确定开启");
     }
@@ -391,10 +514,32 @@
     const button = els.editForm.querySelector("button[type=submit]");
     setButtonBusy(button, true, "保存中……");
     try {
+      const localEntry = readOutbox().find((item) => `local-${item.token}` === els.editId.value);
+      if (localEntry) {
+        localEntry.content = content;
+        localEntry.status = "queued";
+        replaceOutboxEntry(localEntry);
+        const localNote = snapshot.pending.find((item) => item.id === els.editId.value);
+        if (localNote) {
+          localNote.content = content;
+          localNote.updated_at = new Date().toISOString();
+          localNote.delivery_status = "queued";
+        }
+        els.editDialog.close();
+        render();
+        setNotice("待送达的星星已经修改，网络恢复后会自动送出。 ");
+        flushOutbox();
+        return;
+      }
       await window.LoveSync.updateStarNote(els.editId.value, content);
+      const note = snapshot.pending.find((item) => item.id === els.editId.value);
+      if (note) {
+        note.content = content;
+        note.updated_at = new Date().toISOString();
+      }
       els.editDialog.close();
       setNotice("这颗尚未开启的星星已经修改。 ");
-      await loadSnapshot(true);
+      render();
     } catch (error) {
       setNotice(errorMessage(error), true);
     } finally {
@@ -403,14 +548,205 @@
   }
 
   async function deleteStar(id) {
+    const localEntry = readOutbox().find((item) => `local-${item.token}` === id);
+    if (localEntry) {
+      if (Number(localEntry.attempts || 0) > 0) {
+        localEntry.status = "cancelled";
+        replaceOutboxEntry(localEntry);
+      } else {
+        removeOutboxEntry(localEntry.token);
+      }
+      removeLocalNote(id, false);
+      setNotice(Number(localEntry.attempts || 0) > 0 ? "星星已从本机移走，正在确认云端撤销。 " : "这颗尚未送达的星星已经删除。 ");
+      flushOutbox();
+      return;
+    }
     setNotice("正在移走这颗星……");
     try {
       await window.LoveSync.deleteStarNote(id);
+      const opened = snapshot.history.some((item) => item.id === id);
+      removeLocalNote(id, opened);
       setNotice("这颗星已经删除。 ");
-      await loadSnapshot(true);
     } catch (error) {
       setNotice(errorMessage(error), true);
     }
+  }
+
+  function createClientToken() {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+  }
+
+  function readOutbox() {
+    try {
+      const entries = JSON.parse(localStorage.getItem(outboxKey));
+      return Array.isArray(entries) ? entries.filter((item) => item?.token && item?.content && item?.role) : [];
+    } catch { return []; }
+  }
+
+  function writeOutbox(entries) {
+    try {
+      localStorage.setItem(outboxKey, JSON.stringify(entries));
+      return true;
+    } catch {
+      setNotice("本机存储空间不足，星星尚未存入，请保留当前文字后重试。", true);
+      return false;
+    }
+  }
+
+  function saveOutboxEntry(entry) {
+    const entries = readOutbox().filter((item) => item.token !== entry.token);
+    entries.push(entry);
+    return writeOutbox(entries);
+  }
+
+  function replaceOutboxEntry(entry) {
+    saveOutboxEntry(entry);
+  }
+
+  function removeOutboxEntry(token) {
+    writeOutbox(readOutbox().filter((item) => item.token !== token));
+  }
+
+  function outboxNote(entry) {
+    return {
+      id: `local-${entry.token}`,
+      client_token: entry.token,
+      sender_role: entry.role,
+      recipient_role: entry.recipient,
+      content: entry.content,
+      created_at: entry.createdAt,
+      updated_at: entry.createdAt,
+      delivery_status: entry.status || "queued"
+    };
+  }
+
+  function mergeOutboxNotes(remoteNotes) {
+    const notes = Array.isArray(remoteNotes) ? [...remoteNotes] : [];
+    const tokens = new Set(notes.map((item) => item.client_token).filter(Boolean));
+    const queued = readOutbox().filter((item) => item.role === role && item.status !== "cancelled" && !tokens.has(item.token));
+    const queuedNotes = queued.map(outboxNote);
+    return {
+      notes: [...queuedNotes, ...notes].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)),
+      unmatched: queued.length
+    };
+  }
+
+  function addOptimisticStar(entry) {
+    const note = outboxNote(entry);
+    snapshot.pending = [note, ...snapshot.pending.filter((item) => item.client_token !== entry.token)];
+    snapshot.pendingTotal += 1;
+    snapshot.counts[entry.recipient] = (snapshot.counts[entry.recipient] || 0) + 1;
+    pendingLoaded = true;
+    render();
+    drawBottle();
+  }
+
+  function hydrateOutbox() {
+    if (!role) return;
+    const queued = readOutbox().filter((item) => item.role === role && item.status !== "cancelled");
+    if (!queued.length) return;
+    const merged = mergeOutboxNotes(snapshot.pending);
+    snapshot.pending = merged.notes;
+    snapshot.pendingTotal = Math.max(snapshot.pendingTotal, queued.length);
+    for (const entry of queued) {
+      snapshot.counts[entry.recipient] = Math.max(snapshot.counts[entry.recipient] || 0, queued.filter((item) => item.recipient === entry.recipient).length);
+    }
+    pendingLoaded = true;
+  }
+
+  async function sendQueuedStar(entry, quiet = false) {
+    if (!connected || !navigator.onLine || !window.LoveSync?.createStarNote) return false;
+    const latest = readOutbox().find((item) => item.token === entry.token);
+    if (!latest) return true;
+    latest.status = "sending";
+    latest.attempts = Number(latest.attempts || 0) + 1;
+    replaceOutboxEntry(latest);
+    const localNote = snapshot.pending.find((item) => item.client_token === latest.token);
+    if (localNote) localNote.delivery_status = "sending";
+    if (els.pending.open) renderPending();
+    try {
+      const result = await window.LoveSync.createStarNote(latest.content, latest.token);
+      const saved = result?.note || result;
+      if (!saved?.id) throw new Error("星星送达后没有返回记录，请稍后重试");
+      removeOutboxEntry(latest.token);
+      const index = snapshot.pending.findIndex((item) => item.client_token === latest.token || item.id === `local-${latest.token}`);
+      if (saved.deleted_at || saved.opened_at) {
+        if (index >= 0) snapshot.pending.splice(index, 1);
+        snapshot.pendingTotal = Math.max(0, snapshot.pendingTotal - 1);
+        if (saved.opened_at) {
+          snapshot.historyTotal += 1;
+          if (historyLoaded) snapshot.history = [{ ...saved, can_delete: true }, ...snapshot.history];
+        }
+      } else if (index >= 0) {
+        snapshot.pending.splice(index, 1, { ...saved, delivery_status: null });
+      }
+      if (result?.counts) {
+        snapshot.counts = {
+          liu: Number(result.counts.liu || 0),
+          fu: Number(result.counts.fu || 0)
+        };
+      }
+      render();
+      drawBottle();
+      if (!quiet) setNotice("星星已经送达，正在瓶中等待对方开启。 ");
+      return true;
+    } catch (error) {
+      const queued = readOutbox().find((item) => item.token === latest.token);
+      if (!queued) return false;
+      queued.status = "queued";
+      replaceOutboxEntry(queued);
+      const pending = snapshot.pending.find((item) => item.client_token === queued.token);
+      if (pending) pending.delivery_status = "queued";
+      render();
+      if (!quiet) setNotice("网络暂时较慢，星星已保存在本机，将自动重试送达。 ");
+      const delay = Math.min(60000, 4000 * Math.max(1, queued.attempts || 1));
+      window.setTimeout(flushOutbox, delay);
+      return false;
+    }
+  }
+
+  function flushOutbox() {
+    if (outboxFlushPromise || !connected || !navigator.onLine || !role) return outboxFlushPromise;
+    const entries = readOutbox().filter((item) => item.role === role);
+    if (!entries.length) return null;
+    outboxFlushPromise = (async () => {
+      for (const entry of entries) {
+        const delivered = entry.status === "cancelled"
+          ? await cancelQueuedStar(entry)
+          : await sendQueuedStar(entry, true);
+        if (!delivered) break;
+      }
+    })().finally(() => { outboxFlushPromise = null; });
+    return outboxFlushPromise;
+  }
+
+  async function cancelQueuedStar(entry) {
+    if (!connected || !navigator.onLine || !window.LoveSync?.deleteStarNoteByToken) return false;
+    try {
+      await window.LoveSync.deleteStarNoteByToken(entry.token);
+      removeOutboxEntry(entry.token);
+      return true;
+    } catch {
+      window.setTimeout(flushOutbox, 15000);
+      return false;
+    }
+  }
+
+  function removeLocalNote(id, opened) {
+    if (opened) {
+      const note = snapshot.history.find((item) => item.id === id);
+      snapshot.history = snapshot.history.filter((item) => item.id !== id);
+      snapshot.historyTotal = Math.max(0, snapshot.historyTotal - 1);
+      if (note?.recipient_role && !note.opened_at) snapshot.counts[note.recipient_role] = Math.max(0, (snapshot.counts[note.recipient_role] || 0) - 1);
+    } else {
+      const note = snapshot.pending.find((item) => item.id === id);
+      snapshot.pending = snapshot.pending.filter((item) => item.id !== id);
+      snapshot.pendingTotal = Math.max(0, snapshot.pendingTotal - 1);
+      if (note?.recipient_role) snapshot.counts[note.recipient_role] = Math.max(0, (snapshot.counts[note.recipient_role] || 0) - 1);
+    }
+    render();
+    drawBottle();
   }
 
   function saveDraft() {
@@ -502,84 +838,117 @@
     window.setTimeout(() => els.canvasShell.classList.remove("is-opening"), 700);
   }
 
-  function drawBottle() {
+  function drawBottle(force = false) {
     const canvas = els.canvas;
+    if (!canvas.closest(".screen")?.classList.contains("is-active")) return;
     const rect = canvas.getBoundingClientRect();
     const width = Math.max(280, rect.width || 320);
     const height = width * 19 / 16;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = Math.min(1.5, window.devicePixelRatio || 1);
+    const tone = recipient === "fu" ? "coral" : "mint";
+    const count = snapshot.counts[recipient] || 0;
+    const drawKey = `${tone}:${count}:${Math.round(width)}:${dpr}`;
+    if (!force && drawKey === lastDrawKey) return;
+    lastDrawKey = drawKey;
     canvas.width = Math.round(width * dpr);
     canvas.height = Math.round(height * dpr);
     const ctx = canvas.getContext("2d");
     ctx.setTransform(dpr * width / 320, 0, 0, dpr * height / 380, 0, 0);
     ctx.clearRect(0, 0, 320, 380);
-    const tone = recipient === "fu" ? "coral" : "mint";
-    const count = snapshot.counts[recipient] || 0;
 
-    ctx.save();
-    ctx.filter = "blur(7px)";
-    ctx.fillStyle = "rgba(79,57,48,.16)";
+    const shadow = ctx.createRadialGradient(160, 339, 18, 160, 339, 102);
+    shadow.addColorStop(0, "rgba(76,57,50,.2)");
+    shadow.addColorStop(.58, "rgba(76,57,50,.08)");
+    shadow.addColorStop(1, "rgba(76,57,50,0)");
+    ctx.fillStyle = shadow;
     ctx.beginPath();
-    ctx.ellipse(160, 340, 92, 14, 0, 0, Math.PI * 2);
+    ctx.ellipse(160, 339, 105, 19, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.restore();
 
     const body = bottlePath(ctx);
-    const glass = ctx.createLinearGradient(55, 0, 270, 0);
-    glass.addColorStop(0, "rgba(218,236,231,.48)");
-    glass.addColorStop(.2, "rgba(255,255,255,.2)");
-    glass.addColorStop(.72, tone === "coral" ? "rgba(246,218,218,.2)" : "rgba(208,232,218,.22)");
-    glass.addColorStop(1, "rgba(176,207,201,.38)");
+    const glass = ctx.createLinearGradient(66, 0, 254, 0);
+    glass.addColorStop(0, "rgba(190,220,214,.34)");
+    glass.addColorStop(.13, "rgba(255,255,255,.22)");
+    glass.addColorStop(.52, tone === "coral" ? "rgba(255,231,229,.13)" : "rgba(224,243,233,.14)");
+    glass.addColorStop(.86, "rgba(255,255,255,.19)");
+    glass.addColorStop(1, "rgba(164,202,195,.36)");
     ctx.fillStyle = glass;
     ctx.fill(body);
 
     ctx.save();
     ctx.clip(body);
+    const bottomGlow = ctx.createLinearGradient(0, 246, 0, 337);
+    bottomGlow.addColorStop(0, "rgba(255,255,255,0)");
+    bottomGlow.addColorStop(1, tone === "coral" ? "rgba(238,171,174,.11)" : "rgba(136,189,163,.11)");
+    ctx.fillStyle = bottomGlow;
+    ctx.fillRect(54, 235, 212, 110);
     drawStars(ctx, count, tone);
+    ctx.strokeStyle = "rgba(255,255,255,.42)";
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(86, 317);
+    ctx.quadraticCurveTo(160, 338, 234, 317);
+    ctx.stroke();
     ctx.restore();
 
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = "rgba(112,153,145,.48)";
+    ctx.lineWidth = 3.2;
+    ctx.strokeStyle = "rgba(103,151,143,.46)";
     ctx.stroke(body);
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = "rgba(255,255,255,.84)";
+    ctx.lineWidth = 1.1;
+    ctx.strokeStyle = "rgba(255,255,255,.9)";
     ctx.stroke(body);
 
     ctx.save();
     ctx.lineCap = "round";
-    ctx.strokeStyle = "rgba(255,255,255,.72)";
-    ctx.lineWidth = 9;
+    ctx.strokeStyle = "rgba(255,255,255,.76)";
+    ctx.lineWidth = 8;
     ctx.beginPath();
-    ctx.moveTo(91, 130);
-    ctx.bezierCurveTo(68, 174, 75, 255, 94, 301);
+    ctx.moveTo(98, 133);
+    ctx.bezierCurveTo(73, 170, 78, 250, 96, 290);
     ctx.stroke();
-    ctx.strokeStyle = "rgba(255,255,255,.38)";
-    ctx.lineWidth = 4;
+    ctx.strokeStyle = "rgba(255,255,255,.42)";
+    ctx.lineWidth = 3.5;
     ctx.beginPath();
-    ctx.moveTo(221, 142);
-    ctx.bezierCurveTo(242, 198, 239, 265, 222, 304);
+    ctx.moveTo(222, 145);
+    ctx.bezierCurveTo(242, 195, 237, 258, 224, 291);
     ctx.stroke();
     ctx.restore();
 
-    const neckGlass = ctx.createLinearGradient(110, 0, 210, 0);
-    neckGlass.addColorStop(0, "rgba(204,226,222,.42)");
-    neckGlass.addColorStop(.5, "rgba(255,255,255,.28)");
-    neckGlass.addColorStop(1, "rgba(166,201,194,.4)");
+    const neckGlass = ctx.createLinearGradient(116, 0, 204, 0);
+    neckGlass.addColorStop(0, "rgba(190,220,215,.42)");
+    neckGlass.addColorStop(.48, "rgba(255,255,255,.24)");
+    neckGlass.addColorStop(1, "rgba(157,199,191,.4)");
     ctx.fillStyle = neckGlass;
     ctx.strokeStyle = "rgba(108,151,142,.5)";
-    ctx.lineWidth = 2.5;
-    roundRect(ctx, 117, 50, 86, 75, 13);
+    ctx.lineWidth = 2.7;
+    roundRect(ctx, 119, 50, 82, 76, 12);
     ctx.fill();
     ctx.stroke();
     ctx.fillStyle = "rgba(255,255,255,.62)";
-    roundRect(ctx, 129, 58, 13, 55, 6);
+    roundRect(ctx, 130, 57, 12, 57, 6);
+    ctx.fill();
+
+    const ribbon = tone === "coral" ? "#d8838e" : "#78a88f";
+    ctx.fillStyle = ribbon;
+    roundRect(ctx, 116, 107, 88, 11, 4);
+    ctx.fill();
+    ctx.fillStyle = tone === "coral" ? "#bf6675" : "#5f8f78";
+    ctx.beginPath();
+    ctx.moveTo(194, 115);
+    ctx.lineTo(207, 132);
+    ctx.lineTo(190, 124);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.24)";
+    roundRect(ctx, 122, 109, 58, 3, 1.5);
     ctx.fill();
 
     const cork = ctx.createLinearGradient(0, 24, 0, 59);
-    cork.addColorStop(0, "#c99b6b");
-    cork.addColorStop(1, "#a97750");
+    cork.addColorStop(0, "#d4a777");
+    cork.addColorStop(.5, "#bd895c");
+    cork.addColorStop(1, "#9f6f4c");
     ctx.fillStyle = cork;
-    roundRect(ctx, 112, 24, 96, 37, 8);
+    roundRect(ctx, 113, 24, 94, 38, 8);
     ctx.fill();
     ctx.strokeStyle = "rgba(99,61,39,.28)";
     ctx.lineWidth = 1.5;
@@ -596,63 +965,84 @@
 
   function bottlePath(ctx) {
     const path = new Path2D();
-    path.moveTo(117, 105);
-    path.bezierCurveTo(112, 121, 91, 127, 79, 145);
-    path.bezierCurveTo(59, 175, 58, 282, 77, 314);
-    path.bezierCurveTo(93, 341, 227, 341, 243, 314);
-    path.bezierCurveTo(262, 282, 261, 175, 241, 145);
-    path.bezierCurveTo(229, 127, 208, 121, 203, 105);
+    path.moveTo(119, 108);
+    path.bezierCurveTo(115, 123, 96, 129, 83, 145);
+    path.bezierCurveTo(62, 171, 60, 280, 76, 311);
+    path.bezierCurveTo(88, 337, 104, 343, 160, 343);
+    path.bezierCurveTo(216, 343, 232, 337, 244, 311);
+    path.bezierCurveTo(260, 280, 258, 171, 237, 145);
+    path.bezierCurveTo(224, 129, 205, 123, 201, 108);
     path.closePath();
     return path;
   }
 
   function drawStars(ctx, count, tone) {
     if (!count) return;
-    const visible = Math.min(count, 140);
-    const columns = visible <= 7 ? 5 : visible <= 28 ? 7 : visible <= 72 ? 9 : 11;
-    const spacingX = visible <= 7 ? 31 : visible <= 28 ? 24 : visible <= 72 ? 19 : 15;
-    const spacingY = visible <= 7 ? 27 : visible <= 28 ? 20 : visible <= 72 ? 15 : 12;
-    const size = visible <= 7 ? 15 : visible <= 28 ? 11 : visible <= 72 ? 8 : 6.5;
+    const visible = Math.min(count, 60);
+    const size = visible <= 6 ? 15 : visible <= 20 ? 11.5 : visible <= 40 ? 9.5 : 8.2;
     const colors = tone === "coral"
-      ? ["#df7b8b", "#e9b2aa", "#e6bd68", "#a69ac7", "#88ad9a"]
-      : ["#79a88f", "#9ab9ad", "#e2b766", "#d98b91", "#a99bc7"];
-    for (let i = 0; i < visible; i += 1) {
-      const row = Math.floor(i / columns);
-      const col = i % columns;
-      const random = pseudoRandom(i + (recipient === "fu" ? 41 : 97));
-      const rowCount = Math.min(columns, visible - row * columns);
-      const rowWidth = (rowCount - 1) * spacingX;
-      const x = 160 - rowWidth / 2 + col * spacingX + (random - .5) * 5;
-      const y = 300 - row * spacingY + (pseudoRandom(i * 3 + 11) - .5) * 5;
-      drawStar(ctx, x, y, size * (.86 + pseudoRandom(i * 7 + 3) * .24), random * Math.PI, colors[i % colors.length]);
+      ? ["#dc7485", "#e6a49f", "#e6bb65", "#9f92c2", "#7da58e"]
+      : ["#6f9f86", "#91b4a4", "#dfb35a", "#d68189", "#9d90be"];
+    let index = 0;
+    let row = 0;
+    while (index < visible) {
+      const halfWidth = Math.max(45, 72 - row * 3.2);
+      const capacity = Math.max(1, Math.floor((halfWidth * 2) / (size * 1.6)));
+      const rowCount = Math.min(capacity, visible - index);
+      const spacing = rowCount === 1 ? 0 : Math.min(size * 1.7, (halfWidth * 2) / (rowCount - 1));
+      const rowWidth = (rowCount - 1) * spacing;
+      for (let column = 0; column < rowCount; column += 1) {
+        const i = index + column;
+        const random = pseudoRandom(i + (recipient === "fu" ? 41 : 97));
+        const x = 160 - rowWidth / 2 + column * spacing + (random - .5) * size * .42;
+        const y = 303 - row * size * 1.32 + (pseudoRandom(i * 3 + 11) - .5) * size * .32;
+        const radius = size * (.9 + pseudoRandom(i * 7 + 3) * .18);
+        drawFoldedStar(ctx, x, y, radius, (random - .5) * .9, colors[i % colors.length]);
+      }
+      index += rowCount;
+      row += 1;
     }
   }
 
-  function drawStar(ctx, x, y, radius, rotation, color) {
+  function drawFoldedStar(ctx, x, y, radius, rotation, color) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(rotation);
-    ctx.shadowColor = "rgba(86,61,53,.18)";
-    ctx.shadowBlur = 3;
-    ctx.shadowOffsetY = 2;
+    ctx.shadowColor = "rgba(75,52,48,.2)";
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetY = 2.5;
+    const points = [];
     ctx.beginPath();
     for (let i = 0; i < 10; i += 1) {
       const angle = -Math.PI / 2 + i * Math.PI / 5;
-      const length = i % 2 === 0 ? radius : radius * .48;
+      const length = i % 2 === 0 ? radius : radius * .5;
       const px = Math.cos(angle) * length;
       const py = Math.sin(angle) * length;
+      points.push({ x: px, y: py });
       if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
     }
     ctx.closePath();
     ctx.fillStyle = color;
     ctx.fill();
     ctx.shadowColor = "transparent";
-    ctx.strokeStyle = "rgba(255,255,255,.5)";
-    ctx.lineWidth = .8;
-    ctx.beginPath();
-    ctx.moveTo(0, -radius * .76);
-    ctx.lineTo(0, radius * .35);
+    for (let i = 0; i < 5; i += 1) {
+      const outer = points[i * 2];
+      const nextInner = points[(i * 2 + 1) % 10];
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(outer.x, outer.y);
+      ctx.lineTo(nextInner.x, nextInner.y);
+      ctx.closePath();
+      ctx.fillStyle = i % 2 === 0 ? "rgba(255,255,255,.24)" : "rgba(72,48,55,.11)";
+      ctx.fill();
+    }
+    ctx.strokeStyle = "rgba(255,255,255,.48)";
+    ctx.lineWidth = .7;
     ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.2)";
+    ctx.beginPath();
+    ctx.arc(-radius * .12, -radius * .15, Math.max(1.1, radius * .1), 0, Math.PI * 2);
+    ctx.fill();
     ctx.restore();
   }
 
