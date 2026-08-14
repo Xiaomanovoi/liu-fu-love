@@ -2,6 +2,10 @@
 
 这份配置会让公共留言、心情、想你信号、心声语音、任务、见面记录和相册在两台手机间同步，同时把个人目标、个人档案、日记、健康和月经记录锁定为本人登录后才能访问。
 
+## 星语瓶升级
+
+已有双人空间只需在 Supabase Dashboard 的 SQL Editor 中完整执行一次 `supabase-star-bottle.sql`。该脚本只新增独立的星语瓶表和受权限保护的接口，不修改 `love_shared_state`、私人记录、照片或语音数据。
+
 ## 1. 创建项目
 
 1. 打开 https://supabase.com/dashboard 并注册或登录。

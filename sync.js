@@ -106,6 +106,7 @@
         : cached.voiceMessages.map((message) => ({ ...message, signedUrl: "" }));
       emit("love-voice-messages", messages);
     }
+    if (cached.starBottleSnapshot) emit("love-star-bottle-snapshot", cached.starBottleSnapshot);
   }
 
   function clearFeatureCache(userId) {
@@ -444,7 +445,7 @@
       if (sync.pendingState && !sync.timer) sync.timer = setTimeout(flushSave, 0);
       scheduleHydrationRetry();
     }
-    Promise.allSettled([loadInviteCode(), refreshMissStats(), refreshVoiceMessages()]);
+    Promise.allSettled([loadInviteCode(), refreshMissStats(), refreshVoiceMessages(), refreshStarBottle()]);
     clearInterval(sync.voiceRefreshTimer);
     sync.voiceRefreshTimer = setInterval(refreshVoiceMessages, 45 * 60 * 1000);
   }
@@ -630,6 +631,10 @@
         if (mediaChanged) sync.photosHydrated = false;
         queueRemoteReload(mediaChanged);
       })
+      .on("broadcast", { event: "star-bottle-changed" }, ({ payload }) => {
+        if (payload?.updatedBy === sync.user?.id) return;
+        emit("love-star-bottle-changed", payload || {});
+      })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "love_private_state", filter: `user_id=eq.${sync.user.id}` }, (payload) => {
         if (!sync.hydrated) return;
         sync.lastPrivateState = structuredClone(payload.new.data || {});
@@ -646,10 +651,14 @@
 
   function featureError(feature, error) {
     const detail = [error?.message, error?.details, error?.hint].filter(Boolean).join(" ");
-    const missing = /PGRST202|42883|does not exist|schema cache|love_voice_messages|love_miss/i.test(detail);
+    const labels = { voice: "心声信箱", miss: "想你信号", stars: "星语瓶" };
+    const label = labels[feature] || "同步功能";
+    const missing = feature === "stars"
+      ? /PGRST202|42883|does not exist|schema cache|love_star_notes|get_love_star/i.test(detail)
+      : /PGRST202|42883|does not exist|schema cache|love_voice_messages|love_miss/i.test(detail);
     const message = missing
-      ? `${feature === "voice" ? "心声信箱" : "想你信号"}尚未完成数据库升级，请执行 supabase-upgrade-2026-08.sql。`
-      : (detail || `${feature === "voice" ? "心声信箱" : "想你信号"}暂时无法同步。`);
+      ? (feature === "stars" ? "星语瓶尚未完成数据库升级，请执行 supabase-star-bottle.sql。" : `${label}尚未完成数据库升级，请执行 supabase-upgrade-2026-08.sql。`)
+      : (detail || `${label}暂时无法同步。`);
     emit("love-sync-feature-error", { feature, message });
   }
 
@@ -748,6 +757,67 @@
       .eq("user_id", sync.user.id);
     if (error) throw error;
     await refreshVoiceMessages();
+  }
+
+  function broadcastStarBottleChange() {
+    if (!sync.channel || !sync.user) return;
+    sync.channel.send({
+      type: "broadcast",
+      event: "star-bottle-changed",
+      payload: { updatedBy: sync.user.id, changedAt: new Date().toISOString() }
+    }).catch((error) => console.warn("Star bottle broadcast failed", error));
+  }
+
+  async function refreshStarBottle(options = {}) {
+    if (!sync.client || !sync.coupleId || !sync.user) return null;
+    const historyRecipient = options.historyRecipient === "liu" || options.historyRecipient === "fu"
+      ? options.historyRecipient
+      : null;
+    const historyLimit = Math.max(1, Math.min(5000, Number(options.historyLimit || 5)));
+    const pendingLimit = Math.max(1, Math.min(5000, Number(options.pendingLimit || 5)));
+    const { data, error } = await runQuery(sync.client.rpc("get_love_star_snapshot", {
+      p_history_recipient: historyRecipient,
+      p_history_limit: historyLimit,
+      p_history_offset: 0,
+      p_pending_limit: pendingLimit,
+      p_pending_offset: 0
+    }), "读取星语瓶");
+    if (error) {
+      featureError("stars", error);
+      throw error;
+    }
+    if (historyRecipient === null && historyLimit === 5 && pendingLimit === 5) {
+      writeFeatureCache(sync.user.id, { starBottleSnapshot: data || {} });
+    }
+    emit("love-star-bottle-snapshot", data || {});
+    return data || {};
+  }
+
+  async function runStarMutation(functionName, parameters, label) {
+    if (!sync.client || !sync.coupleId || !sync.user) throw new Error("not connected");
+    const { data, error } = await runQuery(sync.client.rpc(functionName, parameters), label);
+    if (error) {
+      featureError("stars", error);
+      throw error;
+    }
+    broadcastStarBottleChange();
+    return data;
+  }
+
+  function createStarNote(content) {
+    return runStarMutation("create_love_star", { p_content: content }, "存入星星");
+  }
+
+  function updateStarNote(id, content) {
+    return runStarMutation("update_love_star", { p_note_id: id, p_content: content }, "修改星星");
+  }
+
+  function deleteStarNote(id) {
+    return runStarMutation("delete_love_star", { p_note_id: id }, "删除星星");
+  }
+
+  function openStarNote() {
+    return runStarMutation("open_love_star", {}, "开启星星");
   }
 
   async function deleteSharedRecord(field, id) {
@@ -1033,7 +1103,7 @@
       const detail = syncErrorMessage(error);
       updateUi("connected", detail ? `刷新失败${detail}` : "刷新失败，请稍后重试");
     }
-    Promise.allSettled([refreshMissStats(), refreshVoiceMessages()]);
+    Promise.allSettled([refreshMissStats(), refreshVoiceMessages(), refreshStarBottle()]);
   }
 
   function bindLifecycleFlush() {
@@ -1084,6 +1154,11 @@
     refreshMissStats,
     uploadVoice,
     deleteVoice,
+    refreshStarBottle,
+    createStarNote,
+    updateStarNote,
+    deleteStarNote,
+    openStarNote,
     deleteSharedRecord,
     refreshVoiceMessages,
     refreshVisibleData,

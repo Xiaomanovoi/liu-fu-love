@@ -4,7 +4,7 @@ mkdirSync("dist/assets", { recursive: true });
 mkdirSync("dist/server", { recursive: true });
 mkdirSync("dist/.openai", { recursive: true });
 
-for (const name of ["index.html", "styles.css", "app.js", "sync.js", "questions-extra.js", "supabase-config.js", "manifest.webmanifest", "pwa.js", "sw.js"]) {
+for (const name of ["index.html", "styles.css", "star-bottle.css", "app.js", "star-bottle.js", "sync.js", "questions-extra.js", "supabase-config.js", "manifest.webmanifest", "pwa.js", "sw.js"]) {
   cpSync(name, `dist/${name}`);
 }
 
@@ -16,7 +16,9 @@ const files = {
   "/": { type: "text/html; charset=utf-8", body: ${JSON.stringify(readText("index.html"))} },
   "/index.html": { type: "text/html; charset=utf-8", body: ${JSON.stringify(readText("index.html"))} },
   "/styles.css": { type: "text/css; charset=utf-8", body: ${JSON.stringify(readText("styles.css"))} },
+  "/star-bottle.css": { type: "text/css; charset=utf-8", body: ${JSON.stringify(readText("star-bottle.css"))} },
   "/app.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("app.js"))} },
+  "/star-bottle.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("star-bottle.js"))} },
   "/sync.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("sync.js"))} },
   "/questions-extra.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("questions-extra.js"))} },
   "/supabase-config.js": { type: "application/javascript; charset=utf-8", body: ${JSON.stringify(readText("supabase-config.js"))} },

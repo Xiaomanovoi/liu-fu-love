@@ -15,6 +15,7 @@
     <meta name="color-scheme" content="light">
     <title>心动存档 · 刘向强 × 付嘉颖</title>
     <link rel="stylesheet" href="styles.css?v=20260810-pwa1">
+    <link rel="stylesheet" href="star-bottle.css?v=20260814-star-bottle1">
   </head>
   <body>
     <main class="app-shell">
@@ -206,6 +207,20 @@
           </div>
           <span class="mini-stat" id="taskStats">0/0</span>
         </div>
+
+        <button class="star-bottle-shortcut" id="openStarBottle" type="button" aria-label="进入星语瓶">
+          <span class="star-bottle-shortcut-art" aria-hidden="true">
+            <i class="mini-star-bottle bottle-coral"><b></b><b></b><b></b></i>
+            <i class="mini-star-bottle bottle-mint"><b></b><b></b></i>
+          </span>
+          <span class="star-bottle-shortcut-copy">
+            <small>ONE STAR A DAY</small>
+            <strong>星语瓶</strong>
+            <span id="starBottleShortcutMeta">两只瓶子正在等待第一颗星</span>
+          </span>
+          <span class="star-bottle-shortcut-badge" id="starBottleShortcutBadge" hidden>0</span>
+          <i data-lucide="chevron-right" aria-hidden="true"></i>
+        </button>
 
         <button class="garden-shortcut" id="openGardenTogether" type="button">
           <span class="garden-shortcut-mark" aria-hidden="true"><i data-lucide="sprout"></i></span>
@@ -428,6 +443,86 @@
           <summary><span><small>RECENT SPINS</small><strong>最近转动</strong></span><b id="wheelHistoryCount">0 次</b><i data-lucide="chevron-down" aria-hidden="true"></i></summary>
           <div class="wheel-history-list" id="wheelHistoryList"></div>
           <button class="history-toggle" data-history-toggle="wheelHistory" type="button" hidden></button>
+        </details>
+      </section>
+
+      <section class="screen star-bottle-screen" id="starBottle" aria-label="星语瓶">
+        <header class="star-bottle-topbar">
+          <button class="star-bottle-back" id="closeStarBottle" type="button" aria-label="返回我们的页面" title="返回">
+            <i data-lucide="arrow-left" aria-hidden="true"></i>
+          </button>
+          <div>
+            <p class="section-kicker">One quiet star at a time</p>
+            <h2>星语瓶</h2>
+          </div>
+          <span class="star-bottle-day-chip" id="starBottleDayChip">今日可开启</span>
+        </header>
+
+        <nav class="star-bottle-direction" aria-label="选择玻璃瓶">
+          <button data-star-recipient="fu" type="button">给嘉颖</button>
+          <button data-star-recipient="liu" type="button">给向强</button>
+        </nav>
+
+        <section class="star-bottle-stage" id="starBottleStage" data-tone="coral">
+          <div class="star-bottle-window-light" aria-hidden="true"></div>
+          <div class="star-bottle-shelf" aria-hidden="true"></div>
+          <div class="star-bottle-canvas-shell" id="starBottleCanvasShell">
+            <canvas id="starBottleCanvas" width="640" height="760" aria-label="装着未开启星星的玻璃瓶"></canvas>
+            <span class="star-bottle-flight" id="starBottleFlight" aria-hidden="true">★</span>
+            <span class="star-bottle-paper-tag" id="starBottlePaperTag">给嘉颖</span>
+          </div>
+          <div class="star-bottle-stage-copy">
+            <small id="starBottleRelation">向强写给嘉颖</small>
+            <strong><span id="starBottleCount">0</span> 颗未开启</strong>
+            <p id="starBottleStageStatus">瓶子里还没有星星</p>
+          </div>
+        </section>
+
+        <section class="star-bottle-compose" id="starBottleCompose" hidden>
+          <div class="star-bottle-section-heading">
+            <div><small>FOLD A LITTLE STAR</small><h3 id="starBottleComposeTitle">藏一颗星给嘉颖</h3></div>
+            <span id="starBottleCharacterCount">0/500</span>
+          </div>
+          <form id="starBottleForm">
+            <textarea id="starBottleText" rows="4" maxlength="500" placeholder="写下想对她说的一段话……"></textarea>
+            <button class="primary-button" type="submit"><i data-lucide="sparkles" aria-hidden="true"></i><span>藏入一颗星</span></button>
+          </form>
+        </section>
+
+        <section class="star-bottle-open" id="starBottleOpen" hidden>
+          <div>
+            <small>YOUR STAR FOR TODAY</small>
+            <strong id="starBottleOpenTitle">今天还可以开启一颗</strong>
+            <span id="starBottleOpenMeta">从瓶中随机抽取</span>
+          </div>
+          <button class="primary-button" id="openTodayStar" type="button"><i data-lucide="sparkles" aria-hidden="true"></i><span>开启今日星星</span></button>
+        </section>
+
+        <p class="star-bottle-notice" id="starBottleNotice" aria-live="polite"></p>
+
+        <details class="star-bottle-pending" id="starBottlePending" hidden>
+          <summary>
+            <span><small>WAITING IN THE BOTTLE</small><strong>等待对方开启</strong></span>
+            <b id="starBottlePendingCount">0 颗</b>
+            <i data-lucide="chevron-down" aria-hidden="true"></i>
+          </summary>
+          <div class="star-bottle-pending-list" id="starBottlePendingList"></div>
+          <button class="history-toggle" id="starBottlePendingMore" type="button" hidden>查看更多</button>
+        </details>
+
+        <details class="star-bottle-history" id="starBottleHistory">
+          <summary>
+            <span><small>OPENED STARLIGHT</small><strong>已开启的星光</strong></span>
+            <b id="starBottleHistoryCount">0 条</b>
+            <i data-lucide="chevron-down" aria-hidden="true"></i>
+          </summary>
+          <div class="star-bottle-history-filter" role="group" aria-label="筛选已开启记录">
+            <button class="is-active" data-star-history-filter="all" type="button">全部</button>
+            <button data-star-history-filter="fu" type="button">写给嘉颖</button>
+            <button data-star-history-filter="liu" type="button">写给向强</button>
+          </div>
+          <div class="star-bottle-history-list" id="starBottleHistoryList"></div>
+          <button class="history-toggle" id="starBottleHistoryMore" type="button" hidden>查看更多</button>
         </details>
       </section>
 
@@ -996,12 +1091,46 @@
         <p id="gardenMemoryDialogText"></p>
       </article>
     </dialog>
+    <dialog id="starBottleOpenDialog" class="star-bottle-dialog">
+      <article class="star-bottle-dialog-card star-bottle-confirm-card">
+        <span class="star-bottle-dialog-mark" aria-hidden="true">★</span>
+        <p class="section-kicker">One chance today</p>
+        <h2>开启今天的星星？</h2>
+        <p>开启后今天不能再抽取，明天会有新的机会。</p>
+        <div class="dialog-actions">
+          <button class="soft-button" id="cancelOpenTodayStar" type="button">先等等</button>
+          <button class="primary-button" id="confirmOpenTodayStar" type="button">确定开启</button>
+        </div>
+      </article>
+    </dialog>
+    <dialog id="starBottleRevealDialog" class="star-bottle-dialog">
+      <article class="star-bottle-dialog-card star-bottle-reveal-card">
+        <button class="star-bottle-dialog-close" id="closeStarBottleReveal" type="button" aria-label="关闭星星内容"><i data-lucide="x" aria-hidden="true"></i></button>
+        <span class="star-bottle-reveal-star" aria-hidden="true">★</span>
+        <p class="section-kicker" id="starBottleRevealDirection">A star for you</p>
+        <p class="star-bottle-reveal-text" id="starBottleRevealText"></p>
+        <small id="starBottleRevealMeta"></small>
+      </article>
+    </dialog>
+    <dialog id="starBottleEditDialog" class="star-bottle-dialog">
+      <form class="star-bottle-dialog-card" id="starBottleEditForm">
+        <p class="section-kicker">Before it is opened</p>
+        <h2>修改这颗星</h2>
+        <input id="starBottleEditId" type="hidden">
+        <textarea id="starBottleEditText" rows="5" maxlength="500"></textarea>
+        <div class="dialog-actions">
+          <button class="soft-button" id="cancelStarBottleEdit" type="button">取消</button>
+          <button class="primary-button" type="submit">保存修改</button>
+        </div>
+      </form>
+    </dialog>
     <script src="assets/vendor/supabase.min.js?v=20260810-wechat-sync-fix"></script>
     <script async src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" onload="window.lucide?.createIcons()"></script>
     <script src="supabase-config.js"></script>
-    <script src="sync.js?v=20260810-pwa1"></script>
+    <script src="sync.js?v=20260814-star-bottle1"></script>
     <script src="questions-extra.js?v=20260809-balanced-bank"></script>
-    <script src="app.js?v=20260810-fu-storage-fix"></script>
+    <script src="app.js?v=20260814-star-bottle1"></script>
+    <script src="star-bottle.js?v=20260814-star-bottle1"></script>
     <script src="pwa.js?v=20260810-pwa1"></script>
   </body>
 </html>
