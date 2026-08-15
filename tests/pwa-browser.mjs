@@ -80,6 +80,7 @@ try {
   const consoleErrors = [];
   page.on("console", (message) => { if (message.type() === "error") consoleErrors.push(message.text()); });
   await page.addInitScript(() => {
+    Object.defineProperty(window.navigator, "standalone", { configurable: true, value: true });
     window.__longTasks = [];
     if ("PerformanceObserver" in window) {
       try {
@@ -89,7 +90,12 @@ try {
     }
   });
 
-  await page.goto(`http://127.0.0.1:${port}${prefix}`, { waitUntil: "networkidle" });
+  await page.goto(`http://127.0.0.1:${port}${prefix}`, { waitUntil: "domcontentloaded" });
+  const launchCover = page.locator("#appLaunch");
+  await launchCover.waitFor({ state: "visible" });
+  await page.screenshot({ path: `pwa-launch-${isAndroid ? "android" : "iphone"}-test.png` });
+  await launchCover.waitFor({ state: "detached" });
+  await page.waitForLoadState("networkidle");
   const registration = await page.evaluate(async () => {
     const ready = await navigator.serviceWorker.ready;
     return { scope: ready.scope, scriptURL: ready.active?.scriptURL || "", caches: await caches.keys() };

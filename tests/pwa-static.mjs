@@ -14,6 +14,8 @@ const sync = await readText("sync.js");
 assert.equal(manifest.display, "standalone");
 assert.equal(manifest.start_url, "./");
 assert.equal(manifest.scope, "./");
+assert.equal(manifest.background_color, "#fbf6f2");
+assert.equal(manifest.theme_color, "#fbf6f2");
 assert.ok(manifest.icons.some((icon) => icon.sizes === "192x192" && icon.purpose === "any"));
 assert.ok(manifest.icons.some((icon) => icon.sizes === "512x512" && icon.purpose === "maskable"));
 
@@ -38,8 +40,11 @@ assert.match(html, /apple-mobile-web-app-capable/);
 assert.match(html, /id="syncPasswordForm"/);
 assert.match(html, /id="syncSetPasswordForm"/);
 assert.match(html, /src="pwa\.js\?/);
+assert.match(html, /id="appLaunch"/);
+assert.match(html, /navigator\.standalone/);
 
 assert.match(pwa, /updateViaCache:\s*"none"/);
+assert.match(pwa, /minimumVisibleTime\s*=\s*720/);
 assert.doesNotMatch(pwa, /setInterval\s*\(/);
 assert.doesNotMatch(worker, /caches\.(open|match)|cache\.(add|addAll|put)/);
 assert.match(worker, /event\.request\.mode\s*!==\s*"navigate"/);

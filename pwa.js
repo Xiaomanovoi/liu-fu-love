@@ -1,4 +1,18 @@
 (function () {
+  const launchCover = document.querySelector("#appLaunch");
+  if (launchCover) {
+    const startedAt = Number(window.__appLaunchStartedAt) || performance.now();
+    const minimumVisibleTime = 720;
+    const dismissLaunchCover = () => {
+      const remaining = Math.max(0, minimumVisibleTime - (performance.now() - startedAt));
+      window.setTimeout(() => {
+        launchCover.classList.add("is-leaving");
+        window.setTimeout(() => launchCover.remove(), 320);
+      }, remaining);
+    };
+    requestAnimationFrame(() => requestAnimationFrame(dismissLaunchCover));
+  }
+
   if (!("serviceWorker" in navigator) || !window.isSecureContext) return;
 
   let registration = null;
