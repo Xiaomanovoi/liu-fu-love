@@ -1560,9 +1560,10 @@ function gardenLeafSvg(x, y, rotation, scale = 1, color = "#75a77e") {
 
 function gardenFlowerSvg(x, y, scale, color, accent = "#f4d68d", petals = 8) {
   const light = lightenGardenColor(color);
-  const petalMarkup = Array.from({ length: petals }, (_, index) => `<ellipse cx="0" cy="-18" rx="9" ry="18" fill="${index % 2 ? color : light}" transform="rotate(${index * (360 / petals)})"/>`).join("");
-  const innerMarkup = Array.from({ length: Math.max(5, petals - 2) }, (_, index) => `<ellipse cx="0" cy="-10" rx="5.3" ry="10.5" fill="${index % 2 ? light : color}" opacity=".76" transform="rotate(${(index + .5) * (360 / Math.max(5, petals - 2))})"/>`).join("");
-  return `<g transform="translate(${x} ${y}) scale(${scale})" class="garden-svg-flower">${petalMarkup}${innerMarkup}<circle r="9" fill="${accent}"/><circle r="4" fill="#9b6e42" opacity=".55"/><g fill="#fff4c9" opacity=".85"><circle cx="0" cy="-6" r="1.2"/><circle cx="5" cy="-2" r="1.2"/><circle cx="-5" cy="-2" r="1.2"/></g></g>`;
+  const petalMarkup = Array.from({ length: petals }, (_, index) => `<ellipse cx="0" cy="-19" rx="9.8" ry="19.5" fill="${index % 2 ? color : light}" stroke="rgba(92,66,75,.13)" stroke-width=".8" transform="rotate(${index * (360 / petals)})"/>`).join("");
+  const innerCount = Math.max(5, petals - 2);
+  const innerMarkup = Array.from({ length: innerCount }, (_, index) => `<ellipse cx="0" cy="-10.5" rx="5.6" ry="11" fill="${index % 2 ? light : color}" opacity=".82" transform="rotate(${(index + .5) * (360 / innerCount)})"/>`).join("");
+  return `<g transform="translate(${x} ${y}) scale(${scale})" class="garden-svg-flower">${petalMarkup}${innerMarkup}<circle r="10" fill="${accent}"/><circle r="6.5" fill="rgba(255,247,207,.42)"/><circle r="3.6" fill="#9b6e42" opacity=".58"/><path d="M-15-8Q0-22 15-8" fill="none" stroke="rgba(255,255,255,.46)" stroke-width="2" stroke-linecap="round"/><g fill="#fff4c9" opacity=".9"><circle cx="0" cy="-6" r="1.2"/><circle cx="5" cy="-2" r="1.2"/><circle cx="-5" cy="-2" r="1.2"/></g></g>`;
 }
 
 function lightenGardenColor(color) {
@@ -1571,7 +1572,7 @@ function lightenGardenColor(color) {
 }
 
 function gardenBudSvg(x, y, scale, color) {
-  return `<g transform="translate(${x} ${y}) scale(${scale})"><path d="M0 7C-16-2-15-23 0-31C15-23 16-2 0 7Z" fill="${color}"/><path d="M-15 5Q0 19 15 5Q8 1 0-4Q-8 1-15 5Z" fill="#598866"/><path d="M0 8V20" stroke="#497759" stroke-width="4" stroke-linecap="round"/></g>`;
+  return `<g transform="translate(${x} ${y}) scale(${scale})" class="garden-svg-bud"><path d="M0 8C-17-1-16-24 0-34C16-24 17-1 0 8Z" fill="${color}" stroke="rgba(90,62,72,.15)" stroke-width="1"/><path d="M0-29C-5-19-5-7 0 4C5-7 5-19 0-29Z" fill="rgba(255,255,255,.26)"/><path d="M-16 6Q0 20 16 6Q8 1 0-5Q-8 1-16 6Z" fill="#598866"/><path d="M0 9V21" stroke="#497759" stroke-width="4" stroke-linecap="round"/></g>`;
 }
 
 function mainGardenPlantSvg(stageIndex, growthStep = 0) {
@@ -1605,7 +1606,7 @@ function mainGardenPlantSvg(stageIndex, growthStep = 0) {
     if (stage >= 4) {
       const bloomScale = stage === 4 ? .78 : stage === 5 ? .9 : 1;
       flowers.push(gardenFlowerSvg(103, top + 20, bloomScale, leftColor, "#f5d693", 8), gardenFlowerSvg(197, top + 20, bloomScale, rightColor, "#f3d58e", 8));
-      flowers.push(stage === 4 ? gardenBudSvg(150, top + 29, .68, "#e1a85d") : gardenFlowerSvg(150, top + 27, stage >= 7 ? .88 : .72, "#e1a85d", "#f7e2a7", 9));
+      flowers.push(gardenFlowerSvg(150, top + 27, stage === 4 ? .74 : stage >= 7 ? .88 : .78, "#e1a85d", "#f7e2a7", 9));
     }
     if (stage >= 5) {
       stems.push(`<path d="M121 178C98 158 82 135 76 111"/><path d="M179 178C202 157 218 134 224 111"/>`);
@@ -1614,14 +1615,14 @@ function mainGardenPlantSvg(stageIndex, growthStep = 0) {
     }
     if (stage >= 6) {
       details.push(`<path d="M61 230C55 178 70 122 111 82C130 64 142 54 150 47C158 54 170 64 189 82C230 122 245 178 239 230" fill="none" stroke="#5b8965" stroke-width="5.5" stroke-linecap="round" opacity=".78"/>`);
-      [64, 88, 114, 186, 212, 236].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 220 - (index % 2) * 10, .34, index % 2 ? leftColor : rightColor, "#f5da93", 7)));
+      [72, 105, 195, 228].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 218 - (index % 2) * 12, .34, index % 2 ? leftColor : rightColor, "#f5da93", 7)));
     }
     if (stage >= 7) {
       details.push(`<path d="M79 226C62 153 72 74 150 37C228 74 238 153 221 226" fill="none" stroke="#719a73" stroke-width="7" stroke-linecap="round" opacity=".68"/>`);
-      [84, 106, 129, 171, 194, 216].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 81 + Math.abs(150 - x) * .48, .37, index % 2 ? rightColor : leftColor, "#f5d98c", 8)));
+      [88, 119, 150, 181, 212].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 78 + Math.abs(150 - x) * .5, .36, index % 2 ? rightColor : leftColor, "#f5d98c", 8)));
     }
     if (stage >= 8) {
-      [54, 80, 108, 150, 192, 220, 246].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 216 - (index % 3) * 18, .41 + (index % 2) * .07, [leftColor, rightColor, "#e1a85d", "#78a889"][index % 4], "#f6dc96", 8)));
+      [61, 103, 150, 197, 239].forEach((x, index) => flowers.push(gardenFlowerSvg(x, 224 - (index % 3) * 15, .38 + (index % 2) * .06, [leftColor, rightColor, "#e1a85d", "#78a889"][index % 4], "#f6dc96", 8)));
       details.push(`<g fill="#ffe9a9" opacity=".92"><circle cx="55" cy="74" r="2.5"/><circle cx="245" cy="70" r="3"/><circle cx="44" cy="130" r="2"/><circle cx="258" cy="136" r="2.3"/><path d="M150 17l3 7 7 3-7 3-3 7-3-7-7-3 7-3Z"/></g>`);
     }
   }
