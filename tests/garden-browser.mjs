@@ -81,7 +81,7 @@ try {
   });
   assert.ok(cover.overflow <= 1 && cover.titleFits && cover.separated, JSON.stringify(cover));
 
-  async function showGarden({ name, points, decorations = [] }) {
+  async function showGarden({ name, points, decorations = [], screenshot = true }) {
     await page.evaluate(({ points: nextPoints, decorations: nextDecorations }) => {
       const key = "love-tool-liu-fu-v2";
       const saved = JSON.parse(localStorage.getItem(key) || "{}");
@@ -100,7 +100,7 @@ try {
     await page.reload({ waitUntil: "networkidle" });
     await page.locator("#openGardenHome").click();
     await page.locator("#garden.is-active").waitFor();
-    await page.locator("#gardenStage").screenshot({ path: join(root, "output", "playwright", `garden-${name}-${device}.png`) });
+    if (screenshot) await page.locator("#gardenStage").screenshot({ path: join(root, "output", "playwright", `garden-${name}-${device}.png`) });
     return page.evaluate(() => {
       const stage = document.querySelector("#gardenStage");
       const stageRect = stage.getBoundingClientRect();
@@ -108,11 +108,11 @@ try {
         stage: stage.dataset.stage,
         flowers: stage.querySelectorAll(".garden-svg-flower").length,
         buds: stage.querySelectorAll(".garden-svg-bud").length,
-        decorations: [...stage.querySelectorAll(".garden-decor")].map((node) => {
+        decorations: [...stage.querySelectorAll(".garden-decoration-art")].map((node) => {
           const rect = node.getBoundingClientRect();
           const style = getComputedStyle(node);
           return {
-            name: node.className, width: Math.round(rect.width), height: Math.round(rect.height),
+            name: node.closest("[data-decoration-id]")?.dataset.decorationId || "", width: Math.round(rect.width), height: Math.round(rect.height),
             opacity: Number(style.opacity), inside: rect.right >= stageRect.left && rect.left <= stageRect.right
               && rect.bottom >= stageRect.top && rect.top <= stageRect.bottom
           };
@@ -144,13 +144,96 @@ try {
     name: "decor-late", points: 4300,
     decorations: ["starlight", "pavilion", "moonlamp", "wishbottles", "lanterns", "swing", "fountain"]
   });
+  const natural = await showGarden({
+    name: "decor-natural", points: 4300,
+    decorations: ["lights", "bridge", "picnic", "pond"]
+  });
+  const cottage = await showGarden({
+    name: "decor-cottage", points: 4300,
+    decorations: ["ribbon", "shelf", "windchime", "stones", "flowercart", "birdhouse"]
+  });
+  const moon = await showGarden({
+    name: "decor-moon", points: 4300,
+    decorations: ["starlight", "moongate", "moonlamp", "wishbottles", "lanterns", "mushrooms", "planters"]
+  });
+  const season = await showGarden({
+    name: "decor-season", points: 4300,
+    decorations: ["seasongate", "butterflyhouse"]
+  });
 
-  for (const result of [...stages, basic, late]) {
+  const decorationIds = [
+    "mushrooms", "stones", "planters", "lights", "picnic", "ribbon", "bench", "mailbox", "birdhouse",
+    "windchime", "arch", "lanterns", "butterflyhouse", "swing", "fountain", "pond", "bridge", "shelf",
+    "flowercart", "starlight", "moonlamp", "moongate", "pavilion", "wishbottles", "seasongate"
+  ];
+  for (const id of decorationIds) {
+    const result = await showGarden({ name: `decor-${id}`, points: 4300, decorations: [id], screenshot: false });
+    assert.equal(result.decorations.length, 1, `${id}: ${JSON.stringify(result)}`);
+    assert.ok(result.decorations[0].width >= 30 && result.decorations[0].height >= 20 && result.decorations[0].inside, `${id}: ${JSON.stringify(result)}`);
+  }
+
+  async function showCompanion({ species, careCount, expectedLevel, screenshot = false }) {
+    await page.evaluate(({ nextSpecies, nextCareCount }) => {
+      const key = "love-tool-liu-fu-v2";
+      const saved = JSON.parse(localStorage.getItem(key) || "{}");
+      const care = {};
+      for (let index = 0; index < Math.ceil(nextCareCount / 2); index += 1) {
+        care[`2026-01-${String(index + 1).padStart(2, "0")}`] = index * 2 + 1 < nextCareCount ? ["liu", "fu"] : ["liu"];
+      }
+      saved.writer = "liu";
+      saved.privatePerson = "liu";
+      saved.garden = {
+        ...(saved.garden || {}),
+        points: 4300, baselinePoints: 4300, migrationComplete: true, pointEvents: [], creditedKeys: [],
+        companionPlant: { name: "并肩生长", species: nextSpecies, createdAt: new Date().toISOString(), care }
+      };
+      localStorage.setItem(key, JSON.stringify(saved));
+    }, { nextSpecies: species, nextCareCount: careCount });
+    await page.reload({ waitUntil: "networkidle" });
+    await page.locator("#openGardenHome").click();
+    await page.locator('#garden [data-garden-panel="together"]').click();
+    await page.locator("#gardenPanelTogether:not([hidden])").waitFor();
+    if (screenshot) {
+      await page.locator("#gardenCompanionDisplay").evaluate((node) => node.scrollIntoView({ block: "center", behavior: "instant" }));
+      await page.locator("#gardenCompanionDisplay").screenshot({ path: join(root, "output", "playwright", `companion-${species}-level-${expectedLevel}-${device}.png`) });
+    }
+    const result = await page.evaluate(() => {
+      const display = document.querySelector("#gardenCompanionDisplay");
+      const svg = display.querySelector("svg");
+      const rect = svg.getBoundingClientRect();
+      const displayRect = display.getBoundingClientRect();
+      return {
+        species: display.dataset.species,
+        level: Number(display.dataset.level),
+        width: Math.round(rect.width),
+        height: Math.round(rect.height),
+        leaves: svg.querySelectorAll(".companion-leaf").length,
+        buds: svg.querySelectorAll(".companion-bud").length,
+        blooms: svg.querySelectorAll(".companion-bloom").length,
+        inside: rect.left >= displayRect.left - 1 && rect.right <= displayRect.right + 1
+      };
+    });
+    assert.equal(result.species, species, JSON.stringify(result));
+    assert.equal(result.level, expectedLevel, JSON.stringify(result));
+    assert.ok(result.width >= 180 && result.height >= 180 && result.inside, JSON.stringify(result));
+    return result;
+  }
+
+  const careByLevel = [0, 2, 6, 12, 20, 32, 48];
+  for (const species of ["rose", "daisy", "lavender", "sunflower"]) {
+    for (let level = 0; level <= 6; level += 1) {
+      const result = await showCompanion({ species, careCount: careByLevel[level], expectedLevel: level, screenshot: level === 4 || level === 6 });
+      if (level === 4) assert.equal(result.buds, 3, JSON.stringify(result));
+      if (level === 6) assert.equal(result.blooms, 5, JSON.stringify(result));
+    }
+  }
+
+  for (const result of [...stages, basic, late, natural, cottage, moon, season]) {
     assert.ok(result.overflow <= 1, JSON.stringify(result));
     assert.ok(result.decorations.every((item) => item.width >= 8 && item.height >= 8 && item.opacity >= .65 && item.inside), JSON.stringify(result));
   }
   assert.equal(errors.length, 0, JSON.stringify(errors));
-  console.log(JSON.stringify({ device, cover, stages, basic, late, errors }));
+  console.log(JSON.stringify({ device, cover, stages, basic, late, natural, cottage, moon, season, errors }));
 } finally {
   await browser.close();
   server.close();

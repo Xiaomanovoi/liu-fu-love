@@ -1206,3 +1206,62 @@ dialog::backdrop { background: rgba(63,49,47,.38); backdrop-filter: blur(4px); }
 @media (prefers-reduced-motion: reduce) {
   #wheelCanvas { transition-duration: .01ms !important; }
 }
+
+/* Secret Garden botanical scene 4.0 */
+.garden-stage { min-height: 500px; background-position: center 44%; }
+.garden-scene-decoration { overflow: hidden; }
+.garden-decoration-layer::before { display: none !important; }
+.garden-decoration-art { position: absolute; display: block; max-width: none; overflow: visible; filter: drop-shadow(0 6px 5px rgba(43,60,47,.16)); }
+.garden-decoration-layer[data-decoration-slot="structure"] .garden-decoration-art { opacity: .78; filter: saturate(.86) drop-shadow(0 5px 5px rgba(43,60,47,.1)); }
+.garden-decoration-layer[data-decoration-slot="atmosphere"] .garden-decoration-art { filter: none; }
+
+.garden-decoration-layer[data-decoration-id="mushrooms"] .garden-decoration-art { bottom: 25px; left: 2%; width: 103px; }
+.garden-decoration-layer[data-decoration-id="picnic"] .garden-decoration-art { bottom: 17px; left: 1.5%; width: 116px; }
+.garden-decoration-layer[data-decoration-id="bench"] .garden-decoration-art { bottom: 27px; left: 1.5%; width: 125px; }
+.garden-decoration-layer[data-decoration-id="swing"] .garden-decoration-art { bottom: 30px; left: 1%; width: 112px; height: 184px; }
+.garden-decoration-layer[data-decoration-id="flowercart"] .garden-decoration-art { bottom: 25px; left: 1%; width: 132px; }
+
+.garden-decoration-layer[data-decoration-id="planters"] .garden-decoration-art { right: 1%; bottom: 27px; width: 106px; }
+.garden-decoration-layer[data-decoration-id="mailbox"] .garden-decoration-art { right: 6px; bottom: 28px; width: 76px; }
+.garden-decoration-layer[data-decoration-id="birdhouse"] .garden-decoration-art { right: 7px; bottom: 28px; width: 74px; }
+.garden-decoration-layer[data-decoration-id="butterflyhouse"] .garden-decoration-art { right: 4px; bottom: 27px; width: 82px; }
+.garden-decoration-layer[data-decoration-id="fountain"] .garden-decoration-art { right: 0; bottom: 20px; width: 111px; }
+.garden-decoration-layer[data-decoration-id="pond"] .garden-decoration-art { right: 0; bottom: 13px; width: 127px; }
+
+.garden-decoration-layer[data-decoration-id="stones"] .garden-decoration-art { right: 2.5%; bottom: 1px; width: 95%; }
+.garden-decoration-layer[data-decoration-id="lanterns"] .garden-decoration-art { right: 2%; bottom: 77px; width: 96%; }
+
+.garden-decoration-layer[data-decoration-id="arch"] .garden-decoration-art { bottom: 31px; left: 9%; width: 82%; height: 318px; }
+.garden-decoration-layer[data-decoration-id="bridge"] .garden-decoration-art { bottom: 43px; left: 7%; width: 86%; }
+.garden-decoration-layer[data-decoration-id="shelf"] .garden-decoration-art { top: 72px; left: 18%; width: 64%; height: 222px; }
+.garden-decoration-layer[data-decoration-id="moongate"] .garden-decoration-art { bottom: 28px; left: 10%; width: 80%; height: 328px; }
+.garden-decoration-layer[data-decoration-id="pavilion"] .garden-decoration-art { bottom: 25px; left: 7%; width: 86%; height: 342px; }
+.garden-decoration-layer[data-decoration-id="seasongate"] .garden-decoration-art { bottom: 25px; left: 7%; width: 86%; height: 330px; }
+
+.garden-decoration-layer[data-decoration-id="lights"] .garden-decoration-art { top: 51px; left: 8%; width: 84%; }
+.garden-decoration-layer[data-decoration-id="ribbon"] .garden-decoration-art { top: 91px; left: 12%; width: 76%; }
+.garden-decoration-layer[data-decoration-id="moonlamp"] .garden-decoration-art { top: 46px; right: 15%; width: 69px; }
+.garden-decoration-layer[data-decoration-id="windchime"] .garden-decoration-art { top: 48px; right: 7%; width: 61px; height: 103px; }
+.garden-decoration-layer[data-decoration-id="wishbottles"] .garden-decoration-art { top: 57px; left: 50%; width: 145px; height: 105px; transform: translateX(-50%); }
+.garden-decoration-layer[data-decoration-id="starlight"] .garden-decoration-art { top: 43px; left: 5%; width: 90%; height: 252px; opacity: .9; }
+
+.garden-companion-scene { top: 168px; right: 12px; bottom: auto; z-index: 2; width: 66px; height: 82px; padding: 4px 4px 3px; overflow: visible; border: 1px solid rgba(232,240,226,.72); border-radius: 31px 31px 9px 9px; background: linear-gradient(160deg,rgba(250,252,245,.68),rgba(190,214,197,.2)); box-shadow: inset 7px 4px 10px rgba(255,255,255,.34); filter: drop-shadow(0 5px 4px rgba(42,57,43,.12)); }
+.garden-companion-scene::before { right: -8px; bottom: -8px; left: -8px; height: 8px; border-radius: 5px; background: linear-gradient(#dfc79e,#ab8c67); box-shadow: 0 4px 7px rgba(54,66,51,.14); }
+.garden-companion-scene .companion-plant-svg { width: 100%; height: 100%; overflow: visible; filter: none; }
+.companion-plant-display { width: min(292px,94%); height: 244px; margin: 1px auto 0; background: radial-gradient(ellipse at 50% 77%,rgba(111,150,120,.14),transparent 57%); }
+.companion-plant-svg { overflow: visible; }
+.companion-plant-svg:not(.is-compact) { filter: drop-shadow(0 10px 8px rgba(66,82,69,.11)); }
+.companion-plant-svg .companion-leaf,.companion-plant-svg .companion-bud,.companion-plant-svg .companion-bloom { transform-box: fill-box; transform-origin: center; }
+
+@media (max-width: 380px) {
+  .garden-stage { min-height: 458px; }
+  .garden-companion-scene { top: 159px; right: 8px; width: 59px; height: 74px; }
+  .garden-decoration-layer[data-decoration-id="bench"] .garden-decoration-art,.garden-decoration-layer[data-decoration-id="flowercart"] .garden-decoration-art { width: 112px; }
+  .garden-decoration-layer[data-decoration-id="fountain"] .garden-decoration-art,.garden-decoration-layer[data-decoration-id="pond"] .garden-decoration-art { width: 101px; }
+  .garden-decoration-layer[data-decoration-id="swing"] .garden-decoration-art { width: 101px; height: 169px; }
+  .garden-decoration-layer[data-decoration-id="arch"] .garden-decoration-art,.garden-decoration-layer[data-decoration-id="moongate"] .garden-decoration-art,.garden-decoration-layer[data-decoration-id="pavilion"] .garden-decoration-art,.garden-decoration-layer[data-decoration-id="seasongate"] .garden-decoration-art { height: 300px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .companion-plant-svg .companion-leaf,.companion-plant-svg .companion-bud,.companion-plant-svg .companion-bloom { animation: none !important; }
+}
