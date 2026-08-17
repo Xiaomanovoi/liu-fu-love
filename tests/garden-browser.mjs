@@ -63,8 +63,24 @@ try {
   page.setDefaultTimeout(10000);
   const errors = [];
   page.on("console", (message) => { if (message.type() === "error") errors.push(message.text()); });
+  page.on("pageerror", (error) => errors.push(error.message));
   const baseUrl = `http://127.0.0.1:${port}${prefix}`;
   const device = isAndroid ? "android" : "iphone";
+  await page.addInitScript(() => {
+    const fixture = new URL(location.href).searchParams.get("__gardenFixture");
+    if (!fixture) return;
+    const key = "love-tool-liu-fu-v2";
+    const saved = JSON.parse(localStorage.getItem(key) || "{}");
+    saved.writer = "liu";
+    saved.privatePerson = "liu";
+    saved.garden = { ...(saved.garden || {}), ...JSON.parse(fixture) };
+    localStorage.setItem(key, JSON.stringify(saved));
+  });
+  const gardenFixtureUrl = (garden) => {
+    const url = new URL(baseUrl);
+    url.searchParams.set("__gardenFixture", JSON.stringify(garden));
+    return url.href;
+  };
 
   await page.goto(baseUrl, { waitUntil: "networkidle" });
   await page.screenshot({ path: join(root, "output", "playwright", `cover-${device}.png`) });
@@ -82,24 +98,19 @@ try {
   assert.ok(cover.overflow <= 1 && cover.titleFits && cover.separated, JSON.stringify(cover));
 
   async function showGarden({ name, points, decorations = [], screenshot = true }) {
-    await page.evaluate(({ points: nextPoints, decorations: nextDecorations }) => {
-      const key = "love-tool-liu-fu-v2";
-      const saved = JSON.parse(localStorage.getItem(key) || "{}");
-      const now = new Date().toISOString();
-      saved.writer = "liu";
-      saved.privatePerson = "liu";
-      saved.garden = {
-        ...(saved.garden || {}), version: 3, points: nextPoints, baselinePoints: nextPoints,
-        migrationComplete: true, pointEvents: [], creditedKeys: [],
-        decorationStates: Object.fromEntries(nextDecorations.map((id, index) => [id, {
-          enabled: true, updatedAt: new Date(Date.now() + index * 1000).toISOString()
-        }]))
-      };
-      localStorage.setItem(key, JSON.stringify(saved));
-    }, { points, decorations });
-    await page.reload({ waitUntil: "networkidle" });
+    await page.goto(gardenFixtureUrl({
+      version: 3, points, baselinePoints: points, migrationComplete: true, pointEvents: [], creditedKeys: [],
+      decorationStates: Object.fromEntries(decorations.map((id, index) => [id, {
+        enabled: true, updatedAt: new Date(Date.now() + index * 1000).toISOString()
+      }]))
+    }), { waitUntil: "networkidle" });
     await page.locator("#openGardenHome").click();
     await page.locator("#garden.is-active").waitFor();
+    try {
+      await page.waitForFunction((expectedCount) => document.querySelector("#gardenSceneDecoration")?.dataset.decorationCount === String(expectedCount), decorations.length);
+    } catch (error) {
+      throw new Error(`${error.message}; page errors: ${errors.join(" | ") || "none"}`);
+    }
     if (screenshot) await page.locator("#gardenStage").screenshot({ path: join(root, "output", "playwright", `garden-${name}-${device}.png`) });
     return page.evaluate(() => {
       const stage = document.querySelector("#gardenStage");
@@ -199,28 +210,19 @@ try {
   ];
   for (const id of decorationIds) {
     const result = await showGarden({ name: `decor-${id}`, points: 4300, decorations: [id], screenshot: false });
-    assert.equal(result.decorations.length, 1, `${id}: ${JSON.stringify(result)}`);
+    assert.equal(result.decorations.length, 1, `${id}: ${JSON.stringify({ result, errors })}`);
     assert.ok(result.decorations[0].width >= 30 && result.decorations[0].height >= 20 && result.decorations[0].inside, `${id}: ${JSON.stringify(result)}`);
   }
 
   async function showCompanion({ species, careCount, expectedLevel, screenshot = false }) {
-    await page.evaluate(({ nextSpecies, nextCareCount }) => {
-      const key = "love-tool-liu-fu-v2";
-      const saved = JSON.parse(localStorage.getItem(key) || "{}");
-      const care = {};
-      for (let index = 0; index < Math.ceil(nextCareCount / 2); index += 1) {
-        care[`2026-01-${String(index + 1).padStart(2, "0")}`] = index * 2 + 1 < nextCareCount ? ["liu", "fu"] : ["liu"];
-      }
-      saved.writer = "liu";
-      saved.privatePerson = "liu";
-      saved.garden = {
-        ...(saved.garden || {}),
-        points: 4300, baselinePoints: 4300, migrationComplete: true, pointEvents: [], creditedKeys: [],
-        companionPlant: { name: "并肩生长", species: nextSpecies, createdAt: new Date().toISOString(), care }
-      };
-      localStorage.setItem(key, JSON.stringify(saved));
-    }, { nextSpecies: species, nextCareCount: careCount });
-    await page.reload({ waitUntil: "networkidle" });
+    const care = {};
+    for (let index = 0; index < Math.ceil(careCount / 2); index += 1) {
+      care[`2026-01-${String(index + 1).padStart(2, "0")}`] = index * 2 + 1 < careCount ? ["liu", "fu"] : ["liu"];
+    }
+    await page.goto(gardenFixtureUrl({
+      points: 4300, baselinePoints: 4300, migrationComplete: true, pointEvents: [], creditedKeys: [],
+      companionPlant: { name: "并肩生长", species, createdAt: new Date().toISOString(), care }
+    }), { waitUntil: "networkidle" });
     await page.locator("#openGardenHome").click();
     await page.locator('#garden [data-garden-panel="together"]').click();
     await page.locator("#gardenPanelTogether:not([hidden])").waitFor();
@@ -233,19 +235,30 @@ try {
       const svg = display.querySelector("svg");
       const rect = svg.getBoundingClientRect();
       const displayRect = display.getBoundingClientRect();
-      const stems = [...svg.querySelectorAll(".companion-stems path")];
+      const stems = [...svg.querySelectorAll(".companion-stems path[data-stem-index]")];
       const leafNodes = [...svg.querySelectorAll(".companion-leaf")];
       const leafDistances = leafNodes.map((leaf) => {
         const matrix = leaf.transform.baseVal.consolidate().matrix;
         const leafRoot = { x: matrix.e, y: matrix.f };
-        return Math.min(...stems.flatMap((stem) => {
-          const length = stem.getTotalLength();
+        const stem = svg.querySelector(`.companion-stems path[data-stem-index="${leaf.dataset.stemIndex}"]`);
+        if (!stem) return Number.POSITIVE_INFINITY;
+        const length = stem.getTotalLength();
+        return Math.min(...Array.from({ length: 101 }, (_, index) => {
+          const stemPoint = stem.getPointAtLength(length * index / 100);
+          return Math.hypot(leafRoot.x - stemPoint.x, leafRoot.y - stemPoint.y);
+        }));
+      });
+      const stemJoinDistances = stems.slice(1).map((stem, stemIndex) => {
+        const root = stem.getPointAtLength(0);
+        return Math.min(...stems.slice(0, stemIndex + 1).flatMap((parentStem) => {
+          const length = parentStem.getTotalLength();
           return Array.from({ length: 101 }, (_, index) => {
-            const stemPoint = stem.getPointAtLength(length * index / 100);
-            return Math.hypot(leafRoot.x - stemPoint.x, leafRoot.y - stemPoint.y);
+            const point = parentStem.getPointAtLength(length * index / 100);
+            return Math.hypot(root.x - point.x, root.y - point.y);
           });
         }));
       });
+      const petioleLengths = [...svg.querySelectorAll(".companion-petiole")].map((petiole) => petiole.getTotalLength());
       return {
         species: display.dataset.species,
         level: Number(display.dataset.level),
@@ -262,6 +275,8 @@ try {
         buds: svg.querySelectorAll(".companion-bud").length,
         blooms: svg.querySelectorAll(".companion-bloom").length,
         maxLeafStemDistance: leafDistances.length ? Math.max(...leafDistances) : 0,
+        maxStemJoinDistance: stemJoinDistances.length ? Math.max(...stemJoinDistances) : 0,
+        maxPetioleLength: petioleLengths.length ? Math.max(...petioleLengths) : 0,
         inside: rect.left >= displayRect.left - 1 && rect.right <= displayRect.right + 1
       };
     });
@@ -269,6 +284,8 @@ try {
     assert.equal(result.level, expectedLevel, JSON.stringify(result));
     assert.ok(result.width >= 180 && result.height >= 180 && result.inside, JSON.stringify(result));
     assert.ok(result.maxLeafStemDistance <= 3, `detached companion leaf: ${JSON.stringify(result)}`);
+    assert.ok(result.maxStemJoinDistance <= 8, `detached companion stem: ${JSON.stringify(result)}`);
+    assert.ok(result.maxPetioleLength <= 5, `overlong companion petiole: ${JSON.stringify(result)}`);
     assert.equal(result.petioles, result.leaves, JSON.stringify(result));
     assert.equal(result.blades, result.leaves, JSON.stringify(result));
     assert.equal(result.invalidStemRefs, 0, JSON.stringify(result));
@@ -277,7 +294,9 @@ try {
   }
 
   const careByLevel = [0, 2, 6, 12, 20, 32, 48];
-  for (const species of ["rose", "daisy", "lavender", "sunflower"]) {
+  const companionSpecies = ["rose", "daisy", "lavender", "sunflower", "tulip", "camellia", "bluebell"];
+  assert.deepEqual(await page.locator("#gardenCompanionSpecies option").evaluateAll((options) => options.map((option) => option.value)), companionSpecies);
+  for (const species of companionSpecies) {
     for (let level = 0; level <= 6; level += 1) {
       const result = await showCompanion({ species, careCount: careByLevel[level], expectedLevel: level, screenshot: level >= 1 });
       assert.equal(result.leaves, [0, 2, 4, 6, 6, 7, 8][level], JSON.stringify(result));
