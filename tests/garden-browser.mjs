@@ -253,10 +253,20 @@ try {
         const bladeRect = leaf.querySelector(".companion-leaf-blade").getBoundingClientRect();
         const side = Number(leaf.dataset.side);
         return {
+          stemIndex: Number(leaf.dataset.stemIndex),
+          side,
           outward: ((bladeRect.left + bladeRect.right) / 2 - root.x) * side,
           upward: root.y - (bladeRect.top + bladeRect.bottom) / 2
         };
       });
+      const centerLeftLeaf = leafNodes.find((leaf) => leaf.dataset.stemIndex === "0" && leaf.dataset.side === "-1");
+      const outerLeftLeaf = leafNodes.find((leaf) => leaf.dataset.stemIndex === "1" && leaf.dataset.side === "-1");
+      const leftLeafOverlap = centerLeftLeaf && outerLeftLeaf ? (() => {
+        const first = centerLeftLeaf.querySelector(".companion-leaf-blade").getBoundingClientRect();
+        const second = outerLeftLeaf.querySelector(".companion-leaf-blade").getBoundingClientRect();
+        return Math.max(0, Math.min(first.right, second.right) - Math.max(first.left, second.left))
+          * Math.max(0, Math.min(first.bottom, second.bottom) - Math.max(first.top, second.top));
+      })() : 0;
       const leavesPerStem = stems.map((stem) => leafNodes.filter((leaf) => leaf.dataset.stemIndex === stem.dataset.stemIndex).length);
       const stemJoinDistances = stems.slice(1).map((stem, stemIndex) => {
         const root = stem.getPointAtLength(0);
@@ -289,6 +299,8 @@ try {
         maxPetioleLength: petioleLengths.length ? Math.max(...petioleLengths) : 0,
         minOutwardLeafOffset: leafOrientations.length ? Math.min(...leafOrientations.map((item) => item.outward)) : 0,
         minUpwardLeafOffset: leafOrientations.length ? Math.min(...leafOrientations.map((item) => item.upward)) : 0,
+        rightStemLeftUpward: leafOrientations.find((item) => item.stemIndex === 2 && item.side === -1)?.upward || 0,
+        leftLeafOverlap,
         leavesPerStem,
         inside: rect.left >= displayRect.left - 1 && rect.right <= displayRect.right + 1
       };
@@ -301,6 +313,8 @@ try {
     assert.ok(result.maxPetioleLength <= 5, `overlong companion petiole: ${JSON.stringify(result)}`);
     assert.ok(result.leaves === 0 || result.minOutwardLeafOffset >= 4, `wrong companion leaf direction: ${JSON.stringify(result)}`);
     assert.ok(result.leaves === 0 || result.minUpwardLeafOffset >= 0, `downward companion leaf: ${JSON.stringify(result)}`);
+    assert.ok(result.leftLeafOverlap <= 2, `overlapping companion left leaves: ${JSON.stringify(result)}`);
+    assert.ok(result.level < 3 || result.rightStemLeftUpward >= 2, `flat companion right-stem leaf: ${JSON.stringify(result)}`);
     assert.ok(result.leavesPerStem.every((count) => count === 2), `missing companion stem leaves: ${JSON.stringify(result)}`);
     assert.equal(result.petioles, result.leaves, JSON.stringify(result));
     assert.equal(result.blades, result.leaves, JSON.stringify(result));
