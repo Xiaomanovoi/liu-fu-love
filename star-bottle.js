@@ -160,10 +160,23 @@
       openedToday: Boolean(value?.opened_today ?? value?.openedToday),
       pending: Array.isArray(value?.pending) ? value.pending : [],
       pendingTotal: Number(value?.pending_total ?? value?.pendingTotal ?? 0),
-      history: Array.isArray(value?.history) ? value.history : [],
+      history: sortHistoryRecords(Array.isArray(value?.history) ? value.history : []),
       historyTotal: Number(value?.history_total ?? value?.historyTotal ?? 0),
       historyRecipient: value?.history_recipient ?? value?.historyRecipient ?? null
     };
+  }
+
+  function sortHistoryRecords(records) {
+    const unique = new Map();
+    (records || []).forEach((note) => {
+      const key = note?.id || `${note?.sender_role || ""}-${note?.recipient_role || ""}-${note?.opened_at || note?.created_at || ""}`;
+      if (!unique.has(key)) unique.set(key, note);
+    });
+    return [...unique.values()].sort((a, b) => {
+      const right = Date.parse(b?.opened_at || b?.updated_at || b?.created_at || 0) || 0;
+      const left = Date.parse(a?.opened_at || a?.updated_at || a?.created_at || 0) || 0;
+      return right - left || String(b?.id || "").localeCompare(String(a?.id || ""));
+    });
   }
 
   function applySnapshot(value) {
@@ -457,6 +470,8 @@
       els.openDialog.close();
       return;
     }
+    ++loadSequence;
+    ++summarySequence;
     setButtonBusy(els.confirmOpen, true, "正在抽取……");
     try {
       const result = await window.LoveSync.openStarNote();
@@ -466,12 +481,16 @@
       snapshot.counts[recipient] = Math.max(0, (snapshot.counts[recipient] || 0) - 1);
       snapshot.openedToday = true;
       snapshot.historyTotal += 1;
-      if (historyLoaded) snapshot.history = [{ ...note, can_delete: false }, ...snapshot.history];
+      const matchesHistoryFilter = historyFilter === "all" || historyFilter === note.recipient_role;
+      if (historyLoaded && matchesHistoryFilter) {
+        snapshot.history = sortHistoryRecords([{ ...note, can_delete: false }, ...snapshot.history]).slice(0, historyLimit);
+      }
       render();
       drawBottle();
       playOpenAnimation();
       navigator.vibrate?.([22, 35, 22]);
       window.setTimeout(() => showReveal(note), reducedMotion() ? 0 : 420);
+      if (els.history.open) loadSnapshot(true);
     } catch (error) {
       els.openDialog.close();
       setNotice(errorMessage(error), true);

@@ -1073,6 +1073,9 @@ dialog::backdrop { background: rgba(63,49,47,.38); backdrop-filter: blur(4px); }
 .garden-hybrid-preview small,.garden-hybrid-preview strong { display: block; }
 .garden-hybrid-preview small { color: #9c6875; font-size: .52rem; }
 .garden-hybrid-preview strong { margin-top: 5px; font-size: .66rem; line-height: 1.45; }
+.garden-hybrid-preview em { display: block; margin-top: 3px; color: #708475; font-size: .52rem; font-style: normal; line-height: 1.45; }
+.hybrid-form .form-grid label { min-width: 0; }
+.hybrid-form .form-grid select { width: 100%; min-width: 0; }
 .hybrid-bloom time { display: block; margin-top: 5px; color: #8d8883; font-size: .51rem; }
 .garden-list-toggle { width: 100%; min-height: 39px; margin: 9px 0 16px; border: 1px solid rgba(104,133,111,.14); border-radius: 7px; color: #617a68; font-size: .62rem; font-weight: 800; background: #f1f6f0; }
 

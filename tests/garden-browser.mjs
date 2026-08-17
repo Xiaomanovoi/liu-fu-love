@@ -202,6 +202,24 @@ try {
       const svg = display.querySelector("svg");
       const rect = svg.getBoundingClientRect();
       const displayRect = display.getBoundingClientRect();
+      const stems = [...svg.querySelectorAll(".companion-stems path")];
+      const point = svg.createSVGPoint();
+      const toViewport = (node, x, y) => {
+        point.x = x;
+        point.y = y;
+        return point.matrixTransform(node.getCTM());
+      };
+      const leafDistances = [...svg.querySelectorAll(".companion-leaf")].map((leaf) => {
+        const leafRoot = toViewport(leaf, 0, 0);
+        return Math.min(...stems.flatMap((stem) => {
+          const length = stem.getTotalLength();
+          return Array.from({ length: 31 }, (_, index) => {
+            const stemPoint = stem.getPointAtLength(length * index / 30);
+            const viewportPoint = toViewport(stem, stemPoint.x, stemPoint.y);
+            return Math.hypot(leafRoot.x - viewportPoint.x, leafRoot.y - viewportPoint.y);
+          });
+        }));
+      });
       return {
         species: display.dataset.species,
         level: Number(display.dataset.level),
@@ -210,12 +228,14 @@ try {
         leaves: svg.querySelectorAll(".companion-leaf").length,
         buds: svg.querySelectorAll(".companion-bud").length,
         blooms: svg.querySelectorAll(".companion-bloom").length,
+        maxLeafStemDistance: leafDistances.length ? Math.max(...leafDistances) : 0,
         inside: rect.left >= displayRect.left - 1 && rect.right <= displayRect.right + 1
       };
     });
     assert.equal(result.species, species, JSON.stringify(result));
     assert.equal(result.level, expectedLevel, JSON.stringify(result));
     assert.ok(result.width >= 180 && result.height >= 180 && result.inside, JSON.stringify(result));
+    assert.ok(result.maxLeafStemDistance <= 32, `detached companion leaf: ${JSON.stringify(result)}`);
     return result;
   }
 
@@ -227,6 +247,76 @@ try {
       if (level === 6) assert.equal(result.blooms, 5, JSON.stringify(result));
     }
   }
+
+  await page.evaluate(() => {
+    const key = "love-tool-liu-fu-v2";
+    const saved = JSON.parse(localStorage.getItem(key) || "{}");
+    saved.writer = "liu";
+    saved.privatePerson = "liu";
+    saved.garden = {
+      ...(saved.garden || {}),
+      points: 4300, baselinePoints: 4300, migrationComplete: true, pointEvents: [], creditedKeys: [],
+      hybrid: {
+        round: 12,
+        choices: {
+          liu: null,
+          fu: { round: 12, color: "aqua", shape: "lotus", pattern: "moonwash", center: "moon", layer: "double", leaf: "variegated", aura: "halo", date: "2026-08-17", updatedAt: "2026-08-17T02:00:00.000Z" }
+        },
+        blooms: []
+      }
+    };
+    localStorage.setItem(key, JSON.stringify(saved));
+  });
+  await page.reload({ waitUntil: "networkidle" });
+  await page.locator("#openGardenHome").click();
+  await page.locator('#garden [data-garden-panel="flowers"]').click();
+  await page.locator("#gardenPanelFlowers:not([hidden])").waitFor();
+  const hybridOptionCounts = await page.evaluate(() => Object.fromEntries([
+    "Color", "Shape", "Pattern", "Center", "Layer", "Leaf", "Aura"
+  ].map((name) => [name.toLowerCase(), document.querySelector(`#gardenHybrid${name}`).options.length])));
+  assert.deepEqual(hybridOptionCounts, { color: 16, shape: 12, pattern: 8, center: 8, layer: 4, leaf: 5, aura: 6 });
+  await page.locator("#gardenHybridColor").selectOption("wine");
+  await page.locator("#gardenHybridShape").selectOption("butterfly");
+  await page.locator("#gardenHybridPattern").selectOption("speckle");
+  await page.locator("#gardenHybridCenter").selectOption("heart");
+  await page.locator("#gardenHybridLayer").selectOption("lush");
+  await page.locator("#gardenHybridLeaf").selectOption("vine");
+  await page.locator("#gardenHybridAura").selectOption("butterfly");
+  const hybridPreview = await page.evaluate(() => {
+    const preview = document.querySelector("#gardenHybridPreview");
+    const svg = preview.querySelector("svg");
+    const rect = svg.getBoundingClientRect();
+    const host = preview.getBoundingClientRect();
+    return {
+      petals: svg.querySelectorAll(".hybrid-petal").length,
+      leaves: svg.querySelectorAll(".hybrid-leaf-detail").length,
+      inside: rect.left >= host.left - 1 && rect.right <= host.right + 1 && rect.top >= host.top - 1 && rect.bottom <= host.bottom + 1,
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+    };
+  });
+  assert.equal(hybridPreview.petals, 23, JSON.stringify(hybridPreview));
+  assert.equal(hybridPreview.leaves, 2, JSON.stringify(hybridPreview));
+  assert.ok(hybridPreview.inside && hybridPreview.overflow <= 1, JSON.stringify(hybridPreview));
+  await page.locator("#gardenHybridPreview").evaluate((node) => node.scrollIntoView({ block: "center", behavior: "instant" }));
+  await page.locator("#gardenHybridPreview").screenshot({ path: join(root, "output", "playwright", `hybrid-options-${device}.png`) });
+  await page.locator("#gardenHybridForm button[type=submit]").click();
+  await page.locator("#gardenBloomGallery .hybrid-bloom").first().waitFor();
+  const savedBloom = await page.evaluate(() => {
+    const saved = JSON.parse(localStorage.getItem("love-tool-liu-fu-v2") || "{}");
+    const bloom = saved.garden?.hybrid?.blooms?.[0];
+    return {
+      left: bloom?.left,
+      right: bloom?.right,
+      galleryPetals: document.querySelector("#gardenBloomGallery .hybrid-flower-svg")?.querySelectorAll(".hybrid-petal").length,
+      overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
+    };
+  });
+  assert.equal(savedBloom.left?.layer, "lush", JSON.stringify(savedBloom));
+  assert.equal(savedBloom.left?.leaf, "vine", JSON.stringify(savedBloom));
+  assert.equal(savedBloom.left?.aura, "butterfly", JSON.stringify(savedBloom));
+  assert.equal(savedBloom.right?.layer, "double", JSON.stringify(savedBloom));
+  assert.equal(savedBloom.galleryPetals, 23, JSON.stringify(savedBloom));
+  assert.ok(savedBloom.overflow <= 1, JSON.stringify(savedBloom));
 
   for (const result of [...stages, basic, late, natural, cottage, moon, season]) {
     assert.ok(result.overflow <= 1, JSON.stringify(result));

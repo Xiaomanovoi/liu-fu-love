@@ -31,10 +31,20 @@ const syncMock = String.raw`
     { id: "incoming-1", sender_role: "fu", recipient_role: "liu", content: "今天也有认真想你。", created_at: "2026-08-14T02:20:00Z", updated_at: "2026-08-14T02:20:00Z" },
     { id: "incoming-2", sender_role: "fu", recipient_role: "liu", content: "下次见面要抱久一点。", created_at: "2026-08-13T08:20:00Z", updated_at: "2026-08-13T08:20:00Z" }
   ];
-  let history = [];
+  let history = Array.from({ length: 7 }, (_, index) => ({
+    id: "history-" + (index + 1),
+    sender_role: index % 2 ? "liu" : "fu",
+    recipient_role: index % 2 ? "fu" : "liu",
+    content: "旧星光" + (index + 1),
+    created_at: "2026-08-" + String(12 - index).padStart(2, "0") + "T08:00:00Z",
+    updated_at: "2026-08-" + String(12 - index).padStart(2, "0") + "T08:00:00Z",
+    opened_at: "2026-08-" + String(12 - index).padStart(2, "0") + "T09:00:00Z",
+    can_delete: false
+  }));
   const savedTokens = new Map();
   window.__starCalls = { summary: 0, snapshot: 0, create: 0 };
   window.__starCreateDelayMs = 0;
+  window.__starSnapshotDelayMs = 0;
   const emit = (name, detail) => window.dispatchEvent(new CustomEvent(name, { detail }));
   function snapshot(options = {}) {
     const filter = options.historyRecipient || null;
@@ -70,6 +80,7 @@ const syncMock = String.raw`
   async function refreshStarBottle(options = {}) {
     window.__starCalls.snapshot += 1;
     const value = snapshot(options);
+    if (window.__starSnapshotDelayMs) await new Promise((resolve) => setTimeout(resolve, window.__starSnapshotDelayMs));
     emit("love-star-bottle-snapshot", value);
     return value;
   }
@@ -298,6 +309,15 @@ try {
   assert.equal(await page.getByText("这颗待送达星星会被撤销。", { exact: true }).count(), 0);
 
   await page.locator('[data-star-recipient="liu"]').click();
+  await page.locator("#starBottleHistory summary").click();
+  await page.locator("#starBottleHistoryList").getByText("旧星光1", { exact: true }).waitFor();
+  assert.equal(await page.locator("#starBottleHistoryList .star-bottle-record").count(), 5);
+  assert.equal(await page.locator("#starBottleHistoryMore").isVisible(), true);
+  await page.evaluate(() => {
+    window.__starSnapshotDelayMs = 700;
+    window.dispatchEvent(new CustomEvent("love-star-bottle-changed"));
+  });
+  await page.waitForTimeout(560);
   await page.locator("#openTodayStar").click();
   await page.locator("#confirmOpenTodayStar").click();
   await page.locator("#starBottleRevealDialog[open]").waitFor();
@@ -305,9 +325,14 @@ try {
   await page.locator("#closeStarBottleReveal").click();
   await page.waitForFunction(() => document.querySelector("#starBottleCount")?.textContent === "1");
   assert.equal(await page.locator("#openTodayStar").isDisabled(), true);
-
-  await page.locator("#starBottleHistory summary").click();
-  await page.locator("#starBottleHistoryList").getByText("今天也有认真想你。", { exact: true }).waitFor();
+  await page.waitForTimeout(850);
+  await page.evaluate(() => { window.__starSnapshotDelayMs = 0; });
+  const firstOpenedStar = page.locator("#starBottleHistoryList .star-bottle-record p").first();
+  await firstOpenedStar.waitFor();
+  assert.equal(await firstOpenedStar.textContent(), "今天也有认真想你。");
+  await page.locator("#starBottleHistoryMore").click();
+  await page.waitForFunction(() => document.querySelectorAll("#starBottleHistoryList .star-bottle-record").length > 5);
+  assert.equal(await firstOpenedStar.textContent(), "今天也有认真想你。");
   const layout = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     dayChip: document.querySelector("#starBottleDayChip")?.textContent,
@@ -322,7 +347,7 @@ try {
   const visualCount = Number(process.env.STAR_VISUAL_COUNT || 0);
   if (visualCount > 0) {
     await page.evaluate((count) => window.dispatchEvent(new CustomEvent("love-star-bottle-summary", {
-      detail: { role: "liu", counts: { liu: count, fu: 2 }, opened_today: true, pending_total: 2, history_total: 1 }
+      detail: { role: "liu", counts: { liu: count, fu: 2 }, opened_today: true, pending_total: 2, history_total: 8 }
     })), visualCount);
     await page.waitForTimeout(80);
   }
