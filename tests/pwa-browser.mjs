@@ -96,6 +96,26 @@ try {
   await page.screenshot({ path: `pwa-launch-${isAndroid ? "android" : "iphone"}-test.png` });
   await launchCover.waitFor({ state: "detached" });
   await page.waitForLoadState("networkidle");
+  await page.waitForFunction(() => {
+    const hero = document.querySelector("img.hero-media");
+    return hero?.complete && hero.naturalWidth > 0;
+  });
+  const homeVisuals = await page.evaluate(() => {
+    const hero = document.querySelector("img.hero-media");
+    const days = document.querySelector("#daysTogether");
+    const style = getComputedStyle(days);
+    return {
+      heroLoaded: hero.complete && hero.naturalWidth > 0,
+      heroWidth: hero.naturalWidth,
+      fontStyle: style.fontStyle,
+      fontVariantNumeric: style.fontVariantNumeric
+    };
+  });
+  assert.equal(homeVisuals.heroLoaded, true, JSON.stringify(homeVisuals));
+  assert.ok(homeVisuals.heroWidth >= 1000, JSON.stringify(homeVisuals));
+  assert.equal(homeVisuals.fontStyle, "normal", JSON.stringify(homeVisuals));
+  assert.match(homeVisuals.fontVariantNumeric, /tabular-nums/, JSON.stringify(homeVisuals));
+  await page.locator(".hero").screenshot({ path: `pwa-home-${isAndroid ? "android" : "iphone"}-test.png` });
   const registration = await page.evaluate(async () => {
     const ready = await navigator.serviceWorker.ready;
     return { scope: ready.scope, scriptURL: ready.active?.scriptURL || "", caches: await caches.keys() };
