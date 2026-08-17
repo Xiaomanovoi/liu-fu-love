@@ -203,20 +203,14 @@ try {
       const rect = svg.getBoundingClientRect();
       const displayRect = display.getBoundingClientRect();
       const stems = [...svg.querySelectorAll(".companion-stems path")];
-      const point = svg.createSVGPoint();
-      const toViewport = (node, x, y) => {
-        point.x = x;
-        point.y = y;
-        return point.matrixTransform(node.getCTM());
-      };
       const leafDistances = [...svg.querySelectorAll(".companion-leaf")].map((leaf) => {
-        const leafRoot = toViewport(leaf, 0, 0);
+        const matrix = leaf.transform.baseVal.consolidate().matrix;
+        const leafRoot = { x: matrix.e, y: matrix.f };
         return Math.min(...stems.flatMap((stem) => {
           const length = stem.getTotalLength();
-          return Array.from({ length: 31 }, (_, index) => {
-            const stemPoint = stem.getPointAtLength(length * index / 30);
-            const viewportPoint = toViewport(stem, stemPoint.x, stemPoint.y);
-            return Math.hypot(leafRoot.x - viewportPoint.x, leafRoot.y - viewportPoint.y);
+          return Array.from({ length: 101 }, (_, index) => {
+            const stemPoint = stem.getPointAtLength(length * index / 100);
+            return Math.hypot(leafRoot.x - stemPoint.x, leafRoot.y - stemPoint.y);
           });
         }));
       });
@@ -235,7 +229,7 @@ try {
     assert.equal(result.species, species, JSON.stringify(result));
     assert.equal(result.level, expectedLevel, JSON.stringify(result));
     assert.ok(result.width >= 180 && result.height >= 180 && result.inside, JSON.stringify(result));
-    assert.ok(result.maxLeafStemDistance <= 32, `detached companion leaf: ${JSON.stringify(result)}`);
+    assert.ok(result.maxLeafStemDistance <= 3, `detached companion leaf: ${JSON.stringify(result)}`);
     return result;
   }
 
@@ -243,6 +237,7 @@ try {
   for (const species of ["rose", "daisy", "lavender", "sunflower"]) {
     for (let level = 0; level <= 6; level += 1) {
       const result = await showCompanion({ species, careCount: careByLevel[level], expectedLevel: level, screenshot: level === 4 || level === 6 });
+      assert.equal(result.leaves, [0, 2, 4, 6, 6, 7, 8][level], JSON.stringify(result));
       if (level === 4) assert.equal(result.buds, 3, JSON.stringify(result));
       if (level === 6) assert.equal(result.blooms, 5, JSON.stringify(result));
     }
@@ -272,15 +267,15 @@ try {
   await page.locator('#garden [data-garden-panel="flowers"]').click();
   await page.locator("#gardenPanelFlowers:not([hidden])").waitFor();
   const hybridOptionCounts = await page.evaluate(() => Object.fromEntries([
-    "Color", "Shape", "Pattern", "Center", "Layer", "Leaf", "Aura"
+    "Color", "Shape", "Pattern", "Center", "Layer", "Aura"
   ].map((name) => [name.toLowerCase(), document.querySelector(`#gardenHybrid${name}`).options.length])));
-  assert.deepEqual(hybridOptionCounts, { color: 16, shape: 12, pattern: 8, center: 8, layer: 4, leaf: 5, aura: 6 });
+  assert.deepEqual(hybridOptionCounts, { color: 16, shape: 12, pattern: 8, center: 8, layer: 4, aura: 6 });
+  assert.equal(await page.locator("#gardenHybridLeaf").count(), 0);
   await page.locator("#gardenHybridColor").selectOption("wine");
   await page.locator("#gardenHybridShape").selectOption("butterfly");
   await page.locator("#gardenHybridPattern").selectOption("speckle");
   await page.locator("#gardenHybridCenter").selectOption("heart");
   await page.locator("#gardenHybridLayer").selectOption("lush");
-  await page.locator("#gardenHybridLeaf").selectOption("vine");
   await page.locator("#gardenHybridAura").selectOption("butterfly");
   const hybridPreview = await page.evaluate(() => {
     const preview = document.querySelector("#gardenHybridPreview");
@@ -289,13 +284,15 @@ try {
     const host = preview.getBoundingClientRect();
     return {
       petals: svg.querySelectorAll(".hybrid-petal").length,
-      leaves: svg.querySelectorAll(".hybrid-leaf-detail").length,
+      leaves: svg.querySelectorAll(".hybrid-fixed-leaves, .hybrid-leaf-detail").length,
+      stems: svg.querySelectorAll(".hybrid-stem").length,
       inside: rect.left >= host.left - 1 && rect.right <= host.right + 1 && rect.top >= host.top - 1 && rect.bottom <= host.bottom + 1,
       overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
     };
   });
   assert.equal(hybridPreview.petals, 23, JSON.stringify(hybridPreview));
-  assert.equal(hybridPreview.leaves, 2, JSON.stringify(hybridPreview));
+  assert.equal(hybridPreview.leaves, 0, JSON.stringify(hybridPreview));
+  assert.equal(hybridPreview.stems, 1, JSON.stringify(hybridPreview));
   assert.ok(hybridPreview.inside && hybridPreview.overflow <= 1, JSON.stringify(hybridPreview));
   await page.locator("#gardenHybridPreview").evaluate((node) => node.scrollIntoView({ block: "center", behavior: "instant" }));
   await page.locator("#gardenHybridPreview").screenshot({ path: join(root, "output", "playwright", `hybrid-options-${device}.png`) });
@@ -312,7 +309,7 @@ try {
     };
   });
   assert.equal(savedBloom.left?.layer, "lush", JSON.stringify(savedBloom));
-  assert.equal(savedBloom.left?.leaf, "vine", JSON.stringify(savedBloom));
+  assert.equal(Object.hasOwn(savedBloom.left || {}, "leaf"), false, JSON.stringify(savedBloom));
   assert.equal(savedBloom.left?.aura, "butterfly", JSON.stringify(savedBloom));
   assert.equal(savedBloom.right?.layer, "double", JSON.stringify(savedBloom));
   assert.equal(savedBloom.galleryPetals, 23, JSON.stringify(savedBloom));
