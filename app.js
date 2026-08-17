@@ -1676,7 +1676,22 @@ function companionSpeciesList() {
   return ["rose", "daisy", "lavender", "sunflower", "tulip", "camellia", "bluebell"];
 }
 
-function companionLeafSvg(species, x, y, rotation, scale = 1, tone = 0, stemIndex = 0) {
+function companionLeafLayout() {
+  return [
+    [0, .24, -1, .58, 0, 1, 0],
+    [0, .55, 1, .53, 1, 1, -1],
+    [1, .3, -1, .54, 1, 2, 2],
+    [1, .69, 1, .46, 0, 2, 1],
+    [2, .38, 1, .55, 0, 3, -2],
+    [2, .75, -1, .45, 1, 3, -1],
+    [3, .38, -1, .43, 1, 5, 1],
+    [3, .68, 1, .39, 0, 5, 0],
+    [4, .42, 1, .43, 0, 6, -1],
+    [4, .72, -1, .39, 1, 6, 1]
+  ];
+}
+
+function companionLeafSvg(species, x, y, side, scale = 1, tone = 0, stemIndex = 0, tilt = 0) {
   const palettes = {
     rose: [["#5d936a", "#91b991"], ["#75a77a", "#a7caa3"]],
     daisy: [["#65966c", "#9fc49d"], ["#7eaa7f", "#b5d0ae"]],
@@ -1697,7 +1712,9 @@ function companionLeafSvg(species, x, y, rotation, scale = 1, tone = 0, stemInde
   };
   const [color, vein] = (palettes[species] || palettes.rose)[tone ? 1 : 0];
   const petioleWidth = ["lavender", "bluebell"].includes(species) ? 1.7 : 2.15;
-  return `<g class="companion-leaf companion-leaf-${species}" data-stem-index="${stemIndex}" transform="translate(${x} ${y}) rotate(${rotation})"><g transform="scale(${scale})"><path class="companion-petiole" d="M0 0Q2.2-.45 4.6 0" fill="none" stroke="#4e805d" stroke-width="${petioleWidth}" stroke-linecap="round"/><g class="companion-leaf-blade" transform="translate(2.8 0)"><path d="${paths[species] || paths.rose}" fill="${color}" stroke="rgba(49,92,61,.12)" stroke-width=".65"/><path d="M1 0Q11-1 22-5" fill="none" stroke="${vein}" stroke-width="1.15" stroke-linecap="round"/><path d="M11-2l4-4M17-4l4 2" fill="none" stroke="rgba(241,249,233,.42)" stroke-width=".8" stroke-linecap="round"/></g></g></g>`;
+  const direction = side < 0 ? -1 : 1;
+  const rotation = direction < 0 ? 8 + tilt : -8 + tilt;
+  return `<g class="companion-leaf companion-leaf-${species}" data-stem-index="${stemIndex}" data-side="${direction}" transform="translate(${x} ${y}) rotate(${rotation})"><g transform="scale(${direction * scale} ${scale})"><path class="companion-petiole" d="M0 0L2.2-.6" fill="none" stroke="#4e805d" stroke-width="${petioleWidth}" stroke-linecap="round"/><g class="companion-leaf-blade"><path d="${paths[species] || paths.rose}" fill="${color}" stroke="rgba(49,92,61,.12)" stroke-width=".65"/><path d="M1 0Q11-1 22-5" fill="none" stroke="${vein}" stroke-width="1.15" stroke-linecap="round"/><path d="M11-2l4-4M17-4l4 2" fill="none" stroke="rgba(241,249,233,.42)" stroke-width=".8" stroke-linecap="round"/></g></g></g>`;
 }
 
 function companionStemPath(stem) {
@@ -1711,14 +1728,6 @@ function companionStemPoint(stem, progress) {
     Number((u ** 3 * stem[0] + 3 * u ** 2 * t * stem[2] + 3 * u * t ** 2 * stem[4] + t ** 3 * stem[6]).toFixed(2)),
     Number((u ** 3 * stem[1] + 3 * u ** 2 * t * stem[3] + 3 * u * t ** 2 * stem[5] + t ** 3 * stem[7]).toFixed(2))
   ];
-}
-
-function companionStemAngle(stem, progress) {
-  const t = Math.max(0, Math.min(1, progress));
-  const u = 1 - t;
-  const dx = 3 * u ** 2 * (stem[2] - stem[0]) + 6 * u * t * (stem[4] - stem[2]) + 3 * t ** 2 * (stem[6] - stem[4]);
-  const dy = 3 * u ** 2 * (stem[3] - stem[1]) + 6 * u * t * (stem[5] - stem[3]) + 3 * t ** 2 * (stem[7] - stem[5]);
-  return Math.atan2(dy, dx) * 180 / Math.PI;
 }
 
 function companionShootSvg(species, x, y, turn = 0, scale = 1) {
@@ -1796,12 +1805,11 @@ function companionPlantSvg(species = "rose", level = 0, compact = false) {
   const growthScale = [1, .42, .62, .82, 1, 1, 1][currentLevel];
   const stemWidths = { rose: 4.65, daisy: 4, lavender: 3.15, sunflower: 5.2, tulip: 4.4, camellia: 4.55, bluebell: 3.35 };
   const stems = profile.stems.slice(0, stemCount).map((stem, index) => `<path data-stem-index="${index}" d="${companionStemPath(stem)}" stroke-width="${Math.max(2.8, stemWidths[currentSpecies] - index * .12)}"/>`).join("");
-  const leaves = profile.leaves
+  const leaves = companionLeafLayout()
     .filter(([stemIndex, , , , , minimumLevel]) => currentLevel >= minimumLevel && stemIndex < stemCount)
-    .map(([stemIndex, progress, side, scale, tone, , spread = 70]) => {
+    .map(([stemIndex, progress, side, scale, tone, , tilt]) => {
       const [x, y] = companionStemPoint(profile.stems[stemIndex], progress);
-      const rotation = companionStemAngle(profile.stems[stemIndex], progress) + side * spread;
-      return companionLeafSvg(currentSpecies, x, y, rotation, scale, tone, stemIndex);
+      return companionLeafSvg(currentSpecies, x, y, side, scale, tone, stemIndex, tilt);
     }).join("");
   let heads = "";
   if (currentLevel === 4) heads = profile.heads.slice(0, 3).map(([x, y, turn], index) => companionBudSvg(currentSpecies, x, y + (index === 2 ? 3 : 0), index === 0 ? .82 : .7)).join("");

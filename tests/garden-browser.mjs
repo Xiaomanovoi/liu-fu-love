@@ -248,6 +248,16 @@ try {
           return Math.hypot(leafRoot.x - stemPoint.x, leafRoot.y - stemPoint.y);
         }));
       });
+      const leafOrientations = leafNodes.map((leaf) => {
+        const root = new DOMPoint(0, 0).matrixTransform(leaf.getScreenCTM());
+        const bladeRect = leaf.querySelector(".companion-leaf-blade").getBoundingClientRect();
+        const side = Number(leaf.dataset.side);
+        return {
+          outward: ((bladeRect.left + bladeRect.right) / 2 - root.x) * side,
+          upward: root.y - (bladeRect.top + bladeRect.bottom) / 2
+        };
+      });
+      const leavesPerStem = stems.map((stem) => leafNodes.filter((leaf) => leaf.dataset.stemIndex === stem.dataset.stemIndex).length);
       const stemJoinDistances = stems.slice(1).map((stem, stemIndex) => {
         const root = stem.getPointAtLength(0);
         return Math.min(...stems.slice(0, stemIndex + 1).flatMap((parentStem) => {
@@ -277,6 +287,9 @@ try {
         maxLeafStemDistance: leafDistances.length ? Math.max(...leafDistances) : 0,
         maxStemJoinDistance: stemJoinDistances.length ? Math.max(...stemJoinDistances) : 0,
         maxPetioleLength: petioleLengths.length ? Math.max(...petioleLengths) : 0,
+        minOutwardLeafOffset: leafOrientations.length ? Math.min(...leafOrientations.map((item) => item.outward)) : 0,
+        minUpwardLeafOffset: leafOrientations.length ? Math.min(...leafOrientations.map((item) => item.upward)) : 0,
+        leavesPerStem,
         inside: rect.left >= displayRect.left - 1 && rect.right <= displayRect.right + 1
       };
     });
@@ -286,6 +299,9 @@ try {
     assert.ok(result.maxLeafStemDistance <= 3, `detached companion leaf: ${JSON.stringify(result)}`);
     assert.ok(result.maxStemJoinDistance <= 8, `detached companion stem: ${JSON.stringify(result)}`);
     assert.ok(result.maxPetioleLength <= 5, `overlong companion petiole: ${JSON.stringify(result)}`);
+    assert.ok(result.leaves === 0 || result.minOutwardLeafOffset >= 4, `wrong companion leaf direction: ${JSON.stringify(result)}`);
+    assert.ok(result.leaves === 0 || result.minUpwardLeafOffset >= 0, `downward companion leaf: ${JSON.stringify(result)}`);
+    assert.ok(result.leavesPerStem.every((count) => count === 2), `missing companion stem leaves: ${JSON.stringify(result)}`);
     assert.equal(result.petioles, result.leaves, JSON.stringify(result));
     assert.equal(result.blades, result.leaves, JSON.stringify(result));
     assert.equal(result.invalidStemRefs, 0, JSON.stringify(result));
@@ -299,7 +315,7 @@ try {
   for (const species of companionSpecies) {
     for (let level = 0; level <= 6; level += 1) {
       const result = await showCompanion({ species, careCount: careByLevel[level], expectedLevel: level, screenshot: level >= 1 });
-      assert.equal(result.leaves, [0, 2, 4, 6, 6, 7, 8][level], JSON.stringify(result));
+      assert.equal(result.leaves, [0, 2, 4, 6, 6, 8, 10][level], JSON.stringify(result));
       if (level === 4) assert.equal(result.buds, 3, JSON.stringify(result));
       if (level === 6) assert.equal(result.blooms, 5, JSON.stringify(result));
     }
