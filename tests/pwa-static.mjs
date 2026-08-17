@@ -43,7 +43,7 @@ assert.match(html, /id="syncSetPasswordForm"/);
 assert.match(html, /src="pwa\.js\?/);
 assert.match(html, /id="appLaunch"/);
 assert.match(html, /navigator\.standalone/);
-assert.match(html, /rel="preload" as="image" href="assets\/hero-cute\.jpg" fetchpriority="high"/);
+assert.match(html, /rel="preload" as="image" href="assets\/hero-cute-fast\.jpg" fetchpriority="high"/);
 assert.match(html, /<img class="hero-media"[^>]+loading="eager"[^>]+fetchpriority="high"/);
 assert.match(html, /class="app-launch-emblem-mark"/);
 assert.doesNotMatch(html, /app-launch-emblem[\s\S]{0,120}icon-192\.png/);
