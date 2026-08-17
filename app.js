@@ -1564,8 +1564,8 @@ function gardenWeather() {
   return { id: "morning", label: "晴朗晨光" };
 }
 
-function gardenLeafSvg(x, y, rotation, scale = 1, color = "#75a77e") {
-  return `<g transform="translate(${x} ${y}) rotate(${rotation}) scale(${scale})"><path d="M0 0C10-21 33-22 45-4C33 13 11 14 0 0Z" fill="${color}"/><path d="M4 1C17-1 30-5 40-10" fill="none" stroke="rgba(255,255,255,.46)" stroke-width="2" stroke-linecap="round"/><path d="M18-2L14-9M27-5L24-13" fill="none" stroke="rgba(54,101,67,.22)" stroke-width="1.4" stroke-linecap="round"/></g>`;
+function gardenLeafSvg(x, y, rotation, scale = 1, color = "#75a77e", stemIndex = 0) {
+  return `<g class="garden-svg-leaf" data-stem-index="${stemIndex}" transform="translate(${x} ${y}) rotate(${rotation})"><g transform="scale(${scale})"><path class="garden-leaf-petiole" d="M0 0C4-.5 8-1 12-1.5" fill="none" stroke="#4f805d" stroke-width="4" stroke-linecap="round"/><g class="garden-leaf-blade" transform="translate(10 -1.5)"><path d="M0 0C10-21 33-22 45-4C33 13 11 14 0 0Z" fill="${color}"/><path d="M2 0C15-2 27-5 37-9" fill="none" stroke="rgba(255,255,255,.46)" stroke-width="1.9" stroke-linecap="round"/><path d="M17-3L14-9M26-5L23-12" fill="none" stroke="rgba(54,101,67,.2)" stroke-width="1.2" stroke-linecap="round"/></g></g></g>`;
 }
 
 function gardenFlowerSvg(x, y, scale, color, accent = "#f4d68d", petals = 8) {
@@ -1592,25 +1592,55 @@ function mainGardenPlantSvg(stageIndex, growthStep = 0) {
   const foliage = [];
   const flowers = [];
   const stems = [];
+  const stemSpecs = [];
   const details = [];
   const bonus = Math.min(10, Math.max(0, growthStep) * 3);
+  const addStem = (stem, width = 7) => {
+    const index = stemSpecs.length;
+    stemSpecs.push(stem);
+    stems.push(`<path data-stem-index="${index}" d="${companionStemPath(stem)}" stroke-width="${width}"/>`);
+    return index;
+  };
+  const addLeaf = (stemIndex, progress, rotation, scale, color) => {
+    const [x, y] = companionStemPoint(stemSpecs[stemIndex], progress);
+    foliage.push(gardenLeafSvg(x, y, rotation, scale, color, stemIndex));
+  };
 
   if (stage === 0) {
     details.push(`<ellipse cx="150" cy="234" rx="34" ry="10" fill="#6b4d3d" opacity=".72"/><path d="M150 229C136 217 138 199 150 192C162 199 164 217 150 229Z" fill="#8b5d49"/><path d="M150 208C145 204 143 199 145 193" fill="none" stroke="#f1d3c2" stroke-width="2.4" stroke-linecap="round"/><circle cx="143" cy="215" r="2" fill="#f5d9c8" opacity=".65"/>`);
   } else if (stage === 1) {
-    stems.push(`<path d="M145 241C143 216 137 190 136 ${174 - bonus}"/><path d="M155 241C158 213 164 187 166 ${166 - bonus}"/>`);
-    foliage.push(gardenLeafSvg(137, 205, 202, .7), gardenLeafSvg(141, 191, -24, .62, "#91bd98"), gardenLeafSvg(163, 199, -18, .72, "#82b089"), gardenLeafSvg(160, 184, 204, .61, "#9bc39d"));
+    const leftStem = addStem([145,241,143,216,137,190,136,174 - bonus]);
+    const rightStem = addStem([155,241,158,213,164,187,166,166 - bonus]);
+    addLeaf(leftStem, .42, 202, .7, "#75a77e");
+    addLeaf(leftStem, .68, -24, .62, "#91bd98");
+    addLeaf(rightStem, .42, -18, .72, "#82b089");
+    addLeaf(rightStem, .68, 204, .61, "#9bc39d");
     details.push(`<path d="M136 ${174 - bonus}C129 ${166 - bonus} 130 ${157 - bonus} 139 ${152 - bonus}C145 ${162 - bonus} 143 ${170 - bonus} 136 ${174 - bonus}Z" fill="#acd0ae"/><path d="M166 ${166 - bonus}C159 ${157 - bonus} 161 ${148 - bonus} 171 ${143 - bonus}C177 ${153 - bonus} 174 ${162 - bonus} 166 ${166 - bonus}Z" fill="#94c099"/><path d="M132 231Q150 222 168 231" fill="none" stroke="#b78a67" stroke-width="3" opacity=".65"/>`);
   } else {
     const top = [0, 0, 130, 94, 70, 56, 46, 38, 30][stage] - bonus;
-    stems.push(`<path d="M143 243C139 202 128 160 105 ${top + 24}"/>`, `<path d="M157 243C162 201 174 159 195 ${top + 24}"/>`);
-    if (stage >= 3) stems.push(`<path d="M150 229C150 181 151 127 150 ${top + 27}"/>`);
-    foliage.push(gardenLeafSvg(132, 205, 198, .72), gardenLeafSvg(168, 201, -17, .74, "#8bb491"), gardenLeafSvg(121, 168, 210, .66, "#6f9c76"), gardenLeafSvg(179, 165, -31, .67, "#88b18b"), gardenLeafSvg(109, 137, 201, .58, "#82aa82"), gardenLeafSvg(191, 134, -22, .58, "#9ac19a"));
-    if (stage >= 3) foliage.push(gardenLeafSvg(145, 154, 205, .61), gardenLeafSvg(155, 128, -24, .6, "#75a37c"));
-    if (stage >= 5) foliage.push(gardenLeafSvg(96, 116, 202, .52), gardenLeafSvg(204, 113, -23, .52, "#94bb95"), gardenLeafSvg(138, 99, 208, .48), gardenLeafSvg(162, 82, -28, .46, "#83ad88"));
+    const leftStem = addStem([143,243,139,202,128,160,105,top + 24]);
+    const rightStem = addStem([157,243,162,201,174,159,195,top + 24]);
+    const centerStem = stage >= 3 ? addStem([150,229,150,181,151,127,150,top + 27], 6.4) : -1;
+    addLeaf(leftStem, .22, 198, .72, "#75a77e");
+    addLeaf(rightStem, .22, -17, .74, "#8bb491");
+    addLeaf(leftStem, .48, 210, .66, "#6f9c76");
+    addLeaf(rightStem, .48, -31, .67, "#88b18b");
+    addLeaf(leftStem, .72, 201, .58, "#82aa82");
+    addLeaf(rightStem, .72, -22, .58, "#9ac19a");
+    if (centerStem >= 0) {
+      addLeaf(centerStem, .42, 205, .61, "#75a77e");
+      addLeaf(centerStem, .62, -24, .6, "#75a37c");
+    }
+    if (stage >= 5) {
+      addLeaf(leftStem, .86, 202, .52, "#75a77e");
+      addLeaf(rightStem, .86, -23, .52, "#94bb95");
+      addLeaf(centerStem, .76, 208, .48, "#75a77e");
+      addLeaf(centerStem, .89, -28, .46, "#83ad88");
+    }
     if (stage === 2) {
       details.push(`<path d="M105 ${top + 24}C97 ${top + 12} 100 ${top + 1} 113 ${top - 4}" fill="none" stroke="#82ad83" stroke-width="5" stroke-linecap="round"/><path d="M195 ${top + 24}C203 ${top + 12} 200 ${top + 1} 187 ${top - 4}" fill="none" stroke="#82ad83" stroke-width="5" stroke-linecap="round"/>`);
-      foliage.push(gardenLeafSvg(108, top + 16, 205, .45), gardenLeafSvg(192, top + 14, -24, .45, "#a0c5a1"));
+      addLeaf(leftStem, .92, 205, .45, "#75a77e");
+      addLeaf(rightStem, .92, -24, .45, "#a0c5a1");
     }
     if (stage === 3) flowers.push(gardenBudSvg(104, top + 22, .78, leftColor), gardenBudSvg(196, top + 22, .78, rightColor), gardenBudSvg(150, top + 28, .62, "#e1a85d"));
     if (stage >= 4) {
@@ -1619,8 +1649,10 @@ function mainGardenPlantSvg(stageIndex, growthStep = 0) {
       flowers.push(gardenFlowerSvg(150, top + 27, stage === 4 ? .74 : stage >= 7 ? .88 : .78, "#e1a85d", "#f7e2a7", 9));
     }
     if (stage >= 5) {
-      stems.push(`<path d="M121 178C98 158 82 135 76 111"/><path d="M179 178C202 157 218 134 224 111"/>`);
-      foliage.push(gardenLeafSvg(91, 142, 207, .55), gardenLeafSvg(209, 139, -27, .55, "#8cb592"));
+      const outerLeftStem = addStem([121,178,98,158,82,135,76,111], 6.2);
+      const outerRightStem = addStem([179,178,202,157,218,134,224,111], 6.2);
+      addLeaf(outerLeftStem, .52, 207, .55, "#75a77e");
+      addLeaf(outerRightStem, .52, -27, .55, "#8cb592");
       flowers.push(gardenFlowerSvg(75, 105, .5, rightColor, "#f2d58a", 7), gardenFlowerSvg(225, 105, .5, leftColor, "#f2d58a", 7));
     }
     if (stage >= 6) {
@@ -1637,7 +1669,7 @@ function mainGardenPlantSvg(stageIndex, growthStep = 0) {
     }
   }
 
-  return `<svg class="garden-plant-svg" viewBox="0 0 300 310" role="presentation"><defs><linearGradient id="main-pot-${stage}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dda088"/><stop offset=".5" stop-color="#bd7869"/><stop offset="1" stop-color="#8f5a53"/></linearGradient><linearGradient id="main-soil-${stage}" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#705044"/><stop offset="1" stop-color="#48332d"/></linearGradient><filter id="main-shadow-${stage}" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#31483a" flood-opacity=".22"/></filter></defs><ellipse cx="150" cy="303" rx="78" ry="8" fill="#304a39" opacity=".17"/><g class="garden-svg-stems" fill="none" stroke="#4f805d" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">${stems.join("")}</g>${details.join("")}${foliage.join("")}${flowers.join("")}<g filter="url(#main-shadow-${stage})"><ellipse cx="150" cy="244" rx="72" ry="16" fill="url(#main-soil-${stage})"/><path d="M78 246H222L209 296Q205 305 195 305H105Q95 305 91 296Z" fill="url(#main-pot-${stage})"/><path d="M72 242Q72 232 83 232H217Q228 232 228 242V253H72Z" fill="#ca826f"/><path d="M91 266Q150 279 209 266" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="4" stroke-linecap="round"/><path d="M101 286Q150 296 199 286" fill="none" stroke="rgba(88,46,43,.12)" stroke-width="2"/><text x="150" y="288" text-anchor="middle" fill="#fff8ef" font-family="Georgia,serif" font-size="13" font-weight="700" letter-spacing="1">LIU ♥ FU</text></g></svg>`;
+  return `<svg class="garden-plant-svg" viewBox="0 0 300 310" role="presentation"><defs><linearGradient id="main-pot-${stage}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#dda088"/><stop offset=".5" stop-color="#bd7869"/><stop offset="1" stop-color="#8f5a53"/></linearGradient><linearGradient id="main-soil-${stage}" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#705044"/><stop offset="1" stop-color="#48332d"/></linearGradient><filter id="main-shadow-${stage}" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#31483a" flood-opacity=".22"/></filter></defs><ellipse cx="150" cy="303" rx="78" ry="8" fill="#304a39" opacity=".17"/><g class="garden-svg-botanical"><g class="garden-svg-stems" fill="none" stroke="#4f805d" stroke-width="7" stroke-linecap="round" stroke-linejoin="round">${stems.join("")}</g>${details.join("")}${foliage.join("")}${flowers.join("")}</g><g filter="url(#main-shadow-${stage})"><ellipse cx="150" cy="244" rx="72" ry="16" fill="url(#main-soil-${stage})"/><path d="M78 246H222L209 296Q205 305 195 305H105Q95 305 91 296Z" fill="url(#main-pot-${stage})"/><path d="M72 242Q72 232 83 232H217Q228 232 228 242V253H72Z" fill="#ca826f"/><path d="M91 266Q150 279 209 266" fill="none" stroke="rgba(255,255,255,.2)" stroke-width="4" stroke-linecap="round"/><path d="M101 286Q150 296 199 286" fill="none" stroke="rgba(88,46,43,.12)" stroke-width="2"/><text x="150" y="288" text-anchor="middle" fill="#fff8ef" font-family="Georgia,serif" font-size="13" font-weight="700" letter-spacing="1">LIU ♥ FU</text></g></svg>`;
 }
 
 function companionLeafSvg(species, x, y, rotation, scale = 1, tone = 0, stemIndex = 0) {
@@ -1648,7 +1680,8 @@ function companionLeafSvg(species, x, y, rotation, scale = 1, tone = 0, stemInde
     lavender: "M0 0C5-10 17-13 23-6C18 4 8 6 0 0Z",
     sunflower: "M0 0C4-17 22-25 37-15C41-1 29 13 12 11C5 9 1 5 0 0Z"
   };
-  return `<g class="companion-leaf companion-leaf-${species}" data-stem-index="${stemIndex}" transform="translate(${x} ${y}) rotate(${rotation}) scale(${scale})"><circle r="2.2" fill="#4e805d"/><path d="${paths[species] || paths.rose}" fill="${colors[0]}"/><path d="M3-1Q17-3 32-7" fill="none" stroke="${colors[1]}" stroke-width="1.8" stroke-linecap="round"/><path d="M15-3l5-7M22-5l6 4" fill="none" stroke="rgba(238,248,232,.5)" stroke-width="1.2" stroke-linecap="round"/></g>`;
+  const stemWidth = species === "lavender" ? 3.2 : 3.8;
+  return `<g class="companion-leaf companion-leaf-${species}" data-stem-index="${stemIndex}" transform="translate(${x} ${y}) rotate(${rotation})"><g transform="scale(${scale})"><path class="companion-petiole" d="M0 0C3-.4 6-.8 10-1" fill="none" stroke="#4e805d" stroke-width="${stemWidth}" stroke-linecap="round"/><g class="companion-leaf-blade" transform="translate(8 -1)"><path d="${paths[species] || paths.rose}" fill="${colors[0]}"/><path d="M2 0Q14-2 27-6" fill="none" stroke="${colors[1]}" stroke-width="1.7" stroke-linecap="round"/><path d="M13-3l5-6M20-5l5 3" fill="none" stroke="rgba(238,248,232,.5)" stroke-width="1.1" stroke-linecap="round"/></g></g></g>`;
 }
 
 function companionStemPath(stem) {

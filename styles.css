@@ -875,7 +875,7 @@ dialog::backdrop { background: rgba(63,49,47,.38); backdrop-filter: blur(4px); }
 /* Secret Garden botanical artwork */
 .garden-plant { bottom: 17px; z-index: 3; width: min(300px,78vw); height: 310px; pointer-events: none; transform: translateX(-50%); transform-origin: 50% 100%; }
 .garden-plant-svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 8px 8px rgba(42,67,50,.1)); }
-.garden-svg-stems { transform-box: fill-box; transform-origin: 50% 100%; animation: botanical-breathe 5.6s ease-in-out infinite; }
+.garden-svg-botanical { transform-box: fill-box; transform-origin: 50% 100%; animation: botanical-breathe 5.6s ease-in-out infinite; }
 .garden-svg-flower { transform-box: fill-box; transform-origin: center; }
 .garden-stage.is-watering .garden-plant { animation: plant-thank-you .8s ease; }
 .garden-stage[data-stage="seed"] .garden-plant { width: min(265px,72vw); }
@@ -940,7 +940,7 @@ dialog::backdrop { background: rgba(63,49,47,.38); backdrop-filter: blur(4px); }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .garden-svg-stems { animation: none; }
+  .garden-svg-botanical { animation: none; }
 }
 
 /* Secret Garden canonical scene composition */

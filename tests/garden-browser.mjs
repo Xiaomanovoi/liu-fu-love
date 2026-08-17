@@ -104,10 +104,35 @@ try {
     return page.evaluate(() => {
       const stage = document.querySelector("#gardenStage");
       const stageRect = stage.getBoundingClientRect();
+      const svg = stage.querySelector(".garden-plant-svg");
+      const stems = [...svg.querySelectorAll(".garden-svg-stems path")];
+      const leafNodes = [...svg.querySelectorAll(".garden-svg-leaf")];
+      const leafDistances = leafNodes.map((leaf) => {
+        const matrix = leaf.transform.baseVal.consolidate().matrix;
+        const leafRoot = { x: matrix.e, y: matrix.f };
+        const stem = svg.querySelector(`.garden-svg-stems path[data-stem-index="${leaf.dataset.stemIndex}"]`);
+        if (!stem) return Number.POSITIVE_INFINITY;
+        const length = stem.getTotalLength();
+        return Math.min(...Array.from({ length: 101 }, (_, index) => {
+          const stemPoint = stem.getPointAtLength(length * index / 100);
+          return Math.hypot(leafRoot.x - stemPoint.x, leafRoot.y - stemPoint.y);
+        }));
+      });
+      const svgRect = svg.getBoundingClientRect();
       return {
         stage: stage.dataset.stage,
         flowers: stage.querySelectorAll(".garden-svg-flower").length,
         buds: stage.querySelectorAll(".garden-svg-bud").length,
+        mainLeaves: leafNodes.length,
+        mainPetioles: svg.querySelectorAll(".garden-leaf-petiole").length,
+        mainBlades: svg.querySelectorAll(".garden-leaf-blade").length,
+        mainInvalidStemRefs: leafNodes.filter((leaf) => !svg.querySelector(`.garden-svg-stems path[data-stem-index="${leaf.dataset.stemIndex}"]`)).length,
+        mainLeavesInside: [...svg.querySelectorAll(".garden-leaf-blade")].every((blade) => {
+          const rect = blade.getBoundingClientRect();
+          return rect.left >= svgRect.left - 2 && rect.right <= svgRect.right + 2
+            && rect.top >= svgRect.top - 2 && rect.bottom <= svgRect.bottom + 2;
+        }),
+        mainMaxLeafStemDistance: leafDistances.length ? Math.max(...leafDistances) : 0,
         decorations: [...stage.querySelectorAll(".garden-decoration-art")].map((node) => {
           const rect = node.getBoundingClientRect();
           const style = getComputedStyle(node);
@@ -123,16 +148,22 @@ try {
   }
 
   const stageCases = [
-    ["seed", 0, 0, 0], ["sprout", 200, 0, 0], ["seedling", 500, 0, 0],
-    ["bud", 900, 0, 3], ["bloom", 1400, 3, 0], ["garden", 2000, 5, 0],
-    ["path", 2800, 9, 0], ["courtyard", 3400, 14, 0], ["sanctuary", 4300, 19, 0]
+    ["seed", 0, 0, 0, 0], ["sprout", 200, 0, 0, 4], ["seedling", 500, 0, 0, 8],
+    ["bud", 900, 0, 3, 8], ["bloom", 1400, 3, 0, 8], ["garden", 2000, 5, 0, 14],
+    ["path", 2800, 9, 0, 14], ["courtyard", 3400, 14, 0, 14], ["sanctuary", 4300, 19, 0, 14]
   ];
   const stages = [];
-  for (const [name, points, flowers, buds] of stageCases) {
+  for (const [name, points, flowers, buds, leaves] of stageCases) {
     const result = await showGarden({ name, points });
     assert.equal(result.stage, name);
     assert.equal(result.flowers, flowers);
     assert.equal(result.buds, buds);
+    assert.equal(result.mainLeaves, leaves, JSON.stringify(result));
+    assert.equal(result.mainPetioles, leaves, JSON.stringify(result));
+    assert.equal(result.mainBlades, leaves, JSON.stringify(result));
+    assert.equal(result.mainInvalidStemRefs, 0, JSON.stringify(result));
+    assert.equal(result.mainLeavesInside, true, JSON.stringify(result));
+    assert.ok(result.mainMaxLeafStemDistance <= 3, `detached main-garden leaf: ${JSON.stringify(result)}`);
     stages.push(result);
   }
 
@@ -203,7 +234,8 @@ try {
       const rect = svg.getBoundingClientRect();
       const displayRect = display.getBoundingClientRect();
       const stems = [...svg.querySelectorAll(".companion-stems path")];
-      const leafDistances = [...svg.querySelectorAll(".companion-leaf")].map((leaf) => {
+      const leafNodes = [...svg.querySelectorAll(".companion-leaf")];
+      const leafDistances = leafNodes.map((leaf) => {
         const matrix = leaf.transform.baseVal.consolidate().matrix;
         const leafRoot = { x: matrix.e, y: matrix.f };
         return Math.min(...stems.flatMap((stem) => {
@@ -220,6 +252,13 @@ try {
         width: Math.round(rect.width),
         height: Math.round(rect.height),
         leaves: svg.querySelectorAll(".companion-leaf").length,
+        petioles: svg.querySelectorAll(".companion-petiole").length,
+        blades: svg.querySelectorAll(".companion-leaf-blade").length,
+        invalidStemRefs: leafNodes.filter((leaf) => !svg.querySelector(`.companion-stems path[data-stem-index="${leaf.dataset.stemIndex}"]`)).length,
+        leavesInside: [...svg.querySelectorAll(".companion-leaf-blade")].every((blade) => {
+          const bladeRect = blade.getBoundingClientRect();
+          return bladeRect.left >= rect.left - 1 && bladeRect.right <= rect.right + 1 && bladeRect.top >= rect.top - 1 && bladeRect.bottom <= rect.bottom + 1;
+        }),
         buds: svg.querySelectorAll(".companion-bud").length,
         blooms: svg.querySelectorAll(".companion-bloom").length,
         maxLeafStemDistance: leafDistances.length ? Math.max(...leafDistances) : 0,
@@ -230,13 +269,17 @@ try {
     assert.equal(result.level, expectedLevel, JSON.stringify(result));
     assert.ok(result.width >= 180 && result.height >= 180 && result.inside, JSON.stringify(result));
     assert.ok(result.maxLeafStemDistance <= 3, `detached companion leaf: ${JSON.stringify(result)}`);
+    assert.equal(result.petioles, result.leaves, JSON.stringify(result));
+    assert.equal(result.blades, result.leaves, JSON.stringify(result));
+    assert.equal(result.invalidStemRefs, 0, JSON.stringify(result));
+    assert.equal(result.leavesInside, true, JSON.stringify(result));
     return result;
   }
 
   const careByLevel = [0, 2, 6, 12, 20, 32, 48];
   for (const species of ["rose", "daisy", "lavender", "sunflower"]) {
     for (let level = 0; level <= 6; level += 1) {
-      const result = await showCompanion({ species, careCount: careByLevel[level], expectedLevel: level, screenshot: level === 4 || level === 6 });
+      const result = await showCompanion({ species, careCount: careByLevel[level], expectedLevel: level, screenshot: level >= 1 });
       assert.equal(result.leaves, [0, 2, 4, 6, 6, 7, 8][level], JSON.stringify(result));
       if (level === 4) assert.equal(result.buds, 3, JSON.stringify(result));
       if (level === 6) assert.equal(result.blooms, 5, JSON.stringify(result));
