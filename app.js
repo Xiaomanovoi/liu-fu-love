@@ -1649,11 +1649,7 @@ function mainGardenPlantSvg(stageIndex, growthStep = 0) {
       flowers.push(gardenFlowerSvg(150, top + 27, stage === 4 ? .74 : stage >= 7 ? .88 : .78, "#e1a85d", "#f7e2a7", 9));
     }
     if (stage >= 5) {
-      const outerLeftStem = addStem([121,178,98,158,82,135,76,111], 6.2);
-      const outerRightStem = addStem([179,178,202,157,218,134,224,111], 6.2);
-      addLeaf(outerLeftStem, .52, 207, .55, "#75a77e");
-      addLeaf(outerRightStem, .52, -27, .55, "#8cb592");
-      flowers.push(gardenFlowerSvg(75, 105, .5, rightColor, "#f2d58a", 7), gardenFlowerSvg(225, 105, .5, leftColor, "#f2d58a", 7));
+      details.push(`<path d="M96 222Q150 202 204 222" fill="none" stroke="#739879" stroke-width="4" stroke-linecap="round" opacity=".5"/><g fill="#f5e6bc" opacity=".8"><circle cx="112" cy="213" r="2.2"/><circle cx="150" cy="207" r="2.6"/><circle cx="188" cy="213" r="2.2"/></g>`);
     }
     if (stage >= 6) {
       details.push(`<path d="M61 230C55 178 70 122 111 82C130 64 142 54 150 47C158 54 170 64 189 82C230 122 245 178 239 230" fill="none" stroke="#5b8965" stroke-width="5.5" stroke-linecap="round" opacity=".78"/>`);
@@ -1673,7 +1669,7 @@ function mainGardenPlantSvg(stageIndex, growthStep = 0) {
 }
 
 function companionSpeciesList() {
-  return ["rose", "daisy", "lavender", "sunflower", "tulip", "camellia", "bluebell"];
+  return ["rose", "redrose", "daisy", "lavender", "sunflower", "tulip", "camellia", "bluebell"];
 }
 
 function companionLeafLayout() {
@@ -1694,6 +1690,7 @@ function companionLeafLayout() {
 function companionLeafSvg(species, x, y, side, scale = 1, tone = 0, stemIndex = 0, tilt = 0) {
   const palettes = {
     rose: [["#5d936a", "#91b991"], ["#75a77a", "#a7caa3"]],
+    redrose: [["#517f5b", "#8eb18b"], ["#67946b", "#a4c19b"]],
     daisy: [["#65966c", "#9fc49d"], ["#7eaa7f", "#b5d0ae"]],
     lavender: [["#668f6f", "#a0bea0"], ["#7da07f", "#b7cdb0"]],
     sunflower: [["#5a8d63", "#92b78b"], ["#73a171", "#aac99d"]],
@@ -1703,6 +1700,7 @@ function companionLeafSvg(species, x, y, side, scale = 1, tone = 0, stemIndex = 
   };
   const paths = {
     rose: "M0 0C6-9 18-12 29-7C31 2 23 10 12 10C6 9 2 5 0 0Z",
+    redrose: "M0 0C7-10 20-13 31-7C32 3 23 11 12 10C6 9 2 5 0 0Z",
     daisy: "M0 0C6-7 17-9 26-4C25 5 16 10 8 8C4 7 1 3 0 0Z",
     lavender: "M0 0C5-5 14-7 22-3C20 4 12 8 5 6C2 5 1 2 0 0Z",
     sunflower: "M0 0C5-11 18-16 30-10C34 0 27 11 15 12C8 12 3 7 0 0Z",
@@ -1742,9 +1740,10 @@ function companionShootSvg(species, x, y, turn = 0, scale = 1) {
 function companionBudSvg(species, x, y, scale = 1) {
   if (species === "lavender") return `<g class="companion-bud" transform="translate(${x} ${y}) scale(${scale})"><path d="M0 4V-29" stroke="#557d62" stroke-width="4" stroke-linecap="round"/>${[-26, -21, -16, -11, -6].map((offset, index) => `<ellipse cx="${index % 2 ? 4.5 : -4.5}" cy="${offset}" rx="4.8" ry="6.5" fill="${index % 2 ? "#aa94cc" : "#8d79bb"}" transform="rotate(${index % 2 ? 27 : -27})"/>`).join("")}<ellipse cy="-30" rx="4" ry="6" fill="#bdafe0"/></g>`;
   if (species === "sunflower") return `<g class="companion-bud" transform="translate(${x} ${y}) scale(${scale}) rotate(-8)"><path d="M0 7V-2" stroke="#557d62" stroke-width="5"/><path d="M0 0C-14-3-18-18-7-26C6-32 18-21 14-8C11-1 5 2 0 0Z" fill="#70996a"/><path d="M-5-24C4-21 10-14 11-6" fill="none" stroke="#a8c193" stroke-width="2"/></g>`;
-  if (species === "tulip") return `<g class="companion-bud" transform="translate(${x} ${y}) scale(${scale})"><path d="M0 7V-1" stroke="#537f5d" stroke-width="4"/><path d="M0 1C-13-5-14-22-7-31L0-23L7-31C14-22 13-5 0 1Z" fill="#e58ea0"/><path d="M-7-30C-3-25-1-13 0-2C2-14 4-24 7-30" fill="none" stroke="#f6b8c3" stroke-width="2" stroke-linecap="round"/><path d="M-12-4Q0 9 12-4Q6-1 0-8Q-6-1-12-4Z" fill="#6d9a6c"/></g>`;
+  if (species === "tulip") return `<g class="companion-bud" transform="translate(${x} ${y}) scale(${scale})"><path d="M0 10V-2" stroke="#537f5d" stroke-width="4" stroke-linecap="round"/><path d="M0 1C-13-5-14-22-7-31L0-23L7-31C14-22 13-5 0 1Z" fill="#e58ea0"/><path d="M-7-30C-3-25-1-13 0-2C2-14 4-24 7-30" fill="none" stroke="#f6b8c3" stroke-width="2" stroke-linecap="round"/><path d="M-12-4Q0 9 12-4Q6-1 0-8Q-6-1-12-4Z" fill="#6d9a6c"/></g>`;
   if (species === "camellia") return `<g class="companion-bud" transform="translate(${x} ${y}) scale(${scale})"><path d="M0 7V-1" stroke="#4d7658" stroke-width="4"/><path d="M0 1C-13-2-16-17-7-27C2-35 15-25 14-13C13-4 6 2 0 1Z" fill="#d76f83"/><path d="M-5-26C1-20 5-12 5-4" fill="none" stroke="#f0a0ac" stroke-width="2"/><path d="M-12-3Q0 10 12-3Q5 0 0-8Q-5 0-12-3Z" fill="#527e5c"/></g>`;
-  if (species === "bluebell") return `<g class="companion-bud" transform="translate(${x} ${y}) scale(${scale})"><path d="M0 5Q4-10 0-27" fill="none" stroke="#557d62" stroke-width="3" stroke-linecap="round"/>${[-22, -14, -6].map((offset, index) => `<g transform="translate(${index % 2 ? -4 : 4} ${offset}) rotate(${index % 2 ? 14 : -14})"><path d="M0 0C-6-3-7-11 0-15C7-11 6-3 0 0Z" fill="${index === 0 ? "#8d87c6" : "#a6a0d7"}"/><path d="M-5-1Q0 4 5-1" fill="none" stroke="#d9d4ee" stroke-width="1.2"/></g>`).join("")}</g>`;
+  if (species === "bluebell") return `<g class="companion-bud" transform="translate(${x} ${y}) scale(${scale})"><path d="M0 10L0 0Q4-10 0-27" fill="none" stroke="#557d62" stroke-width="3" stroke-linecap="round"/>${[-22, -14, -6].map((offset, index) => `<g transform="translate(${index % 2 ? -4 : 4} ${offset}) rotate(${index % 2 ? 14 : -14})"><path d="M0 0C-6-3-7-11 0-15C7-11 6-3 0 0Z" fill="${index === 0 ? "#8d87c6" : "#a6a0d7"}"/><path d="M-5-1Q0 4 5-1" fill="none" stroke="#d9d4ee" stroke-width="1.2"/></g>`).join("")}</g>`;
+  if (species === "redrose") return `<g class="companion-bud" transform="translate(${x} ${y}) scale(${scale})"><path d="M0 9V-1" stroke="#477453" stroke-width="4.5" stroke-linecap="round"/><path d="M0 2C-14-2-17-18-8-30C-2-37 8-34 13-25C18-15 13-2 0 2Z" fill="#b82f45"/><path d="M-5-28C1-23 5-15 5-5" fill="none" stroke="#e56a78" stroke-width="2" stroke-linecap="round"/><path d="M-13-3Q0 10 13-3Q6 0 0-8Q-6 0-13-3Z" fill="#4f7e59"/></g>`;
   const petal = species === "daisy" ? "#fffaf0" : "#dc8296";
   const center = species === "daisy" ? `<ellipse cy="-22" rx="4" ry="6" fill="#e8bc5b"/>` : "";
   return `<g class="companion-bud" transform="translate(${x} ${y}) scale(${scale})"><path d="M0 6V-1" stroke="#557d62" stroke-width="4.5"/><path d="M0 1C-12-5-12-20 0-29C12-20 12-5 0 1Z" fill="${petal}"/>${center}<path d="M0 1C-8-2-12-8-11-15C-5-13-1-8 0 1ZM0 1C8-2 12-8 11-15C5-13 1-8 0 1Z" fill="#719d74"/><path d="M0-25C-3-16-2-8 0-2" fill="none" stroke="rgba(255,255,255,.38)" stroke-width="2"/></g>`;
@@ -1754,9 +1753,10 @@ function companionBlossomSvg(species, x, y, scale = 1, turn = 0) {
   if (species === "sunflower") return `<g class="companion-bloom" transform="translate(${x} ${y}) rotate(${turn}) scale(${scale})"><g>${Array.from({ length: 16 }, (_, index) => `<ellipse cx="0" cy="-20" rx="6.4" ry="16" fill="${index % 2 ? "#efb94f" : "#f6cc64"}" transform="rotate(${index * 22.5})"/>`).join("")}</g><circle r="14" fill="#6f513d"/><circle r="10" fill="#8c6743"/><g fill="#d4a957">${Array.from({ length: 12 }, (_, index) => `<circle cx="0" cy="-7" r="1.5" transform="rotate(${index * 30})"/>`).join("")}</g><circle r="3.5" fill="#5e4437"/></g>`;
   if (species === "daisy") return `<g class="companion-bloom" transform="translate(${x} ${y}) rotate(${turn}) scale(${scale})">${Array.from({ length: 12 }, (_, index) => `<ellipse cx="0" cy="-16" rx="5.3" ry="15" fill="${index % 2 ? "#fffdf4" : "#f4f0e8"}" stroke="#e4ded2" stroke-width=".7" transform="rotate(${index * 30})"/>`).join("")}<circle r="10" fill="#e4ad44"/><circle r="6.5" fill="#f1c961"/><g fill="#fff0a8">${Array.from({ length: 8 }, (_, index) => `<circle cx="0" cy="-5" r="1.2" transform="rotate(${index * 45})"/>`).join("")}</g></g>`;
   if (species === "lavender") return `<g class="companion-bloom" transform="translate(${x} ${y}) rotate(${turn}) scale(${scale})"><path d="M0 5V-44" stroke="#557d62" stroke-width="4" stroke-linecap="round"/>${[-40, -33, -26, -19, -12, -5].map((offset, index) => `<g transform="translate(0 ${offset})"><ellipse cx="${index % 2 ? 6 : -6}" rx="7" ry="9" fill="${index % 3 ? "#9f89c8" : "#b2a0d7"}" transform="rotate(${index % 2 ? 31 : -31})"/><ellipse cx="${index % 2 ? -3 : 3}" cy="3" rx="5" ry="7" fill="#8975b6" transform="rotate(${index % 2 ? -24 : 24})"/></g>`).join("")}<path d="M-2-43C2-49 7-48 8-42C5-38 1-38-2-43Z" fill="#c0b2df"/></g>`;
-  if (species === "tulip") return `<g class="companion-bloom" transform="translate(${x} ${y}) rotate(${turn}) scale(${scale})"><path d="M0 7V-2" stroke="#537f5d" stroke-width="4"/><path d="M0 3C-17-2-21-22-15-36C-7-30-2-21 0-8C2-21 7-30 15-36C21-22 17-2 0 3Z" fill="#e58398"/><path d="M0 3C-10-5-11-24 0-39C11-24 10-5 0 3Z" fill="#f1a5b3"/><path d="M-15-35C-10-30-7-22-7-13M15-35C10-30 7-22 7-13" fill="none" stroke="#f7c0c9" stroke-width="1.5" opacity=".8"/></g>`;
+  if (species === "tulip") return `<g class="companion-bloom" transform="translate(${x} ${y}) scale(${scale})"><path d="M0 11V-2" stroke="#537f5d" stroke-width="4" stroke-linecap="round"/><g transform="rotate(${turn})"><path d="M0 3C-17-2-21-22-15-36C-7-30-2-21 0-8C2-21 7-30 15-36C21-22 17-2 0 3Z" fill="#e58398"/><path d="M0 3C-10-5-11-24 0-39C11-24 10-5 0 3Z" fill="#f1a5b3"/><path d="M-15-35C-10-30-7-22-7-13M15-35C10-30 7-22 7-13" fill="none" stroke="#f7c0c9" stroke-width="1.5" opacity=".8"/></g></g>`;
   if (species === "camellia") return `<g class="companion-bloom" transform="translate(${x} ${y}) rotate(${turn}) scale(${scale})"><circle r="28" fill="#f3c2c7" opacity=".22"/>${Array.from({ length: 12 }, (_, index) => `<ellipse cx="0" cy="-14" rx="10" ry="17" fill="${index % 2 ? "#c95f77" : "#df7890"}" transform="rotate(${index * 30})"/>`).join("")}${Array.from({ length: 7 }, (_, index) => `<ellipse cx="0" cy="-9" rx="7" ry="11" fill="${index % 2 ? "#ee96a5" : "#d96e84"}" transform="rotate(${index * (360 / 7) + 10})"/>`).join("")}<circle r="6.5" fill="#e6b75e"/><g fill="#fff0ad">${Array.from({ length: 9 }, (_, index) => `<circle cx="0" cy="-5" r="1.2" transform="rotate(${index * 40})"/>`).join("")}</g></g>`;
-  if (species === "bluebell") return `<g class="companion-bloom" transform="translate(${x} ${y}) rotate(${turn}) scale(${scale})"><path d="M0 7Q7-17 0-43" fill="none" stroke="#557d62" stroke-width="3.4" stroke-linecap="round"/>${[-35, -26, -17, -8].map((offset, index) => `<g transform="translate(${index % 2 ? -7 : 7} ${offset}) rotate(${index % 2 ? 16 : -16})"><path d="M0-13C-10-9-11 2-7 8H7C11 2 10-9 0-13Z" fill="${index % 2 ? "#817bbb" : "#9c96d2"}"/><path d="M-7 7L-3 12L0 7L3 12L7 7" fill="#b8b2df"/><path d="M0-10V5" stroke="rgba(255,255,255,.36)" stroke-width="1.3"/></g>`).join("")}</g>`;
+  if (species === "bluebell") return `<g class="companion-bloom" transform="translate(${x} ${y}) scale(${scale})"><path d="M0 11L0 0Q7-17 0-43" fill="none" stroke="#557d62" stroke-width="3.4" stroke-linecap="round"/><g transform="rotate(${turn})">${[-35, -26, -17, -8].map((offset, index) => `<g transform="translate(${index % 2 ? -7 : 7} ${offset}) rotate(${index % 2 ? 16 : -16})"><path d="M0-13C-10-9-11 2-7 8H7C11 2 10-9 0-13Z" fill="${index % 2 ? "#817bbb" : "#9c96d2"}"/><path d="M-7 7L-3 12L0 7L3 12L7 7" fill="#b8b2df"/><path d="M0-10V5" stroke="rgba(255,255,255,.36)" stroke-width="1.3"/></g>`).join("")}</g></g>`;
+  if (species === "redrose") return `<g class="companion-bloom" transform="translate(${x} ${y}) rotate(${turn}) scale(${scale})"><circle r="28" fill="#d94354" opacity=".16"/>${Array.from({ length: 12 }, (_, index) => `<ellipse cx="0" cy="-14" rx="9.5" ry="17.5" fill="${index % 2 ? "#b7223a" : "#d43a4e"}" stroke="rgba(108,18,34,.16)" stroke-width=".7" transform="rotate(${index * 30}) scale(${index % 3 === 0 ? .88 : 1})"/>`).join("")}${Array.from({ length: 8 }, (_, index) => `<ellipse cx="0" cy="-9" rx="6.8" ry="11.5" fill="${index % 2 ? "#e45161" : "#c52b42"}" transform="rotate(${index * 45 + 12})"/>`).join("")}<circle r="6.8" fill="#8f1f35"/><path d="M-5 1C-4-6 6-8 8-1C9 5 1 8-4 5C-7 2-5-2-1-3C3-4 5-1 3 2" fill="none" stroke="#f58a94" stroke-width="2.4" stroke-linecap="round"/></g>`;
   return `<g class="companion-bloom" transform="translate(${x} ${y}) rotate(${turn}) scale(${scale})"><circle r="25" fill="#f4c2c9" opacity=".35"/>${Array.from({ length: 10 }, (_, index) => `<ellipse cx="0" cy="-13" rx="10" ry="17" fill="${index % 2 ? "#dc8296" : "#ed9bab"}" stroke="rgba(255,255,255,.28)" stroke-width=".8" transform="rotate(${index * 36}) scale(${index % 2 ? .82 : 1})"/>`).join("")}<circle r="12" fill="#d8778d"/><path d="M-8 2C-6-8 8-10 10-1C11 6 2 10-4 6C-9 3-7-3-2-5C3-7 6-3 4 1" fill="none" stroke="#f7c1c9" stroke-width="3" stroke-linecap="round"/></g>`;
 }
 
@@ -1768,6 +1768,11 @@ function companionPlantSvg(species = "rose", level = 0, compact = false) {
       stems: [[130,162,129,132,129,99,128,70], [129,146,115,132,101,108,93,82], [132,143,149,128,165,105,174,79], [110,126,92,118,77,103,68,87], [153,126,175,117,191,101,202,82]],
       heads: [[128,68,0], [92,80,-8], [175,77,8], [67,85,-11], [203,80,11]],
       leaves: [[0,.23,-1,.68,0,1,72],[0,.43,1,.62,1,1,72],[1,.32,-1,.59,1,2,68],[1,.58,1,.54,0,2,70],[2,.32,1,.6,0,3,68],[2,.58,-1,.54,1,3,70],[3,.5,-1,.46,1,5,68],[4,.5,1,.47,0,6,68]]
+    },
+    redrose: {
+      stems: [[130,163,130,129,130,98,130,67], [128,159,114,136,103,108,94,79], [134,160,149,135,164,106,174,76]],
+      heads: [[130,65,0], [94,77,-7], [174,74,7]],
+      leaves: []
     },
     daisy: {
       stems: [[130,163,129,128,124,91,115,60], [132,160,140,125,151,96,165,71], [126,159,112,133,98,109,84,88], [138,158,158,138,179,117,195,95], [120,158,100,144,81,128,64,109]],
@@ -1801,9 +1806,9 @@ function companionPlantSvg(species = "rose", level = 0, compact = false) {
     }
   };
   const profile = profiles[currentSpecies];
-  const stemCount = [0, 1, 2, 3, 3, 4, 5][currentLevel];
+  const stemCount = [0, 1, 2, 3, 3, 3, 3][currentLevel];
   const growthScale = [1, .42, .62, .82, 1, 1, 1][currentLevel];
-  const stemWidths = { rose: 4.65, daisy: 4, lavender: 3.15, sunflower: 5.2, tulip: 4.4, camellia: 4.55, bluebell: 3.35 };
+  const stemWidths = { rose: 4.65, redrose: 4.8, daisy: 4, lavender: 3.15, sunflower: 5.2, tulip: 4.4, camellia: 4.55, bluebell: 3.35 };
   const stems = profile.stems.slice(0, stemCount).map((stem, index) => `<path data-stem-index="${index}" d="${companionStemPath(stem)}" stroke-width="${Math.max(2.8, stemWidths[currentSpecies] - index * .12)}"/>`).join("");
   const leaves = companionLeafLayout()
     .filter(([stemIndex, , , , , minimumLevel]) => currentLevel >= minimumLevel && stemIndex < stemCount)
@@ -1813,12 +1818,15 @@ function companionPlantSvg(species = "rose", level = 0, compact = false) {
     }).join("");
   let heads = "";
   if (currentLevel === 4) heads = profile.heads.slice(0, 3).map(([x, y, turn], index) => companionBudSvg(currentSpecies, x, y + (index === 2 ? 3 : 0), index === 0 ? .82 : .7)).join("");
-  if (currentLevel === 5) heads = profile.heads.slice(0, 4).map(([x, y, turn], index) => index === 3 ? companionBudSvg(currentSpecies, x, y, .58) : companionBlossomSvg(currentSpecies, x, y, index === 0 ? .72 : .61, turn)).join("");
-  if (currentLevel >= 6) heads = profile.heads.map(([x, y, turn], index) => companionBlossomSvg(currentSpecies, x, y, index === 0 ? .74 : index < 3 ? .62 : .5, turn)).join("");
+  if (currentLevel === 5) heads = profile.heads.slice(0, 3).map(([x, y, turn], index) => companionBlossomSvg(currentSpecies, x, y, index === 0 ? .72 : .62, turn)).join("");
+  if (currentLevel >= 6) heads = profile.heads.slice(0, 3).map(([x, y, turn], index) => companionBlossomSvg(currentSpecies, x, y, index === 0 ? .82 : .7, turn)).join("");
+  const maturityDetails = currentLevel >= 6
+    ? `<g class="companion-maturity" fill="#f3dba0" opacity=".72"><circle cx="104" cy="54" r="1.8"/><circle cx="154" cy="46" r="2.1"/><circle cx="188" cy="63" r="1.6"/><path d="M76 141Q130 126 184 141" fill="none" stroke="#84a685" stroke-width="2.2" stroke-linecap="round" opacity=".45"/></g>`
+    : "";
   const seed = currentLevel === 0 ? `<g><ellipse cx="130" cy="159" rx="31" ry="8" fill="#60473c"/><path d="M130 154C118 146 119 132 130 125C141 132 142 146 130 154Z" fill="#9a6c4e"/><path d="M130 140C126 136 126 132 129 128" fill="none" stroke="#efd2ba" stroke-width="2.2" stroke-linecap="round"/></g>` : "";
   const shoots = currentLevel > 0 && currentLevel < 4 ? profile.heads.slice(0, stemCount).map(([x, y, turn], index) => companionShootSvg(currentSpecies, x, y, turn, index === 0 ? 1 : .86)).join("") : "";
   const potId = `companion-pot-${currentSpecies}-${currentLevel}-${compact ? "c" : "f"}`;
-  const botanical = `<g transform="translate(0 ${164 * (1 - growthScale)}) scale(1 ${growthScale})"><g class="companion-stems" fill="none" stroke="#4e805d" stroke-linecap="round" stroke-linejoin="round">${stems}</g>${leaves}${shoots}${heads}</g>`;
+  const botanical = `<g transform="translate(0 ${164 * (1 - growthScale)}) scale(1 ${growthScale})"><g class="companion-stems" fill="none" stroke="#4e805d" stroke-linecap="round" stroke-linejoin="round">${stems}</g>${maturityDetails}${leaves}${shoots}${heads}</g>`;
   return `<svg class="companion-plant-svg is-${currentSpecies}${compact ? " is-compact" : ""}" viewBox="0 0 260 220" role="presentation" aria-hidden="true"><defs><linearGradient id="${potId}" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e3aa92"/><stop offset=".52" stop-color="#c68070"/><stop offset="1" stop-color="#985d58"/></linearGradient><filter id="${potId}-shadow" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="5" stdDeviation="4" flood-color="#334b3b" flood-opacity=".17"/></filter></defs><ellipse cx="130" cy="211" rx="65" ry="7" fill="#395341" opacity=".14"/>${botanical}${seed}<g filter="url(#${potId}-shadow)"><ellipse cx="130" cy="164" rx="61" ry="14" fill="#4f3a31"/><path d="M73 164H187L178 204Q176 212 166 212H94Q84 212 82 204Z" fill="url(#${potId})"/><path d="M68 160Q68 151 78 151H182Q192 151 192 160V170H68Z" fill="#c77d6c"/><path d="M89 180Q130 191 171 180M99 197Q130 204 161 197" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="3" stroke-linecap="round"/></g></svg>`;
 }
 

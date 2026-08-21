@@ -7,6 +7,8 @@
     timer: null, voiceRefreshTimer: null, refreshPromise: null, forceRefreshQueued: false,
     hydrationRetryTimer: null, hydrationRetryCount: 0,
     remoteReloadTimer: null, remotePhotosQueued: false, photosPromise: null,
+    realtimeReconnectTimer: null, realtimeFallbackTimer: null, realtimeReconnectAttempts: 0,
+    subscriptionGeneration: 0, channelStatus: "CLOSED", lastSharedUpdatedAt: null,
     pendingState: null, saveInFlight: false, lastForegroundRefresh: 0,
     hydrated: false, photosHydrated: false, mediaSplitSupported: false, applyingRemote: false,
     lastSharedState: null, lastPhotosState: null, lastGameImagesState: null, lastPrivateState: null,
@@ -355,15 +357,22 @@
   }
 
   function resetConnection() {
-    if (sync.channel) sync.client.removeChannel(sync.channel);
+    sync.subscriptionGeneration += 1;
+    const previousChannel = sync.channel;
+    sync.channel = null;
+    if (previousChannel) sync.client.removeChannel(previousChannel);
     clearTimeout(sync.timer);
     clearTimeout(sync.remoteReloadTimer);
     clearTimeout(sync.hydrationRetryTimer);
+    clearTimeout(sync.realtimeReconnectTimer);
     clearInterval(sync.voiceRefreshTimer);
+    clearInterval(sync.realtimeFallbackTimer);
     sync.timer = null;
     sync.remoteReloadTimer = null;
     sync.hydrationRetryTimer = null;
     sync.hydrationRetryCount = 0;
+    sync.realtimeReconnectAttempts = 0;
+    sync.channelStatus = "CLOSED";
     sync.remotePhotosQueued = false;
     sync.photosPromise = null;
     sync.pendingState = null;
@@ -376,6 +385,9 @@
     sync.role = null;
     sync.channel = null;
     sync.voiceRefreshTimer = null;
+    sync.realtimeReconnectTimer = null;
+    sync.realtimeFallbackTimer = null;
+    sync.lastSharedUpdatedAt = null;
     sync.lastSharedState = null;
     sync.lastPhotosState = null;
     sync.lastGameImagesState = null;
@@ -549,6 +561,7 @@
     ).then((result) => ({ result })).catch((error) => ({ error }));
     const shared = await readSharedCore();
     const sharedData = shared.data || {};
+    sync.lastSharedUpdatedAt = shared.updated_at || sync.lastSharedUpdatedAt;
     sync.lastSharedState = structuredClone(sharedData);
     sync.applyingRemote = true;
     try {
@@ -626,13 +639,71 @@
     }).catch((error) => console.warn("Shared change broadcast failed", error));
   }
 
+  function scheduleRealtimeReconnect() {
+    if (sync.realtimeReconnectTimer || !sync.client || !sync.user || !sync.coupleId) return;
+    const delay = Math.min(20000, 1200 * (2 ** Math.min(sync.realtimeReconnectAttempts, 4)));
+    sync.realtimeReconnectAttempts += 1;
+    sync.realtimeReconnectTimer = window.setTimeout(() => {
+      sync.realtimeReconnectTimer = null;
+      if (document.visibilityState === "hidden") return;
+      subscribe();
+    }, delay);
+  }
+
+  async function checkSharedVersion() {
+    if (!sync.client || !sync.user || !sync.coupleId || !sync.hydrated || document.visibilityState === "hidden") return;
+    if (sync.pendingState || sync.saveInFlight) return;
+    try {
+      const { data: row, error } = await withTimeout(sync.client
+        .from("love_shared_state")
+        .select("updated_at, updated_by")
+        .eq("couple_id", sync.coupleId)
+        .maybeSingle(), 8000, "检查共同记录更新");
+      if (error) throw error;
+      if (!row?.updated_at || row.updated_at === sync.lastSharedUpdatedAt) return;
+      if (row.updated_by === sync.user.id) {
+        sync.lastSharedUpdatedAt = row.updated_at;
+        return;
+      }
+      queueRemoteReload(false);
+    } catch (error) {
+      console.warn("Shared state version check failed", error);
+    }
+  }
+
+  function startRealtimeFallback() {
+    clearInterval(sync.realtimeFallbackTimer);
+    sync.realtimeFallbackTimer = window.setInterval(checkSharedVersion, 12000);
+  }
+
   function subscribe() {
-    if (sync.channel) sync.client.removeChannel(sync.channel);
+    clearTimeout(sync.realtimeReconnectTimer);
+    sync.realtimeReconnectTimer = null;
+    const generation = sync.subscriptionGeneration + 1;
+    sync.subscriptionGeneration = generation;
+    const previousChannel = sync.channel;
+    sync.channel = null;
+    if (previousChannel) sync.client.removeChannel(previousChannel);
     sync.channel = sync.client
       .channel(`love-space-${sync.coupleId}`)
       .on("broadcast", { event: "shared-changed" }, ({ payload }) => {
         if (!sync.hydrated || payload?.updatedBy === sync.user?.id) return;
         const mediaChanged = Boolean(payload?.mediaChanged || payload?.photosChanged);
+        if (mediaChanged) sync.photosHydrated = false;
+        queueRemoteReload(mediaChanged);
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "love_shared_state", filter: `couple_id=eq.${sync.coupleId}` }, (payload) => {
+        if (!sync.hydrated) return;
+        const remoteRow = payload.new || {};
+        if (remoteRow.updated_by === sync.user?.id) {
+          sync.lastSharedUpdatedAt = remoteRow.updated_at || sync.lastSharedUpdatedAt;
+          return;
+        }
+        const remoteData = remoteRow.data;
+        const mediaChanged = Boolean(remoteData && (
+          (Array.isArray(remoteData.photos) && !sameState(remoteData.photos, sync.lastPhotosState))
+          || (Array.isArray(remoteData.gameRecords) && !sameState(sharedGameImages(remoteData), sync.lastGameImagesState))
+        ));
         if (mediaChanged) sync.photosHydrated = false;
         queueRemoteReload(mediaChanged);
       })
@@ -651,7 +722,19 @@
       .on("postgres_changes", { event: "*", schema: "public", table: "love_voice_messages", filter: `couple_id=eq.${sync.coupleId}` }, () => {
         refreshVoiceMessages();
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (generation !== sync.subscriptionGeneration) return;
+        sync.channelStatus = status;
+        if (status === "SUBSCRIBED") {
+          clearTimeout(sync.realtimeReconnectTimer);
+          sync.realtimeReconnectTimer = null;
+          sync.realtimeReconnectAttempts = 0;
+          startRealtimeFallback();
+          if (sync.hydrated) checkSharedVersion();
+          return;
+        }
+        if (["CHANNEL_ERROR", "TIMED_OUT", "CLOSED"].includes(status)) scheduleRealtimeReconnect();
+      });
   }
 
   function featureError(feature, error) {
@@ -981,14 +1064,20 @@
       const serverState = current.data || {};
       const merged = mergeSharedForSave(localState, serverState);
       const writeState = withChangedMedia(merged);
-      if (current.exists && sameState(merged, serverState) && !mediaChanged) return serverState;
+      if (current.exists && sameState(merged, serverState) && !mediaChanged) {
+        sync.lastSharedUpdatedAt = current.updated_at || sync.lastSharedUpdatedAt;
+        return serverState;
+      }
       if (!current.exists) {
         const { data: inserted, error: insertError } = await runWrite(sync.client
           .from("love_shared_state")
           .insert({ couple_id: sync.coupleId, data: writeState, updated_by: sync.user.id })
           .select("updated_at")
           .maybeSingle(), "创建共同记录");
-        if (!insertError && inserted) return merged;
+        if (!insertError && inserted) {
+          sync.lastSharedUpdatedAt = inserted.updated_at || sync.lastSharedUpdatedAt;
+          return merged;
+        }
         if (insertError && insertError.code !== "23505") throw insertError;
       } else {
         const { data: updated, error: updateError } = await runWrite(sync.client
@@ -999,7 +1088,10 @@
           .select("updated_at")
           .maybeSingle(), "保存共同记录");
         if (updateError) throw updateError;
-        if (updated) return merged;
+        if (updated) {
+          sync.lastSharedUpdatedAt = updated.updated_at || sync.lastSharedUpdatedAt;
+          return merged;
+        }
       }
       await new Promise((resolve) => window.setTimeout(resolve, 25 * (attempt + 1)));
     }
@@ -1014,6 +1106,7 @@
       .maybeSingle(), "最终保存共同记录");
     if (finalUpdateError) throw finalUpdateError;
     if (!updated) throw new Error("数据库未允许更新共同空间，请检查登录状态和 RLS 权限");
+    sync.lastSharedUpdatedAt = updated.updated_at || sync.lastSharedUpdatedAt;
     return merged;
   }
 
@@ -1167,11 +1260,19 @@
   function bindLifecycleFlush() {
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") flushSave();
-      else if (sync.user) refreshVisibleData();
+      else if (sync.user) {
+        if (sync.channelStatus !== "SUBSCRIBED" && sync.coupleId) subscribe();
+        refreshVisibleData();
+      }
       else if (sync.client) refreshSession(true);
     });
     window.addEventListener("pageshow", () => {
       if (sync.client) refreshSession(true);
+    });
+    window.addEventListener("focus", () => {
+      if (!sync.client) return;
+      if (sync.channelStatus !== "SUBSCRIBED" && sync.user && sync.coupleId) subscribe();
+      if (sync.user) refreshVisibleData();
     });
     window.addEventListener("pagehide", flushSave);
     window.addEventListener("online", () => {

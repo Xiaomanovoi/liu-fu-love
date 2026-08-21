@@ -160,8 +160,8 @@ try {
 
   const stageCases = [
     ["seed", 0, 0, 0, 0], ["sprout", 200, 0, 0, 4], ["seedling", 500, 0, 0, 8],
-    ["bud", 900, 0, 3, 8], ["bloom", 1400, 3, 0, 8], ["garden", 2000, 5, 0, 14],
-    ["path", 2800, 9, 0, 14], ["courtyard", 3400, 14, 0, 14], ["sanctuary", 4300, 19, 0, 14]
+    ["bud", 900, 0, 3, 8], ["bloom", 1400, 3, 0, 8], ["garden", 2000, 3, 0, 12],
+    ["path", 2800, 7, 0, 12], ["courtyard", 3400, 12, 0, 12], ["sanctuary", 4300, 17, 0, 12]
   ];
   const stages = [];
   for (const [name, points, flowers, buds, leaves] of stageCases) {
@@ -324,14 +324,14 @@ try {
   }
 
   const careByLevel = [0, 2, 6, 12, 20, 32, 48];
-  const companionSpecies = ["rose", "daisy", "lavender", "sunflower", "tulip", "camellia", "bluebell"];
+  const companionSpecies = ["rose", "redrose", "daisy", "lavender", "sunflower", "tulip", "camellia", "bluebell"];
   assert.deepEqual(await page.locator("#gardenCompanionSpecies option").evaluateAll((options) => options.map((option) => option.value)), companionSpecies);
   for (const species of companionSpecies) {
     for (let level = 0; level <= 6; level += 1) {
       const result = await showCompanion({ species, careCount: careByLevel[level], expectedLevel: level, screenshot: level >= 1 });
-      assert.equal(result.leaves, [0, 2, 4, 6, 6, 8, 10][level], JSON.stringify(result));
+      assert.equal(result.leaves, [0, 2, 4, 6, 6, 6, 6][level], JSON.stringify(result));
       if (level === 4) assert.equal(result.buds, 3, JSON.stringify(result));
-      if (level === 6) assert.equal(result.blooms, 5, JSON.stringify(result));
+      if (level === 6) assert.equal(result.blooms, 3, JSON.stringify(result));
     }
   }
 

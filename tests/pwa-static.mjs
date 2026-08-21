@@ -57,5 +57,10 @@ assert.match(worker, /event\.request\.mode\s*!==\s*"navigate"/);
 assert.match(sync, /signInWithPassword/);
 assert.match(sync, /updateUser\(\{ password \}\)/);
 assert.match(sync, /signOut\(\{ scope: "local" \}\)/);
+assert.match(sync, /table: "love_shared_state"/);
+assert.match(sync, /status === "SUBSCRIBED"/);
+assert.match(sync, /scheduleRealtimeReconnect/);
+assert.match(sync, /checkSharedVersion/);
+assert.match(sync, /window\.addEventListener\("focus"/);
 
 console.log("PWA static safety checks passed.");
