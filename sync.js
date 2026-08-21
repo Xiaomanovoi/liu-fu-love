@@ -16,6 +16,7 @@
   };
   let starSummaryPromise = null;
   const starSnapshotPromises = new Map();
+  let starSnapshotRequestSequence = 0;
 
   function emit(name, detail) {
     window.dispatchEvent(new CustomEvent(name, { detail }));
@@ -891,8 +892,9 @@
       : null;
     const historyLimit = Math.max(1, Math.min(5000, Number(options.historyLimit || 5)));
     const pendingLimit = Math.max(1, Math.min(5000, Number(options.pendingLimit || 5)));
-    const key = `${historyRecipient || "all"}:${historyLimit}:${pendingLimit}`;
-    if (starSnapshotPromises.has(key)) return starSnapshotPromises.get(key);
+    const baseKey = `${historyRecipient || "all"}:${historyLimit}:${pendingLimit}`;
+    const key = options.force ? `${baseKey}:force-${++starSnapshotRequestSequence}` : baseKey;
+    if (!options.force && starSnapshotPromises.has(key)) return starSnapshotPromises.get(key);
     const requestedUserId = sync.user.id;
     const promise = (async () => {
       const { data, error } = await runQuery(sync.client.rpc("get_love_star_snapshot", {
@@ -910,7 +912,6 @@
       if (historyRecipient === null && historyLimit === 5 && pendingLimit === 5) {
         writeFeatureCache(requestedUserId, { starBottleSnapshot: data || {}, starBottleSummary: data || {} });
       }
-      emit("love-star-bottle-snapshot", data || {});
       return data || {};
     })().finally(() => starSnapshotPromises.delete(key));
     starSnapshotPromises.set(key, promise);

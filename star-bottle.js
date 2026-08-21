@@ -38,6 +38,7 @@
   let recipient = role || "fu";
   let historyFilter = "all";
   let historyLimit = 5;
+  let historyExpanded = false;
   let pendingLimit = 5;
   let snapshot = emptySnapshot();
   let loadSequence = 0;
@@ -86,12 +87,19 @@
       loadSnapshot();
     });
     els.historyMore.addEventListener("click", () => {
-      historyLimit += 20;
-      loadSnapshot();
+      historyExpanded = !historyExpanded;
+      if (!historyExpanded) {
+        renderHistory();
+        return;
+      }
+      historyLimit = Math.max(5, Math.min(5000, snapshot.historyTotal || snapshot.history.length || 5));
+      if (snapshot.history.length < snapshot.historyTotal) loadSnapshot();
+      else renderHistory();
     });
     els.historyFilters.forEach((button) => button.addEventListener("click", () => {
       historyFilter = button.dataset.starHistoryFilter;
       historyLimit = 5;
+      historyExpanded = false;
       renderHistoryFilters();
       loadSnapshot();
     }));
@@ -237,10 +245,14 @@
     const sequence = ++loadSequence;
     if (!silent) setNotice("正在读取瓶中的星星……");
     try {
+      const historyRequestLimit = historyExpanded
+        ? Math.max(historyLimit, Math.min(5000, snapshot.historyTotal || historyLimit))
+        : Math.max(50, Math.min(5000, snapshot.historyTotal || 50));
       const data = await window.LoveSync.refreshStarBottle({
         historyRecipient: historyFilter === "all" ? null : historyFilter,
-        historyLimit,
-        pendingLimit
+        historyLimit: historyRequestLimit,
+        pendingLimit,
+        force: silent
       });
       if (sequence !== loadSequence || !data) return;
       applySnapshot(data);
@@ -357,15 +369,20 @@
 
   function renderHistory() {
     els.historyList.replaceChildren();
+    const sortedHistory = sortHistoryRecords(snapshot.history);
+    const visibleHistory = historyExpanded ? sortedHistory : sortedHistory.slice(0, 5);
     if (!historyLoaded) {
       els.historyList.append(emptyElement("展开后读取已经开启的星光。"));
-    } else if (!snapshot.history.length) {
+    } else if (!sortedHistory.length) {
       els.historyList.append(emptyElement("还没有开启过的星光。"));
     } else {
-      snapshot.history.forEach((note) => els.historyList.append(recordElement(note, "history")));
+      visibleHistory.forEach((note) => els.historyList.append(recordElement(note, "history")));
     }
-    els.historyMore.hidden = !historyLoaded || snapshot.history.length >= snapshot.historyTotal;
-    els.historyMore.textContent = `查看更多（还有 ${Math.max(0, snapshot.historyTotal - snapshot.history.length)} 条）`;
+    els.historyMore.hidden = !historyLoaded || snapshot.historyTotal <= 5;
+    els.historyMore.setAttribute("aria-expanded", String(historyExpanded));
+    els.historyMore.textContent = historyExpanded
+      ? "收起到最新 5 条"
+      : `展开全部（共 ${snapshot.historyTotal} 条）`;
     refreshIcons();
   }
 

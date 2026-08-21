@@ -333,6 +333,11 @@ try {
   await page.locator("#starBottleHistoryMore").click();
   await page.waitForFunction(() => document.querySelectorAll("#starBottleHistoryList .star-bottle-record").length > 5);
   assert.equal(await firstOpenedStar.textContent(), "今天也有认真想你。");
+  assert.match(await page.locator("#starBottleHistoryMore").textContent(), /收起到最新 5 条/);
+  await page.locator("#starBottleHistoryMore").click();
+  await page.waitForFunction(() => document.querySelectorAll("#starBottleHistoryList .star-bottle-record").length === 5);
+  assert.equal(await firstOpenedStar.textContent(), "今天也有认真想你。");
+  assert.equal(await page.locator("#starBottleHistoryMore").getAttribute("aria-expanded"), "false");
   const layout = await page.evaluate(() => ({
     overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
     dayChip: document.querySelector("#starBottleDayChip")?.textContent,
