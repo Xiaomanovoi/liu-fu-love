@@ -45,6 +45,7 @@
   let summarySequence = 0;
   let pendingLoaded = false;
   let historyLoaded = false;
+  let historyNeedsRefresh = false;
   let remoteRefreshTimer = null;
   let deferredRefresh = false;
   let outboxFlushPromise = null;
@@ -112,7 +113,7 @@
       if (!els.history.open) return;
       renderHistoryFilters();
       renderHistory();
-      if (!historyLoaded) loadSnapshot();
+      if (!historyLoaded || historyNeedsRefresh) loadSnapshot(true);
     });
     window.addEventListener("love-star-bottle-open", () => {
       if (role) recipient = role;
@@ -123,7 +124,7 @@
       flushOutbox();
     });
     window.addEventListener("love-star-bottle-summary", (event) => applySummary(event.detail));
-    window.addEventListener("love-star-bottle-snapshot", (event) => applySnapshot(event.detail));
+    window.addEventListener("love-star-bottle-snapshot", (event) => applySnapshot(event.detail, { cached: Boolean(event.detail?.__fromCache) }));
     window.addEventListener("love-star-bottle-changed", queueRemoteRefresh);
     window.addEventListener("love-sync-status", (event) => {
       const detail = event.detail || {};
@@ -187,7 +188,7 @@
     });
   }
 
-  function applySnapshot(value) {
+  function applySnapshot(value, options = {}) {
     const next = normalizeSnapshot(value);
     if (next.role) role = next.role;
     snapshot.counts = next.counts;
@@ -202,6 +203,7 @@
       snapshot.historyTotal = next.historyTotal;
       snapshot.historyRecipient = next.historyRecipient;
       historyLoaded = true;
+      historyNeedsRefresh = Boolean(options.cached);
     }
     render();
     drawBottle();

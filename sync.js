@@ -112,7 +112,7 @@
       emit("love-voice-messages", messages);
     }
     if (cached.starBottleSummary) emit("love-star-bottle-summary", cached.starBottleSummary);
-    if (cached.starBottleSnapshot) emit("love-star-bottle-snapshot", cached.starBottleSnapshot);
+    if (cached.starBottleSnapshot) emit("love-star-bottle-snapshot", { ...cached.starBottleSnapshot, __fromCache: true });
   }
 
   function clearFeatureCache(userId) {
@@ -909,8 +909,17 @@
         throw error;
       }
       if (sync.user?.id !== requestedUserId) return data || {};
-      if (historyRecipient === null && historyLimit === 5 && pendingLimit === 5) {
-        writeFeatureCache(requestedUserId, { starBottleSnapshot: data || {}, starBottleSummary: data || {} });
+      if (historyRecipient === null && pendingLimit === 5) {
+        const snapshotData = data || {};
+        const { history = [], pending = [], ...summaryData } = snapshotData;
+        writeFeatureCache(requestedUserId, {
+          starBottleSnapshot: {
+            ...snapshotData,
+            history: Array.isArray(history) ? history.slice(0, 5) : [],
+            pending: Array.isArray(pending) ? pending.slice(0, 5) : []
+          },
+          starBottleSummary: summaryData
+        });
       }
       return data || {};
     })().finally(() => starSnapshotPromises.delete(key));

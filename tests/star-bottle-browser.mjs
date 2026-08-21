@@ -309,8 +309,27 @@ try {
   assert.equal(await page.getByText("这颗待送达星星会被撤销。", { exact: true }).count(), 0);
 
   await page.locator('[data-star-recipient="liu"]').click();
+  await page.evaluate(() => {
+    const staleHistory = Array.from({ length: 5 }, (_, index) => ({
+      id: `cached-old-${index}`,
+      sender_role: index % 2 ? "liu" : "fu",
+      recipient_role: index % 2 ? "fu" : "liu",
+      content: `缓存旧星光${index + 1}`,
+      created_at: `2026-07-0${index + 1}T08:00:00Z`,
+      updated_at: `2026-07-0${index + 1}T08:00:00Z`,
+      opened_at: `2026-07-0${index + 1}T09:00:00Z`
+    }));
+    window.dispatchEvent(new CustomEvent("love-star-bottle-snapshot", {
+      detail: {
+        role: "liu", counts: { liu: 2, fu: 0 }, opened_today: false,
+        pending: [], pending_total: 0, history: staleHistory, history_total: 7,
+        history_recipient: null, __fromCache: true
+      }
+    }));
+  });
   await page.locator("#starBottleHistory summary").click();
   await page.locator("#starBottleHistoryList").getByText("旧星光1", { exact: true }).waitFor();
+  assert.equal(await page.getByText("缓存旧星光5", { exact: true }).count(), 0, "cached all-history must refresh when opened");
   assert.equal(await page.locator("#starBottleHistoryList .star-bottle-record").count(), 5);
   assert.equal(await page.locator("#starBottleHistoryMore").isVisible(), true);
   await page.evaluate(() => {
