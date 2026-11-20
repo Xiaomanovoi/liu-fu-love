@@ -23,6 +23,7 @@
     </script>
     <link rel="stylesheet" href="styles.css?v=20260817-ios1">
     <link rel="stylesheet" href="star-bottle.css?v=20260814-star-bottle2">
+    <link rel="stylesheet" href="calendar.css?v=2">
   </head>
   <body>
     <div class="app-launch" id="appLaunch" role="status" aria-label="心动存档正在打开">
@@ -229,6 +230,12 @@
           <span class="mini-stat" id="taskStats">0/0</span>
         </div>
 
+        <button class="calendar-shortcut" id="openCalendar" type="button">
+          <span class="calendar-shortcut-icon"><i data-lucide="calendar-days" aria-hidden="true"></i></span>
+          <strong>共同日历</strong>
+          <i data-lucide="chevron-right" aria-hidden="true"></i>
+        </button>
+
         <button class="star-bottle-shortcut" id="openStarBottle" type="button" aria-label="进入星语瓶">
           <span class="star-bottle-shortcut-art" aria-hidden="true">
             <i class="mini-star-bottle bottle-coral"><b></b><b></b><b></b></i>
@@ -416,6 +423,36 @@
             <button class="soft-button" type="submit">添加</button>
           </form>
         </article>
+      </section>
+
+      <section class="screen calendar-screen" id="sharedCalendar" aria-labelledby="calendarTitle">
+        <header class="calendar-heading">
+          <button class="calendar-icon" id="closeCalendar" type="button" aria-label="返回我们的页面" title="返回"><i data-lucide="arrow-left" aria-hidden="true"></i></button>
+          <div><h2 id="calendarTitle">共同日历</h2><p id="calendarTodayLabel"></p></div>
+          <button class="calendar-today" id="calendarGoToday" type="button">今天</button>
+        </header>
+        <div class="calendar-month">
+          <header class="calendar-month-nav">
+            <button class="calendar-icon" id="calendarPrev" type="button" aria-label="上个月" title="上个月"><i data-lucide="chevron-left" aria-hidden="true"></i></button>
+            <h3 id="calendarMonthLabel" aria-live="polite"></h3>
+            <button class="calendar-icon" id="calendarNext" type="button" aria-label="下个月" title="下个月"><i data-lucide="chevron-right" aria-hidden="true"></i></button>
+          </header>
+          <div class="calendar-grid" aria-hidden="true"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+          <div class="calendar-grid calendar-days" id="calendarDays" role="group" aria-labelledby="calendarMonthLabel"></div>
+          <div class="calendar-legend"><span><b class="calendar-dot liu"></b>向强</span><span><b class="calendar-dot fu"></b>嘉颖</span><span><b class="calendar-star" aria-hidden="true">★</b>重要日子</span></div>
+        </div>
+        <section class="calendar-day" aria-labelledby="calendarDayLabel">
+          <header class="calendar-day-head">
+            <div class="calendar-day-date"><h3 id="calendarDayLabel"></h3><p id="calendarDayLunar" hidden></p></div>
+            <div class="calendar-day-actions">
+              <button class="calendar-icon" id="calendarAddEvent" type="button" aria-label="标记重要日子" title="标记重要日子" disabled><i data-lucide="star" aria-hidden="true"></i></button>
+              <button class="calendar-write" id="calendarAddNote" type="button" disabled><i data-lucide="plus" aria-hidden="true"></i>写一条</button>
+            </div>
+          </header>
+          <div class="calendar-festivals" id="calendarFestivals" hidden></div>
+          <div class="calendar-connection"><p id="calendarStatus" role="status"></p><button id="calendarSignIn" class="calendar-small" type="button" hidden>前往双人同步</button><button id="calendarRetry" class="calendar-small" type="button" hidden>重试</button></div>
+          <div id="calendarEntries"></div>
+        </section>
       </section>
 
       <section class="screen wheel-screen" id="wheel" aria-label="幸运大转盘">
@@ -1151,13 +1188,26 @@
         </div>
       </form>
     </dialog>
+    <dialog class="calendar-dialog" id="calendarDialog" aria-labelledby="calendarDialogTitle">
+      <form class="dialog-card stack-form" id="calendarForm">
+        <div><h2 id="calendarDialogTitle"></h2><p id="calendarDialogDate"></p></div>
+        <label><span id="calendarInputLabel">内容</span><textarea id="calendarBody" rows="4" maxlength="2000" required></textarea></label>
+        <label class="calendar-repeat" id="calendarRepeatLabel" hidden><input type="checkbox" id="calendarRepeat">每年重复</label>
+        <p id="calendarFormStatus" role="status"></p>
+        <div class="dialog-actions">
+          <button class="soft-button" id="calendarCancel" type="button">取消</button>
+          <button class="primary-button" id="calendarSave" type="submit">保存</button>
+        </div>
+      </form>
+    </dialog>
     <script src="assets/vendor/supabase.min.js?v=20260810-wechat-sync-fix"></script>
     <script async src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" onload="window.lucide?.createIcons()"></script>
     <script src="supabase-config.js"></script>
-    <script src="sync.js?v=20260814-star-bottle2"></script>
+    <script src="sync.js?v=calendar1"></script>
     <script src="questions-extra.js?v=20260809-balanced-bank"></script>
-    <script src="app.js?v=20260817-garden11"></script>
+    <script src="app.js?v=calendar1"></script>
     <script src="star-bottle.js?v=20260817-star-bottle3"></script>
+    <script src="calendar.js?v=2"></script>
     <script src="pwa.js?v=20260815-launch1"></script>
   </body>
 </html>

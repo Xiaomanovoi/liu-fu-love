@@ -3,7 +3,7 @@
   const hasConfig = Boolean(config.url && config.publishableKey);
   const featureCacheKey = "love-sync-feature-cache-v1";
   const sync = {
-    client: null, user: null, coupleId: null, role: null, channel: null,
+    client: null, user: null, coupleId: null, role: null, channel: null, calendarMemberId: null,
     timer: null, voiceRefreshTimer: null, refreshPromise: null, forceRefreshQueued: false,
     hydrationRetryTimer: null, hydrationRetryCount: 0,
     remoteReloadTimer: null, remotePhotosQueued: false, photosPromise: null,
@@ -382,6 +382,7 @@
     sync.mediaSplitSupported = false;
     sync.applyingRemote = false;
     sync.user = null;
+    sync.calendarMemberId = null;
     sync.coupleId = null;
     sync.role = null;
     sync.channel = null;
@@ -428,6 +429,10 @@
       return;
     }
     if (!force && sync.user?.id === session.user.id && sync.coupleId) return;
+    if (sync.user?.id !== session.user.id) {
+      sync.calendarMemberId = null;
+      emit("love-calendar-session");
+    }
     sync.user = session.user;
     emitCachedFeatures(sync.user.id);
     const { data: member, error } = await runQuery(sync.client
@@ -440,6 +445,7 @@
       return;
     }
     if (!member) {
+      sync.calendarMemberId = null;
       updateUi("pairing", "等待配对");
       q("#inviteResult").textContent = "登录成功。请选择自己是谁，再输入对方的邀请码加入空间。";
       emit("love-sync-status", { connected: false, authenticated: true, needsPairing: true, role: null });
@@ -447,6 +453,7 @@
     }
     sync.coupleId = member.couple_id;
     sync.role = member.role;
+    sync.calendarMemberId = session.user.id;
     sync.hydrated = false;
     updateUi("connected", "正在刷新");
     q("#syncConnectedText").textContent = `已作为${sync.role === "liu" ? "刘向强" : "付嘉颖"}连接到两人空间。`;
@@ -711,6 +718,10 @@
       .on("broadcast", { event: "star-bottle-changed" }, ({ payload }) => {
         if (payload?.updatedBy === sync.user?.id) return;
         emit("love-star-bottle-changed", payload || {});
+      })
+      .on("broadcast", { event: "calendar-changed" }, ({ payload }) => {
+        if (generation !== sync.subscriptionGeneration || payload?.updatedBy === sync.user?.id) return;
+        emit("love-calendar-changed");
       })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "love_private_state", filter: `user_id=eq.${sync.user.id}` }, (payload) => {
         if (!sync.hydrated) return;
@@ -1292,6 +1303,41 @@
     });
   }
 
+  function calendarScope() {
+    return sync.user && sync.user.id === sync.calendarMemberId && sync.coupleId
+      ? `${sync.user.id}:${sync.coupleId}`
+      : null;
+  }
+
+  async function calendarRequest(name, params, label) {
+    const scope = calendarScope();
+    if (!scope) throw new Error("请先登录并进入双人空间");
+    const { data, error } = await runQuery(sync.client.rpc(name, params), label);
+    if (scope !== calendarScope()) throw new Error("双人空间已切换");
+    if (error) {
+      if (isMissingRpcError(error)) {
+        throw Object.assign(new Error("共同日历尚未启用，请先完成数据库配置"), { code: "CALENDAR_SETUP" });
+      }
+      const messages = {
+        CALENDAR_NOT_PAIRED: "请先登录并进入双人空间",
+        CALENDAR_ENTRY_CHANGED: "这条内容已在另一台设备上修改，请刷新后再试",
+        CALENDAR_ENTRY_UNAVAILABLE: "这条内容已删除或无法修改",
+        CALENDAR_PARENT_MISSING: "原记录已删除，无法接一句",
+        CALENDAR_INVALID_DATE: "日期超出了日历范围",
+        CALENDAR_INVALID_ENTRY: "请检查内容长度或日期"
+      };
+      throw Object.assign(new Error(messages[error.message] || `${label}失败，请重试`), { code: error.code });
+    }
+    return data;
+  }
+
+  async function calendarMutation(name, params, label) {
+    await calendarRequest(name, params, label);
+    sync.channel?.send({
+      type: "broadcast", event: "calendar-changed", payload: { updatedBy: sync.user.id }
+    }).catch(() => {});
+  }
+
   window.LoveSync = {
     async initialize() {
       bindUi();
@@ -1333,6 +1379,12 @@
     deleteSharedRecord,
     refreshVoiceMessages,
     refreshVisibleData,
+    getCalendarScope: calendarScope,
+    readCalendarDay: (day) => calendarRequest("get_love_calendar", { p_day: day }, "读取共同日历"),
+    saveCalendarEntry: (entry) => calendarMutation("save_love_calendar_entry", entry, "保存日历记录"),
+    deleteCalendarEntry: (id, version) => calendarMutation(
+      "delete_love_calendar_entry", { p_id: id, p_expected_version: version }, "删除日历记录"
+    ),
     isConnected: () => Boolean(sync.coupleId),
     isAuthenticated: () => Boolean(sync.user),
     isReady: () => Boolean(sync.coupleId && sync.hydrated),

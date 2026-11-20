@@ -444,11 +444,16 @@ function bindNavigation() {
 }
 
 function activateTab(target, scrollTarget) {
-  const isTogetherFeature = target === "garden" || target === "wheel" || target === "starBottle";
+  const calendarWasOpen = q("#sharedCalendar").classList.contains("is-active");
+  const calendarIsOpen = target === "sharedCalendar";
+  const isTogetherFeature = target === "garden" || target === "wheel" || target === "starBottle" || calendarIsOpen;
   const navigationTarget = isTogetherFeature ? "together" : target;
   document.body.classList.toggle("garden-mode", isTogetherFeature);
   els.tabs.forEach((item) => item.classList.toggle("is-active", item.dataset.tab === navigationTarget));
   els.screens.forEach((screen) => screen.classList.toggle("is-active", screen.id === target));
+  if (calendarWasOpen !== calendarIsOpen) {
+    window.dispatchEvent(new CustomEvent("love-calendar-view", { detail: calendarIsOpen }));
+  }
   if (scrollTarget) {
     window.setTimeout(() => scrollTarget.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   } else {
@@ -469,6 +474,9 @@ function closeGarden() {
 }
 
 function bindActions() {
+  q("#openCalendar").addEventListener("click", () => activateTab("sharedCalendar"));
+  q("#closeCalendar").addEventListener("click", () => activateTab("together", q("#openCalendar")));
+  q("#calendarSignIn").addEventListener("click", () => activateTab("me", q("#syncPanel")));
   els.openPairing.addEventListener("click", () => activateTab("me", q("#syncPanel")));
   els.editStartDate.addEventListener("click", () => {
     els.startDateInput.value = state.startDate;
